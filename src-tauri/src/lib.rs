@@ -3,7 +3,7 @@ use serde::Serialize;
 use serde_json::Value as JsonValue;
 
 #[derive(Debug, Serialize)]
-struct TableInfo {
+struct PgTable {
     schema: String,
     name: String,
     #[serde(rename = "type")]
@@ -11,7 +11,7 @@ struct TableInfo {
 }
 
 #[derive(Debug, Serialize)]
-struct ColumnInfo {
+struct PgColumn {
     column_name: String,
     data_type: String,
     is_nullable: String,
@@ -23,7 +23,7 @@ struct ColumnInfo {
 }
 
 #[derive(Debug, Serialize)]
-struct TableRows {
+struct PgTableData {
     rows: Vec<JsonValue>,
     count: i64,
 }
@@ -34,14 +34,14 @@ fn quote_ident(s: &str) -> String {
 }
 
 #[tauri::command]
-async fn list_table_rows(
+async fn get_table_data(
     connection_string: String,
     schema: String,
     table: String,
     offset: Option<i64>,
     limit: Option<i64>,
     where_clause: Option<String>,
-) -> Result<TableRows, String> {
+) -> Result<PgTableData, String> {
     let conn = connection_string.clone();
 
     // defaults mimic the Svelte route: offset=0, limit=100
@@ -95,7 +95,7 @@ async fn list_table_rows(
         let count_row = client.query_one(&count_sql, &[]).map_err(|e| e.to_string())?;
         let count: i64 = count_row.get("count");
 
-        Ok(TableRows { rows: json_rows, count })
+        Ok(PgTableData { rows: json_rows, count })
     })
     .await
     .map_err(|e| e.to_string())?
@@ -119,7 +119,7 @@ async fn test_connection(connection_string: String) -> Result<bool, String> {
 }
 
 #[tauri::command]
-async fn list_tables(connection_string: String) -> Result<Vec<TableInfo>, String> {
+async fn list_tables(connection_string: String) -> Result<Vec<PgTable>, String> {
     let conn = connection_string.clone();
     
     tokio::task::spawn_blocking(move || {
@@ -141,7 +141,7 @@ async fn list_tables(connection_string: String) -> Result<Vec<TableInfo>, String
             &[],
         ).map_err(|e| e.to_string())?;
 
-        let tables = rows.iter().map(|row| TableInfo {
+        let tables = rows.iter().map(|row| PgTable {
             schema: row.get("schema"),
             name: row.get("name"),
             table_type: row.get("type"),
@@ -154,7 +154,7 @@ async fn list_tables(connection_string: String) -> Result<Vec<TableInfo>, String
 }
 
 #[tauri::command]
-async fn list_table_columns(connection_string: String, schema: String, table: String) -> Result<Vec<ColumnInfo>, String> {
+async fn list_table_columns(connection_string: String, schema: String, table: String) -> Result<Vec<PgColumn>, String> {
     let conn = connection_string.clone();
     
     tokio::task::spawn_blocking(move || {
@@ -230,7 +230,7 @@ async fn list_table_columns(connection_string: String, schema: String, table: St
         let rows = client.query(query, &[&schema, &table])
             .map_err(|e| e.to_string())?;
 
-        let columns = rows.iter().map(|row| ColumnInfo {
+        let columns = rows.iter().map(|row| PgColumn {
             column_name: row.get("column_name"),
             data_type: row.get("data_type"),
             is_nullable: row.get("is_nullable"),
@@ -257,7 +257,7 @@ pub fn run() {
             test_connection,
             list_tables,
             list_table_columns,
-            list_table_rows
+            get_table_data
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

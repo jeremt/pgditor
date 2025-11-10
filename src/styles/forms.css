@@ -10,6 +10,11 @@ button.btn {
     font-size: var(--text-sm);
     padding: 0.4em 1em;
     transition: 0.3s all;
+    &:disabled {
+        opacity: 0.3;
+        cursor: default;
+        pointer-events: none;
+    }
     &:hover,
     &:focus-visible {
         color: var(--color-fg);

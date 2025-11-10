@@ -1,15 +1,16 @@
 import {getConnectionsContext} from "$lib/connection/connectionsContext.svelte";
 import {catchError} from "$lib/helpers/catchError";
+import {debounced} from "$lib/helpers/debounced.svelte";
 import {invoke} from "@tauri-apps/api/core";
 import {getContext, setContext} from "svelte";
 
-type TableInfo = {
+type PgTable = {
     schema: string;
     name: string;
     type: "BASE TABLE" | "VIEW";
 };
 
-type ColumnInfo = {
+type PgColumn = {
     column_name: string;
     data_type: string;
     is_nullable: string;
@@ -20,11 +21,24 @@ type ColumnInfo = {
     foreign_column_name?: string;
 };
 
-type RowInfo = Record<string, string | number | null>;
+type PgRow = Record<string, string | number | null>;
 
 class TableContext {
-    list = $state<TableInfo[]>([]);
-    current = $state<TableInfo & {columns: ColumnInfo[]; rows: RowInfo[]; count: number}>();
+    list = $state<PgTable[]>([]);
+    current = $state<PgTable & {columns: PgColumn[]; rows: PgRow[]; count: number}>();
+
+    filters = $state({
+        offset: 0,
+        limit: 100,
+    });
+
+    debouncedFilters = debounced(
+        () => this.filters,
+        async (data) => {
+            this.updateData(data.offset, data.limit);
+        },
+        500
+    );
 
     private connections = getConnectionsContext();
 
@@ -33,7 +47,7 @@ class TableContext {
             return;
         }
         const connectionString = this.connections.current.connectionString;
-        const [tableError, unsortedTables] = await catchError(invoke<TableInfo[]>("list_tables", {connectionString}));
+        const [tableError, unsortedTables] = await catchError(invoke<PgTable[]>("list_tables", {connectionString}));
         if (tableError) {
             throw tableError; // TODO: toast
         }
@@ -43,13 +57,13 @@ class TableContext {
         }
     };
 
-    use = async (table: TableInfo) => {
+    use = async (table: PgTable) => {
         if (!this.connections.current) {
             return;
         }
         const connectionString = this.connections.current.connectionString;
         const [columnsError, columns] = await catchError(
-            invoke<ColumnInfo[]>("list_table_columns", {
+            invoke<PgColumn[]>("list_table_columns", {
                 connectionString,
                 schema: table.schema,
                 table: table.name,
@@ -59,27 +73,26 @@ class TableContext {
             throw columnsError; // TODO: toast
         }
         this.current = {...table, columns, rows: [], count: 0};
-        await this.updateRows();
+        await this.updateData(this.filters.offset, this.filters.limit);
     };
 
-    updateRows = async () => {
+    updateData = async (offset: number, limit: number) => {
         if (!this.connections.current || !this.current) {
             return;
         }
         const connectionString = this.connections.current.connectionString;
         const [dataError, data] = await catchError(
-            invoke<{rows: RowInfo[]; count: number}>("list_table_rows", {
+            invoke<{rows: PgRow[]; count: number}>("get_table_data", {
                 connectionString,
                 schema: this.current.schema,
                 table: this.current.name,
-                offset: 0,
-                limit: 100,
+                offset,
+                limit,
             })
         );
         if (dataError) {
             throw dataError; // TODO: toast
         }
-        console.log(data.rows);
         this.current.rows = data.rows;
         this.current.count = data.count;
     };

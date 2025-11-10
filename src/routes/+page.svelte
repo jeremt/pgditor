@@ -1,56 +1,39 @@
 <script lang="ts">
     import ConnectionButton from "$lib/connection/ConnectionButton.svelte";
+    import ChevronIcon from "$lib/icons/ChevronIcon.svelte";
+    import Table from "$lib/table/Table.svelte";
     import TableButton from "$lib/table/TableButton.svelte";
     import {getTableContext} from "$lib/table/tableContext.svelte";
+    import TableFilters from "$lib/table/TableFilters.svelte";
+    import NumberInput from "$lib/widgets/NumberInput.svelte";
 
     const pgTable = getTableContext();
 </script>
 
-<header class="flex gap-2 p-4 items-center">
+<header class="flex gap-2 p-2 items-center">
     <ConnectionButton />
     <TableButton />
-    {#if pgTable.current}<span>{pgTable.current.count} rows</span>{/if}
+
+    {#if pgTable.current}
+        <TableFilters />
+        <button
+            class="btn icon"
+            disabled={pgTable.filters.offset === 0}
+            onclick={() => (pgTable.filters.offset -= pgTable.filters.limit)}
+        >
+            <ChevronIcon direction="left" />
+        </button>
+        <button
+            class="btn icon"
+            disabled={pgTable.filters.offset + pgTable.filters.limit > pgTable.current.count}
+            onclick={() => (pgTable.filters.offset += pgTable.filters.limit)}
+        >
+            <ChevronIcon direction="right" />
+        </button>
+        <label for="limit">limit</label>
+        <NumberInput --width="5rem" id="limit" type="text" bind:value={pgTable.filters.limit} />
+        <span>{pgTable.filters.offset} - {pgTable.current.count}</span>
+    {/if}
 </header>
 
-{#if pgTable.current === undefined}
-    <div>No table</div>
-{:else}
-    <div class="flex flex-1 w-full h-full overflow-auto">
-        <table class="h-fit">
-            <thead>
-                <tr>
-                    {#each pgTable.current.columns as column}
-                        <th>
-                            {#if column.is_primary_key === "YES"}🔑{/if}
-                            {#if column.foreign_column_name !== null}
-                                <span
-                                    title="{column.foreign_table_schema}.{column.foreign_table_name}.{column.foreign_column_name}"
-                                    >🔗</span
-                                >
-                            {/if}
-                            {column.column_name} <span class="text-xs font-normal pl-2">{column.data_type}</span>
-                        </th>
-                    {/each}
-                </tr>
-            </thead>
-            <tbody>
-                {#each pgTable.current.rows as row}
-                    <tr>
-                        {#each pgTable.current.columns as column}
-                            {@const value = row[column.column_name]}
-                            <td>
-                                {#if value === null}
-                                    NULL
-                                {:else if typeof value === "object"}
-                                    {JSON.stringify(value)}
-                                {:else}
-                                    {value}
-                                {/if}
-                            </td>
-                        {/each}
-                    </tr>
-                {/each}
-            </tbody>
-        </table>
-    </div>
-{/if}
+<Table />

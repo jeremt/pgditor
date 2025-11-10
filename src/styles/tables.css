@@ -13,6 +13,8 @@ td {
 
 td {
     font-size: 0.9rem;
+    max-width: 20rem;
+    overflow: hidden;
 }
 
 thead th {
