@@ -1,0 +1,8 @@
+{
+    "svelte.enable-ts-plugin": true,
+    // Make rust-analyzer find the `cargo` binary when VS Code is launched from GUI
+    "rust-analyzer.server.extraEnv": {
+        "PATH": "/Users/jeremtab/.cargo/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin",
+        "CARGO_HOME": "/Users/jeremtab/.cargo"
+    }
+}
