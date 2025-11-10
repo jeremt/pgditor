@@ -57,23 +57,13 @@ async fn get_table_data(
         let schema_q = quote_ident(&schema);
         let table_q = quote_ident(&table);
 
-        // normalize where clause: if provided and doesn't start with WHERE, add it
-        let where_sql = if where_clause.trim().is_empty() {
-            String::new()
-        } else {
-            let trimmed = where_clause.trim();
-            if trimmed.to_uppercase().starts_with("WHERE") {
-                format!(" {} ", trimmed)
-            } else {
-                format!(" WHERE {} ", trimmed)
-            }
-        };
-
         // Use row_to_json on the DB side and cast to text so we can safely parse into serde_json::Value
         let select_sql = format!(
             "SELECT row_to_json(t)::text as json_text FROM (SELECT * FROM {}.{} {} OFFSET {} LIMIT {}) t",
-            schema_q, table_q, where_sql, offset, limit
+            schema_q, table_q, where_clause, offset, limit
         );
+
+        print!("psql > {}", select_sql);
 
         let rows = client
             .query(&select_sql, &[])
@@ -86,10 +76,9 @@ async fn get_table_data(
             json_rows.push(v);
         }
 
-        // count with same where clause
         let count_sql = format!(
-            "SELECT count(*) as count FROM {}.{} {}",
-            schema_q, table_q, where_sql
+            "SELECT count(*) as count FROM {}.{}",
+            schema_q, table_q
         );
 
         let count_row = client.query_one(&count_sql, &[]).map_err(|e| e.to_string())?;
@@ -105,7 +94,6 @@ async fn get_table_data(
 async fn test_connection(connection_string: String) -> Result<bool, String> {
     let conn = connection_string.clone();
 
-    // Use blocking postgres client inside a blocking task to keep things simple.
     let result = tokio::task::spawn_blocking(move || {
         match postgres::Client::connect(&conn, postgres::NoTls) {
             Ok(_) => Ok(true),

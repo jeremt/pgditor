@@ -28,6 +28,7 @@ class TableContext {
     current = $state<PgTable & {columns: PgColumn[]; rows: PgRow[]; count: number}>();
 
     filters = $state({
+        where: "",
         offset: 0,
         limit: 100,
     });
@@ -35,7 +36,7 @@ class TableContext {
     debouncedFilters = debounced(
         () => this.filters,
         async (data) => {
-            this.updateData(data.offset, data.limit);
+            this.updateData(data.where, data.offset, data.limit);
         },
         500
     );
@@ -73,10 +74,10 @@ class TableContext {
             throw columnsError; // TODO: toast
         }
         this.current = {...table, columns, rows: [], count: 0};
-        await this.updateData(this.filters.offset, this.filters.limit);
+        await this.updateData(this.filters.where, this.filters.offset, this.filters.limit);
     };
 
-    updateData = async (offset: number, limit: number) => {
+    updateData = async (where: string, offset: number, limit: number) => {
         if (!this.connections.current || !this.current) {
             return;
         }
@@ -88,6 +89,7 @@ class TableContext {
                 table: this.current.name,
                 offset,
                 limit,
+                where_clause: where,
             })
         );
         if (dataError) {
