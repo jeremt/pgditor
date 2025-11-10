@@ -13,7 +13,7 @@
 <Popover isOpen={isPopoverOpen} offsetY={10}>
     {#snippet target()}
         <button class="btn" onclick={() => (isPopoverOpen = !isPopoverOpen)}
-            >{connections.selected ? connections.selected.name : "Add connection"}</button
+            >{connections.current ? connections.current.name : "Add connection"}</button
         >
     {/snippet}
     <div class="flex flex-col gap-4 w-sx">
@@ -21,7 +21,7 @@
             <div class="flex gap-4">
                 <button
                     onclick={() => {
-                        connections.select(connection.id);
+                        connections.use(connection.id);
                         isPopoverOpen = false;
                     }}
                     >{connection.name}

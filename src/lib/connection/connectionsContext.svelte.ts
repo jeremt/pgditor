@@ -17,7 +17,7 @@ class ConnectionsContext {
     private store?: Store;
 
     list = $state<Connection[]>([]);
-    selectedId = $state<string>();
+    currentId = $state<string>();
 
     /**
      * Load all saved connections from _connections.json_.
@@ -25,25 +25,28 @@ class ConnectionsContext {
     load = async () => {
         this.list = (await this.getFromStore<Connection[]>(connectionsKey)) ?? [];
         if (this.list.length) {
-            this.selectedId = this.list[0].id;
+            this.currentId = this.list[0].id;
         }
     };
 
     /**
-     * Set the connection with the given id to be currently used.
+     * Select the connection with the given id. This is used to interact with the DB.
      * @param id connection id
      */
-    select = async (id: string) => {
+    use = async (id: string) => {
         if (!this.list.find((connection) => connection.id === id)) {
             throw new Error(`Connection ${id} not found`);
         }
-        this.selectedId = id;
+        this.currentId = id;
         await this.setToStore(selectedIdKey, id);
         await this.saveToStore();
     };
 
-    get selected() {
-        return this.list.find((connection) => connection.id === this.selectedId);
+    /**
+     * Returns the currently selected connection. This is used to interact with the DB.
+     */
+    get current() {
+        return this.list.find((connection) => connection.id === this.currentId);
     }
 
     /**
@@ -55,12 +58,17 @@ class ConnectionsContext {
         await this.setToStore(connectionsKey, this.list);
         await this.saveToStore();
         if (this.list.length === 0) {
-            this.selectedId = undefined;
+            this.currentId = undefined;
         } else {
-            this.select(this.list[0].id);
+            this.use(this.list[0].id);
         }
     };
 
+    /**
+     * Try to create and save the connection string into the store.
+     *
+     * If there is an error, it will return it instead.
+     */
     create = async (name: string, connectionString: string) => {
         const connection = {id: crypto.randomUUID(), name, connectionString};
         const errorMessage = await this.checkErrors(connection);
@@ -70,9 +78,14 @@ class ConnectionsContext {
         this.list.unshift(connection);
         await this.setToStore(connectionsKey, this.list);
         await this.saveToStore();
-        this.select(connection.id);
+        this.use(connection.id);
     };
 
+    /**
+     * Try to edit and save the connection string into the store.
+     *
+     * If there is an error, it will return it instead.
+     */
     edit = async (id: string, name: string, connectionString: string) => {
         const i = this.list.findIndex((connection) => connection.id === id);
         if (i === -1) {
@@ -86,19 +99,23 @@ class ConnectionsContext {
         this.list[i].connectionString = connectionString;
         await this.setToStore(connectionsKey, this.list);
         await this.saveToStore();
-        this.select(this.list[i].id);
+        this.use(this.list[i].id);
     };
 
-    private checkErrors = async (connection: Connection) => {
-        if (connection.name === "") {
+    /**
+     * Check all possible errors in the connection data.
+     */
+    private checkErrors = async ({name, connectionString}: Connection) => {
+        if (name === "") {
             return "Name is required";
         }
-        if (connection.connectionString === "") {
+        if (this.list.find((connection) => connection.name === name)) {
+            return "Name is already taken";
+        }
+        if (connectionString === "") {
             return "Connection string is required";
         }
-        const [error, ok] = await catchError(
-            invoke<boolean>("test_connection", {connectionString: connection.connectionString})
-        );
+        const [error, ok] = await catchError(invoke<boolean>("test_connection", {connectionString}));
         if (error || !ok) {
             return "Connection string is invalid";
         }
@@ -135,7 +152,7 @@ class ConnectionsContext {
     };
 }
 
-const key = Symbol("connections");
+const key = Symbol("connectionsContext");
 
 /**
  * Persist postgres connection strings using tauri's store plugin.
