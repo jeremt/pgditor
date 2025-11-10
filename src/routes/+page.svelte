@@ -6,21 +6,21 @@
     const pgTable = getTableContext();
 </script>
 
-<header class="flex gap-2 p-4">
+<header class="flex gap-2 p-4 items-center">
     <ConnectionButton />
     <TableButton />
+    {#if pgTable.current}<span>{pgTable.current.count} rows</span>{/if}
 </header>
 
 {#if pgTable.current === undefined}
     <div>No table</div>
 {:else}
-    <div class="rows">
-        <table>
+    <div class="flex flex-1 w-full h-full overflow-auto">
+        <table class="h-fit">
             <thead>
                 <tr>
                     {#each pgTable.current.columns as column}
                         <th>
-                            <!-- {JSON.stringify(column)} -->
                             {#if column.is_primary_key === "YES"}🔑{/if}
                             {#if column.foreign_column_name !== null}
                                 <span
@@ -28,7 +28,7 @@
                                     >🔗</span
                                 >
                             {/if}
-                            {column.column_name} <span class="type">{column.data_type}</span>
+                            {column.column_name} <span class="text-xs font-normal pl-2">{column.data_type}</span>
                         </th>
                     {/each}
                 </tr>
@@ -36,17 +36,17 @@
             <tbody>
                 {#each pgTable.current.rows as row}
                     <tr>
-                        {#each Object.values(row) as value}
-                            <td
-                                >{#if value === null}NULL{:else if typeof value === "object"}<pre
-                                        style:padding="0"
-                                        style:margin-block="0"
-                                        style:font-size="0.8rem">{JSON.stringify(
-                                            value,
-                                            null,
-                                            2
-                                        )}</pre>{:else}{value}{/if}</td
-                            >
+                        {#each pgTable.current.columns as column}
+                            {@const value = row[column.column_name]}
+                            <td>
+                                {#if value === null}
+                                    NULL
+                                {:else if typeof value === "object"}
+                                    {JSON.stringify(value)}
+                                {:else}
+                                    {value}
+                                {/if}
+                            </td>
                         {/each}
                     </tr>
                 {/each}

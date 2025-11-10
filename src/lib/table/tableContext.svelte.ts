@@ -24,7 +24,7 @@ type RowInfo = Record<string, string | number | null>;
 
 class TableContext {
     list = $state<TableInfo[]>([]);
-    current = $state<TableInfo & {columns: ColumnInfo[]; rows: RowInfo[]}>();
+    current = $state<TableInfo & {columns: ColumnInfo[]; rows: RowInfo[]; count: number}>();
 
     private connections = getConnectionsContext();
 
@@ -58,18 +58,17 @@ class TableContext {
         if (columnsError) {
             throw columnsError; // TODO: toast
         }
-        const rows = await this.listRows();
-        this.current = {...table, columns, rows: rows ?? []};
+        this.current = {...table, columns, rows: [], count: 0};
+        await this.updateRows();
     };
 
-    listRows = async () => {
+    updateRows = async () => {
         if (!this.connections.current || !this.current) {
             return;
         }
         const connectionString = this.connections.current.connectionString;
-        console.log("IN");
-        const [rowsError, rows] = await catchError(
-            invoke<RowInfo[]>("list_table_columns", {
+        const [dataError, data] = await catchError(
+            invoke<{rows: RowInfo[]; count: number}>("list_table_rows", {
                 connectionString,
                 schema: this.current.schema,
                 table: this.current.name,
@@ -77,10 +76,12 @@ class TableContext {
                 limit: 100,
             })
         );
-        if (rowsError) {
-            throw rowsError; // TODO: toast
+        if (dataError) {
+            throw dataError; // TODO: toast
         }
-        return rows;
+        console.log(data.rows);
+        this.current.rows = data.rows;
+        this.current.count = data.count;
     };
 }
 

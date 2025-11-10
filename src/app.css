@@ -23,86 +23,12 @@
 }
 
 body {
-    @apply h-full;
+    @apply flex flex-col h-dvh w-full;
+    overflow: auto;
     color: var(--color-fg);
     background-color: var(--color-bg);
 }
 
-a.btn,
-button.btn {
-    font-weight: bold;
-    color: var(--color-bg);
-    background-color: var(--color-fg);
-    border-radius: var(--radius-btn);
-    cursor: pointer;
-    outline: none;
-    border: 2px solid var(--color-fg);
-    font-size: var(--text-sm);
-    padding: 0.4em 1em;
-    transition: 0.3s all;
-    &:hover,
-    &:focus-visible {
-        color: var(--color-fg);
-        background-color: transparent;
-    }
-    &.icon {
-        width: 2.4rem;
-        height: 2.4rem;
-        padding: 0;
-        display: grid;
-        place-items: center;
-    }
-    &.outline {
-        color: var(--color-fg);
-        &.error {
-            color: var(--color-error);
-            border: 2px solid var(--color-error);
-        }
-        background-color: transparent;
-        &:hover,
-        &:focus-visible {
-            background-color: var(--color-fg-3);
-        }
-    }
-}
-
-input[type="date"],
-input[type="text"],
-input[type="email"],
-input[type="phone"],
-input[type="number"],
-input[type="password"],
-select,
-textarea {
-    color: var(--color-fg);
-    background-color: var(--color-bg-1);
-    border: 2px solid var(--color-bg-2);
-    border-radius: var(--radius-input);
-    transition: 0.3s border;
-    outline: none;
-
-    padding: 0.5em;
-    font-size: calc(var(--font-size-factor, 1) * 0.9rem);
-    font-family: var(--font-primary);
-
-    &:hover,
-    &:focus-visible {
-        border: 2px solid var(--color-fg);
-    }
-    &::placeholder {
-        color: var(--color-fg-2);
-    }
-    &:disabled {
-        pointer-events: none;
-        color: var(--color-fg-2);
-    }
-}
-
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-    font-weight: bold;
-}
+@import "./styles/typography.css";
+@import "./styles/forms.css";
+@import "./styles/tables.css";
