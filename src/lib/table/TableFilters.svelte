@@ -1,6 +1,12 @@
 <script lang="ts">
+    import CheckIcon from "$lib/icons/CheckIcon.svelte";
+    import ChevronIcon from "$lib/icons/ChevronIcon.svelte";
+    import FunnelIcon from "$lib/icons/FunnelIcon.svelte";
+    import PlusIcon from "$lib/icons/PlusIcon.svelte";
     import TrashIcon from "$lib/icons/TrashIcon.svelte";
     import Popover from "$lib/widgets/Popover.svelte";
+    import Select from "$lib/widgets/Select.svelte";
+
     import {getTableContext} from "./tableContext.svelte";
 
     let isPopoverOpen = $state(false);
@@ -26,13 +32,17 @@
 
 <Popover isOpen={isPopoverOpen} offsetY={10}>
     {#snippet target()}
-        <button class="btn outline" onclick={() => (isPopoverOpen = !isPopoverOpen)}>Filters ({appliedRules})</button>
+        <button class="btn ghost" onclick={() => (isPopoverOpen = !isPopoverOpen)}
+            ><FunnelIcon --size="1.2rem" /> <span>Filters</span>
+            {#if appliedRules > 0}<span class="badge">{appliedRules}</span>{/if}
+            <ChevronIcon --size="1rem" direction={isPopoverOpen ? "top" : "bottom"} />
+        </button>
     {/snippet}
     <div class="flex flex-col gap-2 pb-4 w-lg">
         {#each filters as filter, i}
             <div class="flex gap-2">
-                <input class="small w-80" type="text" bind:value={filters[i].column} placeholder="column name" />
-                <select class="small" value={filter.operator}>
+                <input class="w-40" type="text" bind:value={filters[i].column} placeholder="column name" />
+                <Select class="small" value={filter.operator}>
                     <optgroup label="basic">
                         <option>=</option>
                         <option>&lt;</option>
@@ -55,12 +65,12 @@
                         <option>&lt=&gt;</option>
                         <!-- cosine -->
                     </optgroup>
-                </select>
-                <input class="small w-80" type="text" bind:value={filters[i].value} placeholder="value" />
+                </Select>
+                <input class="small w-60" type="text" bind:value={filters[i].value} placeholder="value" />
                 <button
                     type="button"
                     aria-label="Trash"
-                    class="btn icon"
+                    class="btn icon ghost"
                     onclick={(e) => {
                         e.preventDefault();
                         filters.splice(i, 1);
@@ -68,18 +78,17 @@
                 >
             </div>
         {:else}
-            <p>No filters applied, all rows will be listed.</p>
+            <p class="text-sx text-fg-1 text-center py-2">No filters applied, all rows will be listed.</p>
         {/each}
     </div>
     <div class="flex justify-between">
-        <button
-            class="btn outline small self-start"
-            onclick={() => filters.push({column: "", operator: "=", value: ""})}>Ajouter un filtre</button
+        <button class="btn ghost self-start" onclick={() => filters.push({column: "", operator: "=", value: ""})}
+            ><PlusIcon /> Ajouter un filtre</button
         >
         <button
             class="btn small"
             disabled={!filters.every((filter) => filter.column && filter.value)}
-            onclick={applyFilters}>Apply filter</button
+            onclick={applyFilters}><CheckIcon /> Apply filter</button
         >
     </div>
 </Popover>

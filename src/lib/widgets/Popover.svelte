@@ -87,7 +87,7 @@
         left: 0;
         opacity: 0;
         padding: 1rem;
-        border: 2px solid var(--color-bg-2);
+        border: 1px solid var(--color-bg-1);
         border-radius: var(--radius-card);
         display: flex;
         flex-direction: column;
@@ -97,7 +97,8 @@
             left 0s;
         translate: 0 -1rem;
         pointer-events: none;
-        background-color: var(--color-bg);
+        background-color: #181818aa;
+        backdrop-filter: blur(1rem);
         z-index: 1;
     }
     .popoverCard.open {

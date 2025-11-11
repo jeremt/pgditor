@@ -2,38 +2,46 @@ table {
     border-collapse: separate;
     border: none;
     border-spacing: 0;
-}
 
-th,
-td {
-    padding: 0.4rem;
-    text-align: start;
-    white-space: nowrap;
-}
-
-td {
-    font-size: 0.9rem;
-    max-width: 20rem;
-    overflow: hidden;
-}
-
-thead th {
-    color: var(--color-fg-2);
-    font-size: 0.9rem;
-}
-
-tbody {
-    & > tr > td {
-        border: 1px solid var(--color-bg-2);
+    th,
+    td {
+        padding-inline: 0.4rem;
+        @apply h-10;
+        text-align: start;
+        white-space: nowrap;
     }
-    & > tr:last-of-type > td {
-        border-bottom-width: 1px;
+
+    td {
+        font-size: 0.9rem;
+        max-width: 22rem;
+        overflow: hidden;
+        font-family: var(--font-mono);
     }
-    & > tr > td {
-        border-bottom-width: 0;
-        border-left-width: 0;
+
+    thead th {
+        color: var(--color-fg-2);
+        font-size: 0.9rem;
     }
-    & > tr > td:last-of-type {
-        border-right-width: 0;
+
+    tbody {
+        tr {
+            cursor: pointer;
+            &:hover {
+                background-color: var(--color-bg-1);
+            }
+        }
+        & > tr > td {
+            border: 1px solid var(--color-bg-2);
+        }
+        & > tr:last-of-type > td {
+            border-bottom-width: 1px;
+        }
+        & > tr > td {
+            border-bottom-width: 0;
+            border-left-width: 0;
+        }
+        & > tr > td:last-of-type {
+            border-right-width: 0;
+        }
     }
 }

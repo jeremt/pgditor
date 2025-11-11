@@ -34,63 +34,6 @@ fn quote_ident(s: &str) -> String {
 }
 
 #[tauri::command]
-async fn get_table_data(
-    connection_string: String,
-    schema: String,
-    table: String,
-    offset: Option<i64>,
-    limit: Option<i64>,
-    where_clause: Option<String>,
-) -> Result<PgTableData, String> {
-    let conn = connection_string.clone();
-
-    // defaults mimic the Svelte route: offset=0, limit=100
-    let offset = offset.unwrap_or(0);
-    let limit = limit.unwrap_or(100);
-    let where_clause = where_clause.unwrap_or_default();
-
-    tokio::task::spawn_blocking(move || {
-        let mut client = postgres::Client::connect(&conn, postgres::NoTls)
-            .map_err(|e| e.to_string())?;
-
-        // prepare identifier-quoted schema and table
-        let schema_q = quote_ident(&schema);
-        let table_q = quote_ident(&table);
-
-        // Use row_to_json on the DB side and cast to text so we can safely parse into serde_json::Value
-        let select_sql = format!(
-            "SELECT row_to_json(t)::text as json_text FROM (SELECT * FROM {}.{} {} OFFSET {} LIMIT {}) t",
-            schema_q, table_q, where_clause, offset, limit
-        );
-
-        print!("psql > {}", select_sql);
-
-        let rows = client
-            .query(&select_sql, &[])
-            .map_err(|e| e.to_string())?;
-
-        let mut json_rows: Vec<JsonValue> = Vec::with_capacity(rows.len());
-        for row in rows.iter() {
-            let txt: String = row.get("json_text");
-            let v: JsonValue = serde_json::from_str(&txt).map_err(|e| e.to_string())?;
-            json_rows.push(v);
-        }
-
-        let count_sql = format!(
-            "SELECT count(*) as count FROM {}.{}",
-            schema_q, table_q
-        );
-
-        let count_row = client.query_one(&count_sql, &[]).map_err(|e| e.to_string())?;
-        let count: i64 = count_row.get("count");
-
-        Ok(PgTableData { rows: json_rows, count })
-    })
-    .await
-    .map_err(|e| e.to_string())?
-}
-
-#[tauri::command]
 async fn test_connection(connection_string: String) -> Result<bool, String> {
     let conn = connection_string.clone();
 
@@ -230,6 +173,60 @@ async fn list_table_columns(connection_string: String, schema: String, table: St
         }).collect();
 
         Ok(columns)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+async fn get_table_data(
+    connection_string: String,
+    schema: String,
+    table: String,
+    offset: Option<i64>,
+    limit: Option<i64>,
+    where_clause: Option<String>,
+) -> Result<PgTableData, String> {
+    let conn = connection_string.clone();
+
+    let offset = offset.unwrap_or(0);
+    let limit = limit.unwrap_or(100);
+    let where_clause = where_clause.unwrap_or_default();
+
+    tokio::task::spawn_blocking(move || {
+        let mut client = postgres::Client::connect(&conn, postgres::NoTls)
+            .map_err(|e| e.to_string())?;
+
+        let schema_q = quote_ident(&schema);
+        let table_q = quote_ident(&table);
+
+        let select_sql = format!(
+            "SELECT row_to_json(t)::text as json_text FROM (SELECT * FROM {}.{} {} OFFSET {} LIMIT {}) t",
+            schema_q, table_q, where_clause, offset, limit
+        );
+
+        println!("psql > {}", select_sql);
+
+        let rows = client
+            .query(&select_sql, &[])
+            .map_err(|e| e.to_string())?;
+
+        let mut json_rows: Vec<JsonValue> = Vec::with_capacity(rows.len());
+        for row in rows.iter() {
+            let txt: String = row.get("json_text");
+            let v: JsonValue = serde_json::from_str(&txt).map_err(|e| e.to_string())?;
+            json_rows.push(v);
+        }
+
+        let count_sql = format!(
+            "SELECT count(*) as count FROM {}.{}",
+            schema_q, table_q
+        );
+
+        let count_row = client.query_one(&count_sql, &[]).map_err(|e| e.to_string())?;
+        let count: i64 = count_row.get("count");
+
+        Ok(PgTableData { rows: json_rows, count })
     })
     .await
     .map_err(|e| e.to_string())?

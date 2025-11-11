@@ -1,14 +1,21 @@
 a.btn,
 button.btn {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+    flex-shrink: 0;
+    text-wrap: nowrap;
+    align-items: center;
     font-weight: bold;
     color: var(--color-bg);
     background-color: var(--color-fg);
     border-radius: var(--radius-btn);
     cursor: pointer;
     outline: none;
-    border: 2px solid var(--color-fg);
+    border: none;
     font-size: var(--text-sm);
-    padding: 0.4em 1em;
+    height: var(--input-height);
+    padding-inline: 0.8em;
     transition: 0.3s all;
     &:disabled {
         opacity: 0.3;
@@ -17,23 +24,30 @@ button.btn {
     }
     &:hover,
     &:focus-visible {
-        color: var(--color-fg);
-        background-color: transparent;
+        filter: brightness(0.8);
     }
     &.icon {
-        width: 2.4rem;
-        height: 2.4rem;
+        width: var(--input-height);
+        height: var(--input-height);
+        border-radius: calc(var(--input-height) / 2);
         padding: 0;
         display: grid;
         place-items: center;
     }
-    &.outline {
+    &.error {
+        background-color: var(--color-error);
+    }
+    &.ghost {
         color: var(--color-fg);
-        &.error {
-            color: var(--color-error);
-            border: 2px solid var(--color-error);
-        }
         background-color: transparent;
+        &:hover {
+            filter: brightness(1);
+            background-color: var(--color-bg-1);
+        }
+    }
+    &.secondary {
+        color: var(--color-fg);
+        background-color: var(--color-bg-1);
         &:hover,
         &:focus-visible {
             background-color: var(--color-fg-3);
@@ -41,28 +55,29 @@ button.btn {
     }
 }
 
-input[type="date"],
-input[type="text"],
-input[type="email"],
-input[type="phone"],
-input[type="number"],
-input[type="password"],
+input[type='date'],
+input[type='text'],
+input[type='email'],
+input[type='phone'],
+input[type='number'],
+input[type='password'],
 select,
 textarea {
     color: var(--color-fg);
     background-color: var(--color-bg-1);
-    border: 2px solid var(--color-bg-2);
+    border: none;
     border-radius: var(--radius-input);
-    transition: 0.3s border;
+    transition: 0.3s all;
     outline: none;
 
-    padding: 0.5em;
+    padding-inline: 0.5em;
+    height: var(--input-height);
     font-size: calc(var(--font-size-factor, 1) * 0.9rem);
     font-family: var(--font-primary);
 
     &:hover,
     &:focus-visible {
-        border: 2px solid var(--color-fg);
+        filter: brightness(1.2);
     }
     &::placeholder {
         color: var(--color-fg-2);

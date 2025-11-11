@@ -97,6 +97,7 @@
 <style>
     .inputWrapper {
         width: var(--width, initial);
+        flex-shrink: 0;
         position: relative;
         font-size: var(--font-size, initial);
 
@@ -128,10 +129,10 @@
             align-items: center;
             color: var(--color-fg);
             &.plus {
-                top: 0.2rem;
+                top: 0.1em;
             }
             &.minus {
-                bottom: 0.2rem;
+                bottom: 0.1em;
             }
         }
     }

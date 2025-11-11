@@ -1,6 +1,7 @@
 <script lang="ts">
     import CrossIcon from "$lib/icons/CrossIcon.svelte";
-    import {onMount} from "svelte";
+    import TrashIcon from "$lib/icons/TrashIcon.svelte";
+
     import {getConnectionsContext, type Connection} from "./connectionsContext.svelte";
 
     type Props = {
@@ -26,7 +27,7 @@
 </script>
 
 <header class="flex gap-4 items-center w-md">
-    <button class="btn outline icon" aria-label="Close" onclick={onclose}><CrossIcon /></button>
+    <button class="btn icon ghost" aria-label="Close" onclick={onclose}><CrossIcon /></button>
     <h2>{connection.id ? "Edit" : "Create"} connection string</h2>
     <button class="btn ml-auto" onclick={save}>Test & save</button>
 </header>
@@ -42,11 +43,11 @@
     />
     {#if connection.id}
         <button
-            class="btn outline error self-start"
+            class="btn error self-start"
             onclick={() => {
                 onclose();
                 connections.remove(connection.id);
-            }}>Remove</button
+            }}><TrashIcon --size="1.2rem" /> Remove</button
         >
     {/if}
     {#if errorMessage}

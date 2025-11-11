@@ -1,9 +1,9 @@
 <script lang="ts">
     type Props = {
-        direction?: "top" | "right" | "bottom" | "left";
+        direction?: 'top' | 'right' | 'bottom' | 'left';
     };
-    let {direction = "bottom"}: Props = $props();
-    const directionToTransform = {top: "rotate(-90deg)", right: "", bottom: "rotate(90deg)", left: "rotate(180deg)"};
+    let {direction = 'bottom'}: Props = $props();
+    const directionToTransform = {top: '-90deg', right: '', bottom: '90deg', left: '180deg'};
 </script>
 
 <svg
@@ -16,15 +16,14 @@
     stroke-width="2"
     stroke-linecap="round"
     stroke-linejoin="round"
-    style:--transform={directionToTransform[direction]}
+    style:rotate={directionToTransform[direction]}
     aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg
 >
 
 <style>
     svg {
-        transform: var(--transform);
         width: var(--size);
         height: var(--size);
-        transition: transform 0.3s;
+        transition: rotate 0.3s;
     }
 </style>

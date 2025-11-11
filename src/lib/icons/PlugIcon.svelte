@@ -8,13 +8,13 @@
     stroke-width="2"
     stroke-linecap="round"
     stroke-linejoin="round"
+    style:rotate="90deg"><path d="M9 2v6"></path><path d="M15 2v6"></path><path d="M12 17v5"></path><path d="M5 8h14"></path><path d="M6 11V8h12v3a6 6 0 1 1-12 0Z"></path></svg
 >
-    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-</svg>
 
 <style>
     svg {
         width: var(--size);
         height: var(--size);
+        flex-shrink: 0;
     }
 </style>

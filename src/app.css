@@ -17,9 +17,13 @@
     --color-pink: #ff76ce;
     --color-error: #ee795f;
     --color-success: #b4f55e;
-    --radius-btn: 2rem;
-    --radius-input: 0.8em;
+    --color-primary: var(--color-yellow);
+    --radius-btn: 0.5rem;
+    --radius-input: 0.5em;
     --radius-card: 1rem;
+    --input-height: 2.4em;
+    --font-sans: "Space Grotesk Variable", system-ui, sans-serif;
+    --font-mono: "Space Mono", monospace;
 }
 
 body {
@@ -32,3 +36,14 @@ body {
 @import "./styles/typography.css";
 @import "./styles/forms.css";
 @import "./styles/tables.css";
+
+.badge {
+    color: var(--color-bg);
+    background-color: var(--color-fg);
+    width: 1.5rem;
+    height: 1.5rem;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    font-size: 0.75rem;
+}

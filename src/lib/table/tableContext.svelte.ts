@@ -41,6 +41,8 @@ class TableContext {
         500
     );
 
+    selectedRows = $state<number[]>([]);
+
     private connections = getConnectionsContext();
 
     loadTables = async () => {
@@ -82,6 +84,7 @@ class TableContext {
             return;
         }
         const connectionString = this.connections.current.connectionString;
+        console.log({where});
         const [dataError, data] = await catchError(
             invoke<{rows: PgRow[]; count: number}>("get_table_data", {
                 connectionString,
@@ -95,6 +98,7 @@ class TableContext {
         if (dataError) {
             throw dataError; // TODO: toast
         }
+        this.selectedRows = [];
         this.current.rows = data.rows;
         this.current.count = data.count;
     };
