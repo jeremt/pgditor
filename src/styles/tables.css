@@ -26,6 +26,7 @@ table {
     tbody {
         tr {
             cursor: pointer;
+            transition: 0.3s all;
             &:hover {
                 background-color: var(--color-bg-1);
             }

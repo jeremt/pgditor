@@ -55,12 +55,12 @@ button.btn {
     }
 }
 
-input[type='date'],
-input[type='text'],
-input[type='email'],
-input[type='phone'],
-input[type='number'],
-input[type='password'],
+input[type="date"],
+input[type="text"],
+input[type="email"],
+input[type="phone"],
+input[type="number"],
+input[type="password"],
 select,
 textarea {
     color: var(--color-fg);
@@ -72,6 +72,7 @@ textarea {
 
     padding-inline: 0.5em;
     height: var(--input-height);
+    flex-shrink: 0;
     font-size: calc(var(--font-size-factor, 1) * 0.9rem);
     font-family: var(--font-primary);
 
@@ -85,5 +86,6 @@ textarea {
     &:disabled {
         pointer-events: none;
         color: var(--color-fg-2);
+        opacity: 0.5;
     }
 }

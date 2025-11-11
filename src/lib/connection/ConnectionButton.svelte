@@ -19,7 +19,7 @@
             ><PlugIcon --size="1.2rem" /> {connections.current ? connections.current.name : "Add connection"}</button
         >
     {/snippet}
-    <div class="flex flex-col gap-4 w-sx">
+    <div class="flex flex-col gap-2 w-sx">
         {#each connections.list as connection}
             <div class="flex gap-1">
                 <button

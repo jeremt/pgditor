@@ -3,25 +3,26 @@ import {catchError} from "$lib/helpers/catchError";
 import {debounced} from "$lib/helpers/debounced.svelte";
 import {invoke} from "@tauri-apps/api/core";
 import {getContext, setContext} from "svelte";
+import type {PgType} from "./defaultValues";
 
-type PgTable = {
+export type PgTable = {
     schema: string;
     name: string;
     type: "BASE TABLE" | "VIEW";
 };
 
-type PgColumn = {
+export type PgColumn = {
     column_name: string;
-    data_type: string;
-    is_nullable: string;
+    data_type: PgType;
+    is_nullable: "YES" | "NO";
     column_default?: string;
-    is_primary_key: string;
+    is_primary_key: "YES" | "NO";
     foreign_table_schema?: string;
     foreign_table_name?: string;
     foreign_column_name?: string;
 };
 
-type PgRow = Record<string, string | number | null>;
+export type PgRow = Record<string, object | string | number | boolean | null>;
 
 class TableContext {
     list = $state<PgTable[]>([]);
@@ -101,6 +102,28 @@ class TableContext {
         this.selectedRows = [];
         this.current.rows = data.rows;
         this.current.count = data.count;
+    };
+
+    refresh = async () => {
+        await this.updateData(this.filters.where, this.filters.offset, this.filters.limit);
+    };
+
+    rawQuery = async (sql: string) => {
+        if (!this.connections.current || !this.current) {
+            return;
+        }
+        const connectionString = this.connections.current.connectionString;
+        const [dataError] = await catchError(
+            invoke<{rows: PgRow[]; count: number}>("raw_query", {
+                connectionString,
+                sql,
+            })
+        );
+        if (dataError) {
+            throw dataError; // TODO: toast
+        }
+        // FIXME: this is a bit wasteful to refresh data, it could be done through optimistic update directly
+        await this.refresh();
     };
 }
 

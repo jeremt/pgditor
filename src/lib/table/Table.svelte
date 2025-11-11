@@ -2,10 +2,19 @@
     import KeyIcon from "$lib/icons/KeyIcon.svelte";
     import LinkIcon from "$lib/icons/LinkIcon.svelte";
     import CheckboxInput from "$lib/widgets/CheckboxInput.svelte";
+    import Dialog from "$lib/widgets/Dialog.svelte";
 
-    import {getTableContext} from "./tableContext.svelte";
+    import {getTableContext, type PgRow} from "./tableContext.svelte";
+    import TableUpsert from "./TableUpsert.svelte";
 
     const pgTable = getTableContext();
+
+    let rowToUpdate = $derived<PgRow>(
+        pgTable.current?.columns.reduce((result, column) => {
+            return {...result, [column.column_name]: column.column_default};
+        }, {}) ?? {}
+    );
+    let isUpdateOpen = $state(false);
 </script>
 
 {#if pgTable.current === undefined}
@@ -45,7 +54,7 @@
             {/each}
         </div>
         <table class="h-fit">
-            <thead>
+            <thead class="sticky top-0 bg-bg">
                 <tr>
                     {#each pgTable.current.columns as column}
                         <th>
@@ -65,7 +74,12 @@
             </thead>
             <tbody>
                 {#each pgTable.current.rows as row}
-                    <tr onclick={() => console.log("row clicked", row)}>
+                    <tr
+                        onclick={() => {
+                            rowToUpdate = row; // TODO: default values
+                            isUpdateOpen = true;
+                        }}
+                    >
                         {#each pgTable.current.columns as column}
                             {@const value = row[column.column_name]}
                             <td>
@@ -83,4 +97,10 @@
             </tbody>
         </table>
     </div>
+{/if}
+
+{#if pgTable.current}
+    <Dialog isOpen={isUpdateOpen} onrequestclose={() => (isUpdateOpen = false)} position="right" animation="right">
+        <TableUpsert row={rowToUpdate} onclose={() => (isUpdateOpen = false)} />
+    </Dialog>
 {/if}

@@ -201,7 +201,7 @@ async fn get_table_data(
         let table_q = quote_ident(&table);
 
         let select_sql = format!(
-            "SELECT row_to_json(t)::text as json_text FROM (SELECT * FROM {}.{} {} OFFSET {} LIMIT {}) t",
+            "SELECT row_to_json(t)::text as json_text FROM (SELECT *, ctid::text as ctid FROM {}.{} {} OFFSET {} LIMIT {}) t",
             schema_q, table_q, where_clause, offset, limit
         );
 
@@ -232,6 +232,25 @@ async fn get_table_data(
     .map_err(|e| e.to_string())?
 }
 
+#[tauri::command]
+async fn raw_query(connection_string: String, sql: String) -> Result<i64, String> {
+    let conn = connection_string.clone();
+    let sql_text = sql.clone();
+
+    tokio::task::spawn_blocking(move || {
+        let mut client = postgres::Client::connect(&conn, postgres::NoTls)
+            .map_err(|e| e.to_string())?;
+
+        println!("psql > {}", sql_text);
+
+        let affected = client.execute(&sql_text, &[]).map_err(|e| e.to_string())?;
+
+        Ok(affected as i64)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -242,7 +261,8 @@ pub fn run() {
             test_connection,
             list_tables,
             list_table_columns,
-            get_table_data
+            get_table_data,
+            raw_query
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -1,6 +1,7 @@
 <script lang="ts">
     import CheckIcon from "$lib/icons/CheckIcon.svelte";
     import ChevronIcon from "$lib/icons/ChevronIcon.svelte";
+    import CrossIcon from "$lib/icons/CrossIcon.svelte";
     import FunnelIcon from "$lib/icons/FunnelIcon.svelte";
     import PlusIcon from "$lib/icons/PlusIcon.svelte";
     import TrashIcon from "$lib/icons/TrashIcon.svelte";
@@ -74,7 +75,7 @@
                     onclick={(e) => {
                         e.preventDefault();
                         filters.splice(i, 1);
-                    }}><TrashIcon --size="1.2rem" /></button
+                    }}><CrossIcon --size="1.2rem" /></button
                 >
             </div>
         {:else}
