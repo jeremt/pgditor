@@ -34,9 +34,17 @@ WHERE ctid = '${row.ctid}';`;
             onclose();
         } else {
             const query = `INSERT INTO "${pgTable.current.schema}"."${pgTable.current.name}"
-(${pgTable.current.columns.map(({column_name}) => column_name).join(", ")})
+(${pgTable.current.columns
+                // only send pk if not null
+                .filter((col) => col.is_primary_key === "NO" || row[col.column_name] !== null)
+                .map(({column_name}) => column_name)
+                .join(", ")})
 VALUES
-(${pgTable.current.columns.map((col) => formatValue(col, row[col.column_name])).join(", ")});`;
+(${pgTable.current.columns
+                // only send pk if not null
+                .filter((col) => col.is_primary_key === "NO" || row[col.column_name] !== null)
+                .map((col) => formatValue(col, row[col.column_name]))
+                .join(", ")});`;
             console.log(query);
             await pgTable.rawQuery(query);
             onclose();
