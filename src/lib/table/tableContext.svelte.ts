@@ -46,6 +46,11 @@ class TableContext {
 
     private connections = getConnectionsContext();
 
+    /**
+     * Loads all available tables from every schemas for the current pg connection. The public schema appears before any users.
+     *
+     * The first table of the list is automatically used by default.
+     */
     loadTables = async () => {
         if (!this.connections.current) {
             return;
@@ -61,6 +66,9 @@ class TableContext {
         }
     };
 
+    /**
+     * Select the given table and show its rows automatically.
+     */
     use = async (table: PgTable) => {
         if (!this.connections.current) {
             return;
@@ -77,9 +85,21 @@ class TableContext {
             throw columnsError; // TODO: toast
         }
         this.current = {...table, columns, rows: [], count: 0};
-        await this.updateData(this.filters.where, this.filters.offset, this.filters.limit);
+        this.filters = {
+            where: "",
+            offset: 0,
+            limit: 100,
+        };
+        await this.refresh();
     };
 
+    /**
+     * Run a select to get a list of rows from the currently selected table which applying the given filters.
+     * @param where The where cause to apply (e.g. "WHERE id = 1 AND status = 'success'")
+     * @param offset The offset to apply to the select query.
+     * @param limit The maximal number of rows returns by the query.
+     * @returns
+     */
     updateData = async (where: string, offset: number, limit: number) => {
         if (!this.connections.current || !this.current) {
             return;
@@ -104,10 +124,17 @@ class TableContext {
         this.current.count = data.count;
     };
 
+    /**
+     * Simple helper to re-run `updateData()` with the currently selected filters.
+     */
     refresh = async () => {
         await this.updateData(this.filters.where, this.filters.offset, this.filters.limit);
     };
 
+    /**
+     * Run the given raw sql query and call `refresh()` to update the displayed rows.
+     * @param sql The raw query string to run.
+     */
     rawQuery = async (sql: string) => {
         if (!this.connections.current || !this.current) {
             return;
