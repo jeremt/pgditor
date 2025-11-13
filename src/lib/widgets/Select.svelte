@@ -8,7 +8,7 @@
         children?: Snippet;
     }
 
-    let {value = $bindable(), children, ...props}: Props = $props();
+    let {value = $bindable(), children, class: className, ...props}: Props = $props();
 
     let selectElement: HTMLSelectElement;
     let hasFocus = $state(false);
@@ -47,12 +47,12 @@
 <button
     onclick={() => selectElement.click()}
     tabindex="-1"
-    class="btn secondary"
+    class="btn secondary {className}"
     class:focus={hasFocus}
     disabled={props.disabled}
 >
-    <div aria-hidden="true" class="content">{text}</div>
-    <ChevronIcon />
+    <div aria-hidden="true" class="content mr-auto">{text}</div>
+    <ChevronIcon --size="1.2rem" />
     <select
         bind:this={selectElement}
         bind:value
@@ -67,6 +67,7 @@
 <style>
     button {
         position: relative;
+        cursor: pointer;
     }
     select {
         position: absolute;

@@ -50,7 +50,7 @@ button.btn {
         background-color: var(--color-bg-1);
         &:hover,
         &:focus-visible {
-            background-color: var(--color-fg-3);
+            filter: brightness(1.2);
         }
     }
 }

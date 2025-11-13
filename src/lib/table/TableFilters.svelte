@@ -4,7 +4,6 @@
     import CrossIcon from "$lib/icons/CrossIcon.svelte";
     import FunnelIcon from "$lib/icons/FunnelIcon.svelte";
     import PlusIcon from "$lib/icons/PlusIcon.svelte";
-    import TrashIcon from "$lib/icons/TrashIcon.svelte";
     import Popover from "$lib/widgets/Popover.svelte";
     import Select from "$lib/widgets/Select.svelte";
 
@@ -42,7 +41,11 @@
     <div class="flex flex-col gap-2 pb-4 w-lg">
         {#each filters as filter, i}
             <div class="flex gap-2">
-                <input class="w-40" type="text" bind:value={filters[i].column} placeholder="column name" />
+                <Select class="w-40" bind:value={filters[i].column} placeholder="column name">
+                    {#each pgTable.current?.columns ?? [] as column}
+                        <option>{column.column_name}</option>
+                    {/each}
+                </Select>
                 <Select class="small" value={filter.operator}>
                     <optgroup label="basic">
                         <option>=</option>
@@ -67,7 +70,13 @@
                         <!-- cosine -->
                     </optgroup>
                 </Select>
-                <input class="small w-60" type="text" bind:value={filters[i].value} placeholder="value" />
+                <input
+                    class="small w-60"
+                    type="text"
+                    autocorrect="off"
+                    bind:value={filters[i].value}
+                    placeholder="value"
+                />
                 <button
                     type="button"
                     aria-label="Trash"
