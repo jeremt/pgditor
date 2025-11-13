@@ -40,7 +40,7 @@
         </button>
     {/snippet}
     <div class="flex flex-col gap-2">
-        <input type="text" bind:value={searchText} placeholder="Search table" />
+        <input type="text" bind:value={searchText} autocorrect="off" placeholder="Search table" />
         <div class="flex flex-col gap-2 overflow-auto h-80 py-2">
             {#if searchText === ""}
                 {#each pgTable.list as table}
