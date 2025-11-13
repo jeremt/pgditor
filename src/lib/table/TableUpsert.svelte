@@ -4,8 +4,8 @@
     import KeyIcon from "$lib/icons/KeyIcon.svelte";
     import LinkIcon from "$lib/icons/LinkIcon.svelte";
     import CheckboxInput from "$lib/widgets/CheckboxInput.svelte";
-    import {pgDefaultValues} from "./defaultValues";
-    import {getTableContext, type PgColumn, type PgRow} from "./tableContext.svelte";
+    import {defaultValues, formatValue} from "./values";
+    import {getTableContext, type PgRow} from "./tableContext.svelte";
     import TableValueEditor from "./TableValueEditor.svelte";
 
     type Props = {
@@ -17,13 +17,6 @@
 
     const pgTable = getTableContext();
 
-    const formatSqlValue = (column: PgColumn) => {
-        if (column.data_type === "text" || column.data_type === "timestamptz" || column.data_type === "timestamp") {
-            return `'${row[column.column_name]}'`;
-        }
-        return row[column.column_name];
-    };
-
     const insertOrUpdate = async () => {
         if (!pgTable.current) {
             return;
@@ -31,15 +24,20 @@
         if (row.ctid) {
             const query = `UPDATE "${pgTable.current.schema}"."${pgTable.current.name}"
 SET
-  ${pgTable.current.columns.map((col) => `${col.column_name} = ${formatSqlValue(col)}`).join(",\n  ")}
+  ${pgTable.current.columns
+      .filter((col) => col.is_primary_key === "NO")
+      .map((col) => `${col.column_name} = ${formatValue(col, row[col.column_name])}`)
+      .join(",\n  ")}
 WHERE ctid = '${row.ctid}';`;
+            console.log(query);
             await pgTable.rawQuery(query);
             onclose();
         } else {
             const query = `INSERT INTO "${pgTable.current.schema}"."${pgTable.current.name}"
 (${pgTable.current.columns.map(({column_name}) => column_name).join(", ")})
 VALUES
-(${pgTable.current.columns.map(formatSqlValue).join(", ")});`;
+(${pgTable.current.columns.map((col) => formatValue(col, row[col.column_name])).join(", ")});`;
+            console.log(query);
             await pgTable.rawQuery(query);
             onclose();
         }
@@ -71,9 +69,7 @@ VALUES
                 <CheckboxInput
                     checked={row[column.column_name] === null}
                     onchange={(event) => {
-                        row[column.column_name] = event.currentTarget.checked
-                            ? null
-                            : pgDefaultValues[column.data_type];
+                        row[column.column_name] = event.currentTarget.checked ? null : defaultValues[column.data_type];
                     }}
                 />
             {/if}

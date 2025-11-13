@@ -22,6 +22,15 @@
             }
         },
     };
+    const disabled = $derived.by(() => {
+        if (column.is_primary_key === "YES") {
+            return true;
+        }
+        if (column.is_nullable === "YES" && row[column.column_name] === null) {
+            return true;
+        }
+        return false;
+    });
 </script>
 
 <input
@@ -29,7 +38,7 @@
     type="text"
     class="font-mono!"
     autocorrect="off"
-    disabled={row[column.column_name] === null && column.is_nullable === "YES"}
+    {disabled}
     bind:value={rowValue.value}
     placeholder={row[column.column_name] === null && column.is_nullable === "YES" ? "NULL" : "Enter a value"}
 />

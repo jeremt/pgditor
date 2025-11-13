@@ -3,7 +3,7 @@ import {catchError} from "$lib/helpers/catchError";
 import {debounced} from "$lib/helpers/debounced.svelte";
 import {invoke} from "@tauri-apps/api/core";
 import {getContext, setContext} from "svelte";
-import type {PgType} from "./defaultValues";
+import type {PgType} from "./values";
 
 export type PgTable = {
     schema: string;

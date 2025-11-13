@@ -1,4 +1,5 @@
 <script lang="ts">
+    import ChevronIcon from "$lib/icons/ChevronIcon.svelte";
     import PenIcon from "$lib/icons/PenIcon.svelte";
     import PlugIcon from "$lib/icons/PlugIcon.svelte";
     import Dialog from "$lib/widgets/Dialog.svelte";
@@ -15,9 +16,11 @@
 
 <Popover bind:isOpen={isPopoverOpen} offsetY={10}>
     {#snippet target()}
-        <button class="btn secondary" onclick={() => (isPopoverOpen = !isPopoverOpen)}
-            ><PlugIcon --size="1.2rem" /> {connections.current ? connections.current.name : "Add connection"}</button
-        >
+        <button class="btn secondary" onclick={() => (isPopoverOpen = !isPopoverOpen)}>
+            <PlugIcon --size="1.2rem" />
+            {connections.current ? connections.current.name : "Add connection"}
+            <ChevronIcon --size="1rem" direction={isPopoverOpen ? "top" : "bottom"} />
+        </button>
     {/snippet}
     <div class="flex flex-col gap-2 w-sx">
         {#each connections.list as connection}

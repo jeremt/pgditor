@@ -52,7 +52,7 @@
     disabled={props.disabled}
 >
     <div aria-hidden="true" class="content mr-auto">{text}</div>
-    <ChevronIcon --size="1.2rem" />
+    <ChevronIcon --size="1rem" />
     <select
         bind:this={selectElement}
         bind:value
