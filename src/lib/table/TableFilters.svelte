@@ -31,7 +31,7 @@
     };
 </script>
 
-<Popover isOpen={isPopoverOpen} offsetY={10}>
+<Popover bind:isOpen={isPopoverOpen} offsetY={10}>
     {#snippet target()}
         <button class="btn ghost" onclick={() => (isPopoverOpen = !isPopoverOpen)}
             ><FunnelIcon --size="1.2rem" /> <span>Filters</span>

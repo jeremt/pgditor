@@ -13,7 +13,7 @@
     let isPopoverOpen = $state(false);
 </script>
 
-<Popover isOpen={isPopoverOpen} offsetY={10}>
+<Popover bind:isOpen={isPopoverOpen} offsetY={10}>
     {#snippet target()}
         <button class="btn secondary" onclick={() => (isPopoverOpen = !isPopoverOpen)}
             ><PlugIcon --size="1.2rem" /> {connections.current ? connections.current.name : "Add connection"}</button

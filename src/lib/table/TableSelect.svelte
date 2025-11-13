@@ -28,7 +28,7 @@
     {/if}
 {/snippet}
 
-<Popover isOpen={isPopoverOpen} offsetY={10}>
+<Popover bind:isOpen={isPopoverOpen} offsetY={10}>
     {#snippet target()}
         <button class="btn ghost" onclick={() => (isPopoverOpen = !isPopoverOpen)} disabled={!pgTable.current}>
             {#if pgTable.current}
