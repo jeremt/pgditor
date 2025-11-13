@@ -19,6 +19,17 @@
         }, {}) ?? {}
     );
     let isInsertOpen = $state(false);
+
+    const removeRows = async () => {
+        if (!pgTable.current) {
+            return;
+        }
+        // TODO: check for cascading foreign keys and show a warning dialog before deleting if any
+        const query = `DELETE FROM "${pgTable.current.schema}"."${pgTable.current.name}"
+WHERE ctid = ANY(ARRAY[${pgTable.selectedRows.map((index) => `'${pgTable.current!.rows[index].ctid}'`).join(", ")}]::tid[]);`;
+        await pgTable.rawQuery(query);
+        pgTable.selectedRows = [];
+    };
 </script>
 
 <header class="flex gap-2 p-2 items-center w-full overflow-auto">
@@ -53,7 +64,7 @@
             <ChevronIcon direction="right" />
         </button>
         {#if pgTable.selectedRows.length > 0}
-            <button class="btn ghost"
+            <button class="btn ghost" onclick={removeRows}
                 ><TrashIcon --size="1.2rem" /> Delete rows
                 <span class="badge">{pgTable.selectedRows.length}</span></button
             >
