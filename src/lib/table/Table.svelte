@@ -1,6 +1,7 @@
 <script lang="ts">
     import KeyIcon from "$lib/icons/KeyIcon.svelte";
     import LinkIcon from "$lib/icons/LinkIcon.svelte";
+    import UnpluggedIcon from "$lib/icons/UnpluggedIcon.svelte";
     import CheckboxInput from "$lib/widgets/CheckboxInput.svelte";
     import Dialog from "$lib/widgets/Dialog.svelte";
 
@@ -18,7 +19,10 @@
 </script>
 
 {#if pgTable.current === undefined}
-    <div>No table</div>
+    <div class="w-full h-full flex flex-col gap-4 items-center justify-center text-fg-1">
+        <UnpluggedIcon --size="3rem" --thickness="1.2" />
+        <div>The database is empty or not started.</div>
+    </div>
 {:else}
     <div class="flex flex-1 w-full h-full overflow-auto">
         <div>

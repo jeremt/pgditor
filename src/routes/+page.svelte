@@ -10,6 +10,7 @@
     import TableUpsert from "$lib/table/TableUpsert.svelte";
     import PlusIcon from "$lib/icons/PlusIcon.svelte";
     import Dialog from "$lib/widgets/Dialog.svelte";
+    import RefreshIcon from "$lib/icons/RefreshIcon.svelte";
 
     const pgTable = getTableContext();
     let rowToInsert = $derived<PgRow>(
@@ -57,6 +58,7 @@
                 <span class="badge">{pgTable.selectedRows.length}</span></button
             >
         {/if}
+        <button class="btn ghost" onclick={pgTable.refresh}><RefreshIcon --size="1.2rem" /> Refresh</button>
         <button class="btn" onclick={() => (isInsertOpen = true)}><PlusIcon /> Insert row</button>
     {/if}
 </header>
