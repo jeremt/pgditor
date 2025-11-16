@@ -15,11 +15,12 @@ export type PgColumn = {
     column_name: string;
     data_type: PgType;
     is_nullable: "YES" | "NO";
-    column_default?: string;
+    column_default: string | null;
     is_primary_key: "YES" | "NO";
-    foreign_table_schema?: string;
-    foreign_table_name?: string;
-    foreign_column_name?: string;
+    foreign_table_schema: string | null;
+    foreign_table_name: string | null;
+    foreign_column_name: string | null;
+    enum_values: string[] | null;
 };
 
 export type PgRow = Record<string, object | string | bigint | number | boolean | null>;
@@ -160,6 +161,7 @@ class TableContext {
         if (!this.current) {
             return;
         }
+        console.log("before insert, ", this.current.columns, row);
         const query = row.ctid
             ? // updae
               `UPDATE "${this.current.schema}"."${this.current.name}"
@@ -173,13 +175,13 @@ WHERE ctid = '${row.ctid}';`
               `INSERT INTO "${this.current.schema}"."${this.current.name}"
 (${this.current.columns
                   // only send pk if not null
-                  .filter((col) => col.is_primary_key === "NO" || row[col.column_name] !== null)
+                  .filter((col) => col.is_primary_key === "NO" || row[col.column_name])
                   .map(({column_name}) => column_name)
                   .join(", ")})
 VALUES
 (${this.current.columns
                   // only send pk if not null
-                  .filter((col) => col.is_primary_key === "NO" || row[col.column_name] !== null)
+                  .filter((col) => col.is_primary_key === "NO" || row[col.column_name])
                   .map((col) => formatValue(col, row[col.column_name]))
                   .join(", ")});`;
 

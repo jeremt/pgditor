@@ -106,6 +106,7 @@ struct PgColumn {
     foreign_table_schema: Option<String>,
     foreign_table_name: Option<String>,
     foreign_column_name: Option<String>,
+    enum_values: Option<Vec<String>>,
 }
 
 #[derive(Debug, Serialize)]
@@ -209,7 +210,8 @@ async fn list_table_columns(connection_string: String, schema: String, table: St
                 CASE WHEN pk.column_name IS NOT NULL THEN 'YES' ELSE 'NO' END AS is_primary_key,
                 fk.foreign_table_schema,
                 fk.foreign_table_name,
-                fk.foreign_column_name
+                fk.foreign_column_name,
+                t.typtype AS type_category
             FROM 
                 information_schema.columns AS c
             INNER JOIN pg_catalog.pg_namespace AS n
@@ -263,21 +265,49 @@ async fn list_table_columns(connection_string: String, schema: String, table: St
         let rows = client.query(query, &[&schema, &table])
             .map_err(PgError::from)?;
 
-        let columns = rows.iter().map(|row| PgColumn {
-            column_name: row.get("column_name"),
-            data_type: row.get("data_type"),
-            is_nullable: row.get("is_nullable"),
-            column_default: row.get("column_default"),
-            is_primary_key: row.get("is_primary_key"),
-            foreign_table_schema: row.get("foreign_table_schema"),
-            foreign_table_name: row.get("foreign_table_name"),
-            foreign_column_name: row.get("foreign_column_name"),
+        let columns = rows.iter().map(|row| {
+            let data_type: String = row.get("data_type");
+            let type_category: i8 = row.get("type_category");
+
+            // Fetch enum values if this is an enum type
+            let enum_values = if type_category == b'e' as i8 {
+                fetch_enum_values(&mut client, &data_type).ok()
+            } else {
+                None
+            };
+            
+            PgColumn {
+                column_name: row.get("column_name"),
+                data_type,
+                is_nullable: row.get("is_nullable"),
+                column_default: row.get("column_default"),
+                is_primary_key: row.get("is_primary_key"),
+                foreign_table_schema: row.get("foreign_table_schema"),
+                foreign_table_name: row.get("foreign_table_name"),
+                foreign_column_name: row.get("foreign_column_name"),
+                enum_values,
+            }
         }).collect();
 
         Ok(columns)
     })
     .await
     .map_err(PgError::from)?
+}
+
+fn fetch_enum_values(client: &mut postgres::Client, enum_type: &str) -> Result<Vec<String>, PgError> {
+    let query = r#"
+        SELECT e.enumlabel
+        FROM pg_catalog.pg_type t
+        JOIN pg_catalog.pg_enum e ON t.oid = e.enumtypid
+        WHERE t.typname = $1
+        ORDER BY e.enumsortorder;
+    "#;
+    
+    let rows = client.query(query, &[&enum_type])
+        .map_err(PgError::from)?;
+    
+    Ok(rows.iter().map(|row| row.get("enumlabel")).collect())
 }
 
 #[tauri::command]

@@ -241,5 +241,10 @@ export const formatValue = (column: PgColumn, value: any): string => {
         return `ROW(${values.join(",")})`;
     }
 
-    return String(value);
+    // enums
+    // check if already shaped like an enum value
+    if (value.includes(`::${type}`)) {
+        return value;
+    }
+    return `'${value}'::${type}`;
 };
