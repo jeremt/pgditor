@@ -12,6 +12,7 @@
     import Dialog from "$lib/widgets/Dialog.svelte";
     import RefreshIcon from "$lib/icons/RefreshIcon.svelte";
     import {defaultValues} from "$lib/table/values";
+    import ActionButton from "$lib/widgets/ActionButton.svelte";
 
     const pgTable = getTableContext();
     let rowToInsert = $derived<PgRow>(
@@ -28,7 +29,7 @@
     );
     let isInsertOpen = $state(false);
 
-    const removeRows = async () => {
+    const deleteRows = async () => {
         if (!pgTable.current) {
             return;
         }
@@ -37,6 +38,7 @@
 WHERE ctid = ANY(ARRAY[${pgTable.selectedRows.map((index) => `'${pgTable.current!.rows[index].ctid}'`).join(", ")}]::tid[]);`;
         await pgTable.rawQuery(query);
         pgTable.selectedRows = [];
+        pgTable.filters.where = "";
     };
 </script>
 
@@ -72,9 +74,17 @@ WHERE ctid = ANY(ARRAY[${pgTable.selectedRows.map((index) => `'${pgTable.current
             <ChevronIcon direction="right" />
         </button>
         {#if pgTable.selectedRows.length > 0}
-            <button class="btn ghost" onclick={removeRows}
+            <ActionButton
+                class="btn ghost"
+                onaction={deleteRows}
+                confirm={{
+                    title: "Are you sure?",
+                    description: "Once you delete the selected rows, it can't be undone.",
+                    confirmClass: "btn error",
+                    confirmText: "Confirm delete",
+                }}
                 ><TrashIcon --size="1.2rem" /> Delete rows
-                <span class="badge">{pgTable.selectedRows.length}</span></button
+                <span class="badge">{pgTable.selectedRows.length}</span></ActionButton
             >
         {/if}
         <button class="btn ghost" onclick={pgTable.refresh}><RefreshIcon --size="1.2rem" /> Refresh</button>
