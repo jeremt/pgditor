@@ -1,4 +1,5 @@
-
+use native_tls::TlsConnector;
+use postgres_native_tls::MakeTlsConnector;
 use serde::Serialize;
 use serde_json::Value as JsonValue;
 
@@ -17,12 +18,72 @@ impl From<postgres::Error> for PgError {
         
         PgError {
             message: db_error
-    .map(|e| e.message().to_string())  // ← This gets the actual DB error message
-    .unwrap_or_else(|| err.to_string()),
+                .map(|e| e.message().to_string())
+                .unwrap_or_else(|| err.to_string()),
             code: db_error.map(|e| e.code().code().to_string()),
             detail: db_error.and_then(|e| e.detail().map(String::from)),
             hint: db_error.and_then(|e| e.hint().map(String::from)),
             position: db_error.and_then(|e| e.position().map(|p| format!("{:?}", p))),
+        }
+    }
+}
+
+impl From<String> for PgError {
+    fn from(message: String) -> Self {
+        PgError {
+            message,
+            code: None,
+            detail: None,
+            hint: None,
+            position: None,
+        }
+    }
+}
+
+impl From<&str> for PgError {
+    fn from(message: &str) -> Self {
+        PgError {
+            message: message.to_string(),
+            code: None,
+            detail: None,
+            hint: None,
+            position: None,
+        }
+    }
+}
+
+impl From<serde_json::Error> for PgError {
+    fn from(err: serde_json::Error) -> Self {
+        PgError {
+            message: format!("JSON error: {}", err),
+            code: None,
+            detail: None,
+            hint: None,
+            position: None,
+        }
+    }
+}
+
+impl From<tokio::task::JoinError> for PgError {
+    fn from(err: tokio::task::JoinError) -> Self {
+        PgError {
+            message: format!("Task execution failed: {}", err),
+            code: None,
+            detail: None,
+            hint: None,
+            position: None,
+        }
+    }
+}
+
+impl From<native_tls::Error> for PgError {
+    fn from(err: native_tls::Error) -> Self {
+        PgError {
+            message: format!("TLS error: {}", err),
+            code: None,
+            detail: None,
+            hint: None,
+            position: None,
         }
     }
 }
@@ -54,33 +115,50 @@ struct PgTableData {
 }
 
 fn quote_ident(s: &str) -> String {
-    // double-quote identifier and escape any existing double quotes by doubling them
     format!("\"{}\"", s.replace('"', "\"\""))
 }
 
-#[tauri::command]
-async fn test_connection(connection_string: String) -> Result<bool, String> {
-    let conn = connection_string.clone();
-
-    let result = tokio::task::spawn_blocking(move || {
-        match postgres::Client::connect(&conn, postgres::NoTls) {
-            Ok(_) => Ok(true),
-            Err(e) => Err(e.to_string()),
-        }
-    })
-    .await
-    .map_err(|e| e.to_string())?;
-
-    result
+// Helper function to create a secure connection
+fn create_secure_client(connection_string: &str) -> Result<postgres::Client, PgError> {
+    // Check if the connection string requires SSL
+    let requires_ssl = connection_string.contains("sslmode=require") 
+        || connection_string.contains("sslmode=verify-ca")
+        || connection_string.contains("sslmode=verify-full");
+    
+    if requires_ssl {
+        // Use TLS for secure connections
+        let connector = TlsConnector::builder()
+            .build()
+            .map_err(PgError::from)?;
+        let connector = MakeTlsConnector::new(connector);
+        
+        postgres::Client::connect(connection_string, connector)
+            .map_err(PgError::from)
+    } else {
+        // Use NoTls for local/non-SSL connections
+        postgres::Client::connect(connection_string, postgres::NoTls)
+            .map_err(PgError::from)
+    }
 }
 
 #[tauri::command]
-async fn list_tables(connection_string: String) -> Result<Vec<PgTable>, String> {
+async fn test_connection(connection_string: String) -> Result<bool, PgError> {
     let conn = connection_string.clone();
     
     tokio::task::spawn_blocking(move || {
-        let mut client = postgres::Client::connect(&conn, postgres::NoTls)
-            .map_err(|e| e.to_string())?;
+        create_secure_client(&conn)?;
+        Ok(true)
+    })
+    .await
+    .map_err(PgError::from)?
+}
+
+#[tauri::command]
+async fn list_tables(connection_string: String) -> Result<Vec<PgTable>, PgError> {
+    let conn = connection_string.clone();
+    
+    tokio::task::spawn_blocking(move || {
+        let mut client = create_secure_client(&conn)?;
         
         let rows = client.query(
             "SELECT 
@@ -95,7 +173,7 @@ async fn list_tables(connection_string: String) -> Result<Vec<PgTable>, String> 
                 table_schema,
                 table_name;",
             &[],
-        ).map_err(|e| e.to_string())?;
+        ).map_err(PgError::from)?;
 
         let tables = rows.iter().map(|row| PgTable {
             schema: row.get("schema"),
@@ -106,16 +184,15 @@ async fn list_tables(connection_string: String) -> Result<Vec<PgTable>, String> 
         Ok(tables)
     })
     .await
-    .map_err(|e| e.to_string())?
+    .map_err(PgError::from)?
 }
 
 #[tauri::command]
-async fn list_table_columns(connection_string: String, schema: String, table: String) -> Result<Vec<PgColumn>, String> {
+async fn list_table_columns(connection_string: String, schema: String, table: String) -> Result<Vec<PgColumn>, PgError> {
     let conn = connection_string.clone();
     
     tokio::task::spawn_blocking(move || {
-        let mut client = postgres::Client::connect(&conn, postgres::NoTls)
-            .map_err(|e| e.to_string())?;
+        let mut client = create_secure_client(&conn)?;
         
         let query = r#"
             SELECT 
@@ -184,7 +261,7 @@ async fn list_table_columns(connection_string: String, schema: String, table: St
         "#;
 
         let rows = client.query(query, &[&schema, &table])
-            .map_err(|e| e.to_string())?;
+            .map_err(PgError::from)?;
 
         let columns = rows.iter().map(|row| PgColumn {
             column_name: row.get("column_name"),
@@ -200,7 +277,7 @@ async fn list_table_columns(connection_string: String, schema: String, table: St
         Ok(columns)
     })
     .await
-    .map_err(|e| e.to_string())?
+    .map_err(PgError::from)?
 }
 
 #[tauri::command]
@@ -211,7 +288,7 @@ async fn get_table_data(
     offset: Option<i64>,
     limit: Option<i64>,
     where_clause: Option<String>,
-) -> Result<PgTableData, String> {
+) -> Result<PgTableData, PgError> {
     let conn = connection_string.clone();
 
     let offset = offset.unwrap_or(0);
@@ -219,8 +296,7 @@ async fn get_table_data(
     let where_clause = where_clause.unwrap_or_default();
 
     tokio::task::spawn_blocking(move || {
-        let mut client = postgres::Client::connect(&conn, postgres::NoTls)
-            .map_err(|e| e.to_string())?;
+        let mut client = create_secure_client(&conn)?;
 
         let schema_q = quote_ident(&schema);
         let table_q = quote_ident(&table);
@@ -234,12 +310,12 @@ async fn get_table_data(
 
         let rows = client
             .query(&select_sql, &[])
-            .map_err(|e| e.to_string())?;
+            .map_err(PgError::from)?;
 
         let mut json_rows: Vec<JsonValue> = Vec::with_capacity(rows.len());
         for row in rows.iter() {
             let txt: String = row.get("json_text");
-            let v: JsonValue = serde_json::from_str(&txt).map_err(|e| e.to_string())?;
+            let v: JsonValue = serde_json::from_str(&txt).map_err(PgError::from)?;
             json_rows.push(v);
         }
 
@@ -248,13 +324,13 @@ async fn get_table_data(
             schema_q, table_q
         );
 
-        let count_row = client.query_one(&count_sql, &[]).map_err(|e| e.to_string())?;
+        let count_row = client.query_one(&count_sql, &[]).map_err(PgError::from)?;
         let count: i64 = count_row.get("count");
 
         Ok(PgTableData { rows: json_rows, count })
     })
     .await
-    .map_err(|e| e.to_string())?
+    .map_err(PgError::from)?
 }
 
 #[tauri::command]
@@ -263,8 +339,7 @@ async fn raw_query(connection_string: String, sql: String) -> Result<i64, PgErro
     let sql_text = sql.clone();
 
     tokio::task::spawn_blocking(move || {
-        let mut client = postgres::Client::connect(&conn, postgres::NoTls)
-            .map_err(PgError::from)?;
+        let mut client = create_secure_client(&conn)?;
 
         println!("psql > {}", sql_text);
 
@@ -274,13 +349,7 @@ async fn raw_query(connection_string: String, sql: String) -> Result<i64, PgErro
         Ok(affected as i64)
     })
     .await
-    .map_err(|e| PgError {
-        message: format!("Task execution failed: {}", e),
-        code: None,
-        detail: None,
-        hint: None,
-        position: None,
-    })?
+    .map_err(PgError::from)?
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]

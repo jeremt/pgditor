@@ -27,4 +27,6 @@ tokio = { version = "1.0", features = ["full"] }
 anyhow = "1.0"
 tauri-plugin-store = "2"
 postgres = "0.19"
-
+tokio-postgres = "0.7"
+native-tls = "0.2"
+postgres-native-tls = "0.5"
