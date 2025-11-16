@@ -15,7 +15,11 @@
 
     let {row, onclose}: Props = $props();
 
-    let localRow = $derived.by(() => $state.snapshot(row));
+    // type is lost if not specified here
+    let localRow: PgRow & {ctid?: string} = $derived.by(() => {
+        const value = $state($state.snapshot(row)); // recreate a deeply reactive value separated from the prop
+        return value;
+    });
 
     const pgTable = getTableContext();
 
@@ -49,10 +53,12 @@
                 <span class="text-xs ml-auto">NULL</span>
                 <CheckboxInput
                     checked={localRow[column.column_name] === null}
-                    onchange={(event) => {
-                        localRow[column.column_name] = event.currentTarget.checked
-                            ? null
-                            : defaultValues[column.data_type];
+                    onchange={() => {
+                        if (localRow[column.column_name] !== null) {
+                            localRow[column.column_name] = null;
+                        } else {
+                            localRow[column.column_name] = defaultValues[column.data_type];
+                        }
                     }}
                 />
             {/if}

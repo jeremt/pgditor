@@ -22,7 +22,7 @@ export type PgColumn = {
     foreign_column_name?: string;
 };
 
-export type PgRow = Record<string, object | string | number | boolean | null>;
+export type PgRow = Record<string, object | string | bigint | number | boolean | null>;
 
 class TableContext {
     list = $state<PgTable[]>([]);

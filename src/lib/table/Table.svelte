@@ -10,11 +10,7 @@
 
     const pgTable = getTableContext();
 
-    let rowToUpdate = $derived<PgRow>(
-        pgTable.current?.columns.reduce((result, column) => {
-            return {...result, [column.column_name]: column.column_default};
-        }, {}) ?? {}
-    );
+    let rowToUpdate = $state<PgRow>();
     let isUpdateOpen = $state(false);
 </script>
 
@@ -80,7 +76,7 @@
                 {#each pgTable.current.rows as row}
                     <tr
                         onclick={() => {
-                            rowToUpdate = row; // TODO: default values
+                            rowToUpdate = row;
                             isUpdateOpen = true;
                         }}
                     >
@@ -103,7 +99,7 @@
     </div>
 {/if}
 
-{#if pgTable.current}
+{#if pgTable.current && rowToUpdate}
     <Dialog isOpen={isUpdateOpen} onrequestclose={() => (isUpdateOpen = false)} position="right" animation="right">
         <TableUpsert row={rowToUpdate} onclose={() => (isUpdateOpen = false)} />
     </Dialog>
