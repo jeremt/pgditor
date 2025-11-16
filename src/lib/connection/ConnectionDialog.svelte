@@ -33,13 +33,20 @@
 </header>
 <div class="flex flex-col gap-2 py-4">
     <label class="text-sm" for="{connection.name}-name">Name</label>
-    <input id="{connection.name}-name" type="text" bind:value={connection.name} placeholder="My connection" />
+    <input
+        id="{connection.name}-name"
+        type="text"
+        bind:value={connection.name}
+        placeholder="My connection"
+        autocorrect="off"
+    />
     <label class="text-sm" for="{connection.name}-connectionString">Connection string</label>
     <input
         id="{connection.name}-connectionString"
         type="text"
         bind:value={connection.connectionString}
         placeholder="postgresql://[user]:[password]@[host]:[port]/[dbname]"
+        autocorrect="off"
     />
     {#if connection.id}
         <button
