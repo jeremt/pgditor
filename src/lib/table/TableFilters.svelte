@@ -46,7 +46,7 @@
                         <option>{column.column_name}</option>
                     {/each}
                 </Select>
-                <Select class="small" value={filter.operator}>
+                <Select class="small" bind:value={filter.operator}>
                     <optgroup label="basic">
                         <option>=</option>
                         <option>&lt;</option>
@@ -92,7 +92,10 @@
         {/each}
     </div>
     <div class="flex justify-between">
-        <button class="btn ghost self-start" onclick={() => filters.push({column: "", operator: "=", value: ""})}
+        <button
+            class="btn ghost self-start"
+            onclick={() =>
+                filters.push({column: pgTable.current?.columns[0].column_name ?? "", operator: "=", value: ""})}
             ><PlusIcon /> Ajouter un filtre</button
         >
         <button

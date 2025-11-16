@@ -105,7 +105,6 @@ class TableContext {
             return;
         }
         const connectionString = this.connections.current.connectionString;
-        console.log({where});
         const [dataError, data] = await catchError(
             invoke<{rows: PgRow[]; count: number}>("get_table_data", {
                 connectionString,
@@ -113,7 +112,7 @@ class TableContext {
                 table: this.current.name,
                 offset,
                 limit,
-                where_clause: where,
+                whereClause: where,
             })
         );
         if (dataError) {
