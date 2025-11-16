@@ -39,8 +39,10 @@
     <div class="flex gap-2 items-center w-md pb-4">
         <button class="btn icon ghost" aria-label="Cancel" onclick={onclose}><CrossIcon /></button>
         <h2>
-            {localRow.ctid === undefined ? "Insert into" : "Update row of"}
-            {#if pgTable.current}<span class="font-mono">{pgTable.current.schema}.{pgTable.current.name}</span>{/if}
+            {localRow.ctid === undefined ? "Insert into" : "Update row from"}
+            {#if pgTable.current}<span class="font-mono text-sm bg-bg-1 py-0.5 px-2 rounded-md ml-1"
+                    >{pgTable.current.schema}.{pgTable.current.name}</span
+                >{/if}
         </h2>
         <button class="btn ml-auto" onclick={insertOrUpdate}>
             <CheckIcon --size="1.2rem" /> Apply
