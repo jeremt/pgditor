@@ -15,47 +15,20 @@
 
     let {row, onclose}: Props = $props();
 
+    let localRow = $derived.by(() => $state.snapshot(row));
+
     const pgTable = getTableContext();
 
     const insertOrUpdate = async () => {
-        if (!pgTable.current) {
-            return;
-        }
-        if (row.ctid) {
-            const query = `UPDATE "${pgTable.current.schema}"."${pgTable.current.name}"
-SET
-  ${pgTable.current.columns
-      .filter((col) => col.is_primary_key === "NO")
-      .map((col) => `${col.column_name} = ${formatValue(col, row[col.column_name])}`)
-      .join(",\n  ")}
-WHERE ctid = '${row.ctid}';`;
-            console.log(query);
-            await pgTable.rawQuery(query);
-            onclose();
-        } else {
-            const query = `INSERT INTO "${pgTable.current.schema}"."${pgTable.current.name}"
-(${pgTable.current.columns
-                // only send pk if not null
-                .filter((col) => col.is_primary_key === "NO" || row[col.column_name] !== null)
-                .map(({column_name}) => column_name)
-                .join(", ")})
-VALUES
-(${pgTable.current.columns
-                // only send pk if not null
-                .filter((col) => col.is_primary_key === "NO" || row[col.column_name] !== null)
-                .map((col) => formatValue(col, row[col.column_name]))
-                .join(", ")});`;
-            console.log(query);
-            await pgTable.rawQuery(query);
-            onclose();
-        }
+        await pgTable.upsertRow(localRow);
+        onclose();
     };
 </script>
 
 <header class="flex gap-4 items-center w-md pb-4">
     <button class="btn icon ghost" aria-label="Cancel" onclick={onclose}><CrossIcon /></button>
     <h2>
-        {row.ctid === undefined ? "Insert into" : "Update row of"}
+        {localRow.ctid === undefined ? "Insert into" : "Update row of"}
         {#if pgTable.current}<span class="font-mono">{pgTable.current.schema}.{pgTable.current.name}</span>{/if}
     </h2>
     <button class="btn ml-auto" onclick={insertOrUpdate}>
@@ -75,13 +48,15 @@ VALUES
             {#if column.is_nullable === "YES"}
                 <span class="text-xs ml-auto">NULL</span>
                 <CheckboxInput
-                    checked={row[column.column_name] === null}
+                    checked={localRow[column.column_name] === null}
                     onchange={(event) => {
-                        row[column.column_name] = event.currentTarget.checked ? null : defaultValues[column.data_type];
+                        localRow[column.column_name] = event.currentTarget.checked
+                            ? null
+                            : defaultValues[column.data_type];
                     }}
                 />
             {/if}
         </label>
-        <TableValueEditor bind:row {column} />
+        <TableValueEditor bind:row={localRow} {column} />
     {/each}
 </div>

@@ -3,6 +3,31 @@ use serde::Serialize;
 use serde_json::Value as JsonValue;
 
 #[derive(Debug, Serialize)]
+struct PgError {
+    message: String,
+    code: Option<String>,
+    detail: Option<String>,
+    hint: Option<String>,
+    position: Option<String>,
+}
+
+impl From<postgres::Error> for PgError {
+    fn from(err: postgres::Error) -> Self {
+        let db_error = err.as_db_error();
+        
+        PgError {
+            message: db_error
+    .map(|e| e.message().to_string())  // ← This gets the actual DB error message
+    .unwrap_or_else(|| err.to_string()),
+            code: db_error.map(|e| e.code().code().to_string()),
+            detail: db_error.and_then(|e| e.detail().map(String::from)),
+            hint: db_error.and_then(|e| e.hint().map(String::from)),
+            position: db_error.and_then(|e| e.position().map(|p| format!("{:?}", p))),
+        }
+    }
+}
+
+#[derive(Debug, Serialize)]
 struct PgTable {
     schema: String,
     name: String,
@@ -233,22 +258,29 @@ async fn get_table_data(
 }
 
 #[tauri::command]
-async fn raw_query(connection_string: String, sql: String) -> Result<i64, String> {
+async fn raw_query(connection_string: String, sql: String) -> Result<i64, PgError> {
     let conn = connection_string.clone();
     let sql_text = sql.clone();
 
     tokio::task::spawn_blocking(move || {
         let mut client = postgres::Client::connect(&conn, postgres::NoTls)
-            .map_err(|e| e.to_string())?;
+            .map_err(PgError::from)?;
 
         println!("psql > {}", sql_text);
 
-        let affected = client.execute(&sql_text, &[]).map_err(|e| e.to_string())?;
+        let affected = client.execute(&sql_text, &[])
+            .map_err(PgError::from)?;
 
         Ok(affected as i64)
     })
     .await
-    .map_err(|e| e.to_string())?
+    .map_err(|e| PgError {
+        message: format!("Task execution failed: {}", e),
+        code: None,
+        detail: None,
+        hint: None,
+        position: None,
+    })?
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]

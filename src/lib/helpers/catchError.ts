@@ -23,7 +23,7 @@ export const catchError = async <T, E extends new (message?: string) => Error>(
     } catch (error) {
         if (errors === undefined) {
             // any error
-            return [(error instanceof Error ? error : new Error(`${error}`)) as InstanceType<E>];
+            return [error as InstanceType<E>];
         }
         if (errors.some((possibleError) => error instanceof possibleError)) {
             return [error as InstanceType<E>];

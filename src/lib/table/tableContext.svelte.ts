@@ -3,7 +3,7 @@ import {catchError} from "$lib/helpers/catchError";
 import {debounced} from "$lib/helpers/debounced.svelte";
 import {invoke} from "@tauri-apps/api/core";
 import {getContext, setContext} from "svelte";
-import type {PgType} from "./values";
+import {formatValue, type PgType} from "./values";
 
 export type PgTable = {
     schema: string;
@@ -140,17 +140,47 @@ class TableContext {
             return;
         }
         const connectionString = this.connections.current.connectionString;
-        const [dataError] = await catchError(
-            invoke<{rows: PgRow[]; count: number}>("raw_query", {
+        const [error] = await catchError(
+            invoke("raw_query", {
                 connectionString,
                 sql,
             })
         );
-        if (dataError) {
-            throw dataError; // TODO: toast
+        if (error) {
+            throw new Error(error.message); // TODO: toast
         }
         // FIXME: this is a bit wasteful to refresh data, it could be done through optimistic update directly
         await this.refresh();
+    };
+
+    upsertRow = async (row: PgRow & {ctid?: string}) => {
+        if (!this.current) {
+            return;
+        }
+        if (row.ctid) {
+            const query = `UPDATE "${this.current.schema}"."${this.current.name}"
+SET
+  ${this.current.columns
+      .filter((col) => col.is_primary_key === "NO")
+      .map((col) => `${col.column_name} = ${formatValue(col, row[col.column_name])}`)
+      .join(",\n  ")}
+WHERE ctid = '${row.ctid}';`;
+            await this.rawQuery(query);
+        } else {
+            const query = `INSERT INTO "${this.current.schema}"."${this.current.name}"
+(${this.current.columns
+                // only send pk if not null
+                .filter((col) => col.is_primary_key === "NO" || row[col.column_name] !== null)
+                .map(({column_name}) => column_name)
+                .join(", ")})
+VALUES
+(${this.current.columns
+                // only send pk if not null
+                .filter((col) => col.is_primary_key === "NO" || row[col.column_name] !== null)
+                .map((col) => formatValue(col, row[col.column_name]))
+                .join(", ")});`;
+            await this.rawQuery(query);
+        }
     };
 }
 
