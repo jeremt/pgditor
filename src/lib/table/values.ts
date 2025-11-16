@@ -5,6 +5,9 @@ export const defaultValues = {
     smallint: 0,
     integer: 0,
     bigint: 0n, // BigInt for 64-bit integers
+    int2: 0,
+    int4: 0,
+    int8: 0n, // BigInt for 64-bit integers
     decimal: "0.0",
     numeric: "0.0",
     real: 0.0,
@@ -192,7 +195,7 @@ export const formatValue = (column: PgColumn, value: any): string => {
     }
 
     // 🧮 BigInt types
-    if (type === "bigint" || type === "bigserial") {
+    if (type === "bigint" || type === "int8" || type === "bigserial") {
         return String(value).replace("n", "");
     }
 
@@ -223,6 +226,8 @@ export const formatValue = (column: PgColumn, value: any): string => {
         [
             "smallint",
             "integer",
+            "int2",
+            "int4",
             "decimal",
             "numeric",
             "real",
