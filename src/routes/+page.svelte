@@ -11,11 +11,19 @@
     import PlusIcon from "$lib/icons/PlusIcon.svelte";
     import Dialog from "$lib/widgets/Dialog.svelte";
     import RefreshIcon from "$lib/icons/RefreshIcon.svelte";
+    import {defaultValues} from "$lib/table/values";
 
     const pgTable = getTableContext();
     let rowToInsert = $derived<PgRow>(
         pgTable.current?.columns.reduce((result, column) => {
-            return {...result, [column.column_name]: column.column_default};
+            return {
+                ...result,
+                [column.column_name]: column.column_default
+                    ? column.column_default
+                    : column.is_nullable === "YES"
+                      ? null
+                      : defaultValues[column.data_type],
+            };
         }, {}) ?? {}
     );
     let isInsertOpen = $state(false);

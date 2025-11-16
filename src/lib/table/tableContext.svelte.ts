@@ -147,43 +147,46 @@ class TableContext {
             })
         );
         if (error) {
+            console.error(sql);
             throw new Error(error.message); // TODO: toast
         }
         // FIXME: this is a bit wasteful to refresh data, it could be done through optimistic update directly
         await this.refresh();
     };
 
+    /**
+     * Simple helper function to do an insert into or an update depending on whether a ctid is specified or not.
+     */
     upsertRow = async (row: PgRow & {ctid?: string}) => {
         if (!this.current) {
             return;
         }
-        if (row.ctid) {
-            const query = `UPDATE "${this.current.schema}"."${this.current.name}"
+        const query = row.ctid
+            ? // updae
+              `UPDATE "${this.current.schema}"."${this.current.name}"
 SET
   ${this.current.columns
       .filter((col) => col.is_primary_key === "NO")
       .map((col) => `${col.column_name} = ${formatValue(col, row[col.column_name])}`)
       .join(",\n  ")}
-WHERE ctid = '${row.ctid}';`;
-            await this.rawQuery(query);
-        } else {
-            const query = `INSERT INTO "${this.current.schema}"."${this.current.name}"
+WHERE ctid = '${row.ctid}';`
+            : // insert
+              `INSERT INTO "${this.current.schema}"."${this.current.name}"
 (${this.current.columns
-                // only send pk if not null
-                .filter((col) => col.is_primary_key === "NO" || row[col.column_name] !== null)
-                .map(({column_name}) => column_name)
-                .join(", ")})
+                  // only send pk if not null
+                  .filter((col) => col.is_primary_key === "NO" || row[col.column_name] !== null)
+                  .map(({column_name}) => column_name)
+                  .join(", ")})
 VALUES
 (${this.current.columns
-                // only send pk if not null
-                .filter((col) => col.is_primary_key === "NO" || row[col.column_name] !== null)
-                .map((col) => formatValue(col, row[col.column_name]))
-                .join(", ")});`;
-            await this.rawQuery(query);
-        }
+                  // only send pk if not null
+                  .filter((col) => col.is_primary_key === "NO" || row[col.column_name] !== null)
+                  .map((col) => formatValue(col, row[col.column_name]))
+                  .join(", ")});`;
+
+        return this.rawQuery(query);
     };
 }
-
 const key = Symbol("tableContext");
 
 export const getTableContext = () => getContext<TableContext>(key);

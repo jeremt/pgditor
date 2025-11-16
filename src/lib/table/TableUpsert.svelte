@@ -7,6 +7,7 @@
     import {defaultValues, formatValue} from "./values";
     import {getTableContext, type PgRow} from "./tableContext.svelte";
     import TableValueEditor from "./TableValueEditor.svelte";
+    import {catchError} from "$lib/helpers/catchError";
 
     type Props = {
         row: PgRow & {ctid?: string};
@@ -23,21 +24,29 @@
 
     const pgTable = getTableContext();
 
+    let errorMessage = $state("");
     const insertOrUpdate = async () => {
-        await pgTable.upsertRow(localRow);
-        onclose();
+        const [error] = await catchError(pgTable.upsertRow(localRow));
+        if (error) {
+            errorMessage = error.message;
+        } else {
+            onclose();
+        }
     };
 </script>
 
-<header class="flex gap-4 items-center w-md pb-4">
-    <button class="btn icon ghost" aria-label="Cancel" onclick={onclose}><CrossIcon /></button>
-    <h2>
-        {localRow.ctid === undefined ? "Insert into" : "Update row of"}
-        {#if pgTable.current}<span class="font-mono">{pgTable.current.schema}.{pgTable.current.name}</span>{/if}
-    </h2>
-    <button class="btn ml-auto" onclick={insertOrUpdate}>
-        <CheckIcon --size="1.2rem" /> Apply
-    </button>
+<header class="flex flex-col">
+    <div class="flex gap-2 items-center w-md pb-4">
+        <button class="btn icon ghost" aria-label="Cancel" onclick={onclose}><CrossIcon /></button>
+        <h2>
+            {localRow.ctid === undefined ? "Insert into" : "Update row of"}
+            {#if pgTable.current}<span class="font-mono">{pgTable.current.schema}.{pgTable.current.name}</span>{/if}
+        </h2>
+        <button class="btn ml-auto" onclick={insertOrUpdate}>
+            <CheckIcon --size="1.2rem" /> Apply
+        </button>
+    </div>
+    {#if errorMessage !== ""}<div class="text-error pb-2 text-sm">{errorMessage}</div>{/if}
 </header>
 <div class="flex flex-col gap-2 flex-1 overflow-auto">
     {#each pgTable.current?.columns ?? [] as column}
