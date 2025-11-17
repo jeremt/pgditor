@@ -25,6 +25,8 @@ export type PgColumn = {
 
 export type PgRow = Record<string, object | string | bigint | number | boolean | null>;
 
+export type WhereFilters = {column: string; operator: string; value: string}[];
+
 class TableContext {
     list = $state<PgTable[]>([]);
     current = $state<PgTable & {columns: PgColumn[]; rows: PgRow[]; count: number}>();
@@ -34,6 +36,8 @@ class TableContext {
         offset: 0,
         limit: 100,
     });
+    whereFilters = $state<WhereFilters>([]);
+    appliedFilters = $state(0);
 
     debouncedFilters = debounced(
         () => this.filters,
@@ -186,6 +190,18 @@ VALUES
                   .join(", ")});`;
 
         return this.rawQuery(query);
+    };
+
+    applyWhere = () => {
+        this.filters.where = this.whereFilters.reduce((result, filter) => {
+            return (
+                result +
+                "\n" +
+                (result === "" ? "WHERE" : "AND") +
+                ` ${filter.column} ${filter.operator} '${filter.value}'`
+            );
+        }, "");
+        this.appliedFilters = this.whereFilters.length;
     };
 }
 const key = Symbol("tableContext");

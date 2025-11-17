@@ -1,4 +1,5 @@
 <script lang="ts">
+    import ArrowIcon from "$lib/icons/ArrowIcon.svelte";
     import KeyIcon from "$lib/icons/KeyIcon.svelte";
     import LinkIcon from "$lib/icons/LinkIcon.svelte";
     import UnpluggedIcon from "$lib/icons/UnpluggedIcon.svelte";
@@ -60,10 +61,16 @@
                         <th>
                             <div class="flex gap-1 items-center px-2">
                                 {#if column.is_primary_key === "YES"}<KeyIcon --size="1.2rem" />{/if}
-                                {#if column.foreign_column_name !== null}
-                                    <span
+                                {#if column.foreign_table_schema && column.foreign_table_name}
+                                    <button
+                                        onclick={() =>
+                                            pgTable.use({
+                                                type: "BASE TABLE",
+                                                schema: column.foreign_table_schema!,
+                                                name: column.foreign_table_name!,
+                                            })}
                                         title="{column.foreign_table_schema}.{column.foreign_table_name}.{column.foreign_column_name}"
-                                        ><LinkIcon --size="1.2rem" /></span
+                                        ><LinkIcon --size="1.2rem" /></button
                                     >
                                 {/if}
                                 {column.column_name} <span class="font-normal pl-2">{column.data_type}</span>
@@ -88,7 +95,32 @@
                                 {:else if typeof value === "object"}
                                     {JSON.stringify(value)}
                                 {:else}
-                                    {value}
+                                    <div class="flex gap-2 items-center">
+                                        <span class="grow">{value}</span>
+                                        {#if column.foreign_table_schema && column.foreign_table_name && column.foreign_column_name}
+                                            <button
+                                                class="my-auto cursor-pointer"
+                                                onclick={(event) => {
+                                                    event.stopPropagation();
+                                                    pgTable.use({
+                                                        type: "BASE TABLE",
+                                                        schema: column.foreign_table_schema!,
+                                                        name: column.foreign_table_name!,
+                                                    });
+                                                    pgTable.whereFilters = [
+                                                        {
+                                                            column: column.foreign_column_name!,
+                                                            operator: "=",
+                                                            value: `${value}`,
+                                                        },
+                                                    ];
+                                                    pgTable.applyWhere();
+                                                }}
+                                                title="{column.foreign_table_schema}.{column.foreign_table_name}.{column.foreign_column_name}"
+                                                ><ArrowIcon direction="right" --size="1rem" /></button
+                                            >
+                                        {/if}
+                                    </div>
                                 {/if}
                             </td>
                         {/each}

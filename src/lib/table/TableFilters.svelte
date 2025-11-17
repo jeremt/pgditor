@@ -13,19 +13,8 @@
 
     const pgTable = getTableContext();
 
-    type Where = {column: string; operator: string; value: string}[];
-    let filters = $state<Where>([]);
-    let appliedRules = $state(0);
     const applyFilters = () => {
-        pgTable.filters.where = filters.reduce((result, filter) => {
-            return (
-                result +
-                "\n" +
-                (result === "" ? "WHERE" : "AND") +
-                ` ${filter.column} ${filter.operator} '${filter.value}'`
-            );
-        }, "");
-        appliedRules = filters.length;
+        pgTable.applyWhere();
         isPopoverOpen = false;
     };
 </script>
@@ -34,14 +23,14 @@
     {#snippet target()}
         <button class="btn ghost" onclick={() => (isPopoverOpen = !isPopoverOpen)}
             ><FunnelIcon --size="1.2rem" /> <span>Filters</span>
-            {#if appliedRules > 0}<span class="badge">{appliedRules}</span>{/if}
+            {#if pgTable.appliedFilters > 0}<span class="badge">{pgTable.appliedFilters}</span>{/if}
             <ChevronIcon --size="1rem" direction={isPopoverOpen ? "top" : "bottom"} />
         </button>
     {/snippet}
     <div class="flex flex-col gap-2 pb-4 w-lg">
-        {#each filters as filter, i}
+        {#each pgTable.whereFilters as filter, i}
             <div class="flex gap-2">
-                <Select class="w-40" bind:value={filters[i].column} placeholder="column name">
+                <Select class="w-40" bind:value={pgTable.whereFilters[i].column} placeholder="column name">
                     {#each pgTable.current?.columns ?? [] as column}
                         <option>{column.column_name}</option>
                     {/each}
@@ -74,7 +63,7 @@
                     class="small w-60"
                     type="text"
                     autocorrect="off"
-                    bind:value={filters[i].value}
+                    bind:value={pgTable.whereFilters[i].value}
                     placeholder="value"
                 />
                 <button
@@ -83,7 +72,7 @@
                     class="btn icon ghost"
                     onclick={(e) => {
                         e.preventDefault();
-                        filters.splice(i, 1);
+                        pgTable.whereFilters.splice(i, 1);
                     }}><CrossIcon --size="1.2rem" /></button
                 >
             </div>
@@ -95,12 +84,15 @@
         <button
             class="btn ghost self-start"
             onclick={() =>
-                filters.push({column: pgTable.current?.columns[0].column_name ?? "", operator: "=", value: ""})}
-            ><PlusIcon /> Ajouter un filtre</button
+                pgTable.whereFilters.push({
+                    column: pgTable.current?.columns[0].column_name ?? "",
+                    operator: "=",
+                    value: "",
+                })}><PlusIcon /> Ajouter un filtre</button
         >
         <button
             class="btn small"
-            disabled={!filters.every((filter) => filter.column && filter.value)}
+            disabled={!pgTable.whereFilters.every((filter) => filter.column && filter.value)}
             onclick={applyFilters}><CheckIcon /> Apply filter</button
         >
     </div>
