@@ -1,4 +1,5 @@
 <script lang="ts">
+    import MultilinesInput from "$lib/widgets/MultilinesInput.svelte";
     import Select from "$lib/widgets/Select.svelte";
     import type {PgColumn, PgRow} from "./tableContext.svelte";
     import {formatValue} from "./values";
@@ -67,6 +68,15 @@
             <option value="" disabled>null</option>
         {/if}
     </Select>
+{:else if ["text", "json", "jsonb", "xml"].includes(column.data_type)}
+    <MultilinesInput
+        id={column.column_name}
+        class="font-mono!"
+        {disabled}
+        {placeholder}
+        minRows={1}
+        bind:value={rowValue.value}
+    />
 {:else}
     <input
         id={column.column_name}
