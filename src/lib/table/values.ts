@@ -32,6 +32,7 @@ export const defaultValues = {
 
     // ✅ Boolean
     boolean: false,
+    bool: false,
 
     // 🧩 Geometric
     point: {x: 0, y: 0},
@@ -217,8 +218,8 @@ export const formatValue = (column: PgColumn, value: any): string => {
     }
 
     // ✅ Boolean
-    if (type === "boolean") {
-        return value ? "TRUE" : "FALSE";
+    if (type === "boolean" || type === "bool") {
+        return value === true ? "true" : value === false ? "false" : value;
     }
 
     // 🧮 Numeric types (no quoting needed)

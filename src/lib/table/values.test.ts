@@ -9,6 +9,11 @@ describe("formatValue", () => {
         data_type: data_type as any,
         is_nullable: "YES",
         is_primary_key: "NO",
+        column_default: null,
+        enum_values: null,
+        foreign_column_name: null,
+        foreign_table_name: null,
+        foreign_table_schema: null,
     });
 
     describe("NULL handling", () => {
@@ -216,11 +221,11 @@ describe("formatValue", () => {
 
     describe("✅ Boolean", () => {
         it("should format true as TRUE", () => {
-            expect(formatValue(makeColumn("boolean"), true)).toBe("TRUE");
+            expect(formatValue(makeColumn("boolean"), true)).toBe("true");
         });
 
         it("should format false as FALSE", () => {
-            expect(formatValue(makeColumn("boolean"), false)).toBe("FALSE");
+            expect(formatValue(makeColumn("boolean"), false)).toBe("false");
         });
     });
 

@@ -1,6 +1,7 @@
 <script lang="ts">
     import Select from "$lib/widgets/Select.svelte";
     import type {PgColumn, PgRow} from "./tableContext.svelte";
+    import {formatValue} from "./values";
 
     type Props = {
         column: PgColumn;
@@ -46,12 +47,25 @@
     });
 </script>
 
-{#if column.enum_values}
-    <!-- TODO: handle null properly -->
-    <Select id={column.column_name} {disabled} bind:value={row[column.column_name]}>
+{#if column.enum_values && row[column.column_name] !== null}
+    <Select class="font-mono font-normal!" id={column.column_name} {disabled} bind:value={row[column.column_name]}>
         {#each column.enum_values as enumValue}
             <option>{enumValue}</option>
         {/each}
+    </Select>
+{:else if column.data_type === "boolean" || column.data_type === "bool"}
+    <Select
+        class="font-mono font-normal!"
+        id={column.column_name}
+        {disabled}
+        bind:value={() => formatValue(column, row[column.column_name]), (value) => (row[column.column_name] = value)}
+    >
+        {#if typeof row[column.column_name] === "boolean" || typeof row[column.column_name] === "string"}
+            <option>true</option>
+            <option>false</option>
+        {:else}
+            <option value="" disabled>null</option>
+        {/if}
     </Select>
 {:else}
     <input
