@@ -91,7 +91,7 @@ class ConnectionsContext {
         if (i === -1) {
             return `Connection ${id} not found`;
         }
-        const errorMessage = await this.checkErrors({id, name, connectionString});
+        const errorMessage = await this.checkErrors({id, name, connectionString}, i);
         if (errorMessage) {
             return errorMessage;
         }
@@ -105,11 +105,14 @@ class ConnectionsContext {
     /**
      * Check all possible errors in the connection data.
      */
-    private checkErrors = async ({name, connectionString}: Connection) => {
+    private checkErrors = async ({name, connectionString}: Connection, index?: number) => {
         if (name === "") {
             return "Name is required";
         }
-        if (this.list.find((connection) => connection.name === name)) {
+        if (
+            this.list.find((connection) => connection.name === name) &&
+            (index === undefined || name !== this.list[index].name)
+        ) {
             return "Name is already taken";
         }
         if (connectionString === "") {
