@@ -1,7 +1,9 @@
 <script lang="ts">
+    import CheckIcon from "$lib/icons/CheckIcon.svelte";
     import ChevronIcon from "$lib/icons/ChevronIcon.svelte";
     import PenIcon from "$lib/icons/PenIcon.svelte";
     import PlugIcon from "$lib/icons/PlugIcon.svelte";
+    import PlusIcon from "$lib/icons/PlusIcon.svelte";
     import Dialog from "$lib/widgets/Dialog.svelte";
     import Popover from "$lib/widgets/Popover.svelte";
 
@@ -31,7 +33,11 @@
                         connections.use(connection.id);
                         isPopoverOpen = false;
                     }}
-                    >{connection.name}
+                >
+                    {#if connection.id === connections.currentId}<CheckIcon --size="1rem" />{:else}<div
+                            class="w-4"
+                        ></div>{/if}
+                    {connection.name}
                 </button>
                 <button
                     class="btn ghost icon"
@@ -50,7 +56,7 @@
                 connectionToEdit = {id: "", name: "", connectionString: ""};
                 isDialogOpen = true;
                 isPopoverOpen = false;
-            }}>Add connection</button
+            }}><PlusIcon /> Add connection</button
         >
     </div>
 </Popover>

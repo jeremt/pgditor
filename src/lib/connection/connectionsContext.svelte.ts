@@ -25,7 +25,9 @@ class ConnectionsContext {
     load = async () => {
         this.list = (await this.getFromStore<Connection[]>(connectionsKey)) ?? [];
         if (this.list.length) {
-            this.currentId = this.list[0].id;
+            const selectedId = await this.getFromStore<string>(selectedIdKey);
+            this.currentId =
+                selectedId && this.list.find((c) => c.id === selectedId) !== undefined ? selectedId : this.list[0].id;
         }
     };
 
