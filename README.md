@@ -37,9 +37,40 @@ We’re not trying to be Supabase or provide auth/file storage tooling. PG'ditor
 
 There’s no stable release yet, but you can try it locally by cloning the repo and following the setup steps below.
 
-## Setup
+### Setup
 
 ```bash
 pnpm install
 pnpm tauri dev
 ```
+
+### Build
+
+```bash
+pnpm tauri build
+```
+
+### Recommended IDE Setup
+
+-   VS Code : https://code.visualstudio.com/
+-   Svelte extension : https://marketplace.visualstudio.com/items?itemName=svelte.svelte-vscode
+-   Tauri extension : https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode
+-   rust-analyzer : https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer
+
+### Navigating the codebase
+
+The architecture is intentionally simple:
+
+-   The main UI lives in `src/routes/+page.svelte` (a SPA Svelte app).
+-   UI components are in `src/lib/widgets`.
+-   Postgres connection logic lives in `src/lib/connection`.
+-   Table-editing functionality lives in `src/lib/table`.
+-   The backend is in `src-tauri/src/lib.rs`, containing commands to store connections locally and interact with the selected Postgres database.
+
+## 🫵 Contribute
+
+Contributions are welcome!
+
+-   🐛 Found a bug? Open an issue with steps to reproduce.
+-   💡 Have an idea? Share it in the issues.
+-   👯 Want to help build features or improve the code? PRs are welcome!
