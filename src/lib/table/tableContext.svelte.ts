@@ -66,7 +66,7 @@ class TableContext {
             throw tableError; // TODO: toast
         }
         this.list = unsortedTables.toSorted((table) => (table.schema === "public" ? -1 : 1));
-        if (this.list[0]) {
+        if (this.current === undefined && this.list[0]) {
             this.use(this.list[0]);
         }
     };
@@ -95,7 +95,7 @@ class TableContext {
             offset: 0,
             limit: 100,
         };
-        await this.refresh();
+        await this.refreshData();
     };
 
     /**
@@ -131,7 +131,7 @@ class TableContext {
     /**
      * Simple helper to re-run `updateData()` with the currently selected filters.
      */
-    refresh = async () => {
+    refreshData = async () => {
         await this.updateData(this.filters.where, this.filters.offset, this.filters.limit);
     };
 
@@ -155,7 +155,7 @@ class TableContext {
             throw new Error(error.message); // TODO: toast
         }
         // FIXME: this is a bit wasteful to refresh data, it could be done through optimistic update directly
-        await this.refresh();
+        await this.refreshData();
     };
 
     /**
