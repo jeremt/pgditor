@@ -26,6 +26,9 @@ button.btn {
     &:focus-visible {
         filter: brightness(0.8);
     }
+    &:active {
+        translate: 0 0.15em;
+    }
     &.icon {
         width: var(--input-height);
         height: var(--input-height);

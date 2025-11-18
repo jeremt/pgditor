@@ -40,6 +40,15 @@ WHERE ctid = ANY(ARRAY[${pgTable.selectedRows.map((index) => `'${pgTable.current
         pgTable.selectedRows = [];
         pgTable.filters.where = "";
     };
+
+    // for refresh
+    let spinning = $state(false);
+    const spin = () => {
+        spinning = false;
+        requestAnimationFrame(() => {
+            spinning = true;
+        });
+    };
 </script>
 
 <header class="flex gap-2 p-2 items-center w-full overflow-auto">
@@ -87,7 +96,13 @@ WHERE ctid = ANY(ARRAY[${pgTable.selectedRows.map((index) => `'${pgTable.current
                 <span class="badge">{pgTable.selectedRows.length}</span></ActionButton
             >
         {/if}
-        <button class="btn ghost" onclick={pgTable.refresh}><RefreshIcon --size="1.2rem" /> Refresh</button>
+        <button
+            class="btn ghost"
+            onclick={() => {
+                spin();
+                pgTable.refresh();
+            }}><RefreshIcon --size="1.2rem" {spinning} /> Refresh</button
+        >
         <button class="btn" onclick={() => (isInsertOpen = true)}><PlusIcon /> Insert row</button>
     {/if}
 </header>
