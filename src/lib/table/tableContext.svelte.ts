@@ -55,8 +55,10 @@ class TableContext {
      * Loads all available tables from every schemas for the current pg connection. The public schema appears before any users.
      *
      * The first table of the list is automatically used by default.
+     *
+     * @param autoUse if true, a table will be automatically selected. It should be set to false for a simple refresh for instance.
      */
-    loadTables = async () => {
+    loadTables = async (autoUse = true) => {
         if (!this.connections.current) {
             return;
         }
@@ -66,7 +68,7 @@ class TableContext {
             throw tableError; // TODO: toast
         }
         this.list = unsortedTables.toSorted((table) => (table.schema === "public" ? -1 : 1));
-        if (this.current === undefined && this.list[0]) {
+        if (autoUse && this.list[0]) {
             this.use(this.list[0]);
         }
     };

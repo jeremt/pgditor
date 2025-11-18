@@ -8,7 +8,7 @@
     import ConnectionDialog from "./ConnectionDialog.svelte";
     import {getConnectionsContext, type Connection} from "./connectionsContext.svelte";
 
-    let connections = getConnectionsContext();
+    const connections = getConnectionsContext();
     let connectionToEdit = $state<Connection>({id: "", name: "", connectionString: ""});
     let isDialogOpen = $state(false);
     let isPopoverOpen = $state(false);
