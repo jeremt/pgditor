@@ -59,7 +59,7 @@
                 <tr>
                     {#each pgTable.current.columns as column}
                         <th>
-                            <div class="flex gap-1 items-center px-2">
+                            <div class="flex gap-2 items-center px-1">
                                 {#if column.is_primary_key === "YES"}<KeyIcon --size="1.2rem" />{/if}
                                 {#if column.foreign_table_schema && column.foreign_table_name}
                                     <button
@@ -73,7 +73,10 @@
                                         ><LinkIcon --size="1.2rem" /></button
                                     >
                                 {/if}
-                                {column.column_name} <span class="font-normal pl-2">{column.data_type}</span>
+                                <div>
+                                    {column.column_name}
+                                    <span class="font-normal text-xs! pl-2">{column.data_type}</span>
+                                </div>
                             </div>
                         </th>
                     {/each}
