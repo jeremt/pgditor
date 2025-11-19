@@ -45,8 +45,10 @@ WHERE ctid = ANY(ARRAY[${pgTable.selectedRows.map((index) => `'${pgTable.current
     let refreshing = $state(false);
     const refresh = async () => {
         refreshing = true;
+        setTimeout(() => {
+            refreshing = false;
+        }, 500);
         await pgTable.loadTables(false);
-        refreshing = false;
     };
 </script>
 

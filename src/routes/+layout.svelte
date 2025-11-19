@@ -8,11 +8,13 @@
 
     import {setConnectionsContext} from "$lib/connection/connectionsContext.svelte";
     import {setTableContext} from "$lib/table/tableContext.svelte";
+    import Toaster, {setToastContext} from "$lib/widgets/Toaster.svelte";
 
     let {children} = $props();
 
     const connections = setConnectionsContext();
     const pgTable = setTableContext();
+    setToastContext();
 
     onMount(() => {
         connections.load();
@@ -23,3 +25,4 @@
 </script>
 
 {@render children()}
+<Toaster />

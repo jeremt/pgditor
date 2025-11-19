@@ -11,8 +11,10 @@
 
     import {getTableContext, type PgColumn, type PgRow} from "./tableContext.svelte";
     import TableUpsert from "./TableUpsert.svelte";
+    import {getToastContext} from "$lib/widgets/Toaster.svelte";
 
     const pgTable = getTableContext();
+    const {toast} = getToastContext();
 
     let rowToUpdate = $state<PgRow>();
     let isUpdateOpen = $state(false);
@@ -41,11 +43,12 @@
                 case "table_copy_value":
                     if (lastMenuContext.column && lastMenuContext.row) {
                         await writeText(lastMenuContext.row[lastMenuContext.column.column_name]?.toString() ?? "null");
+                        toast("Valeur copiée");
                     }
                     break;
                 case "table_copy_row_to_json":
                     await writeText(JSON.stringify(lastMenuContext.row));
-                    // TODO: toast
+                    toast("Row copiée au format JSON");
                     break;
                 default:
                     console.warn("Unhandled context menu event", event.payload, lastMenuContext);
