@@ -2,6 +2,7 @@ use native_tls::TlsConnector;
 use postgres_native_tls::MakeTlsConnector;
 use serde::Serialize;
 use serde_json::Value as JsonValue;
+use tauri::Emitter;
 
 #[derive(Debug, Serialize)]
 struct PgError {
@@ -15,7 +16,7 @@ struct PgError {
 impl From<postgres::Error> for PgError {
     fn from(err: postgres::Error) -> Self {
         let db_error = err.as_db_error();
-        
+
         PgError {
             message: db_error
                 .map(|e| e.message().to_string())
@@ -122,30 +123,26 @@ fn quote_ident(s: &str) -> String {
 // Helper function to create a secure connection
 fn create_secure_client(connection_string: &str) -> Result<postgres::Client, PgError> {
     // Check if the connection string requires SSL
-    let requires_ssl = connection_string.contains("sslmode=require") 
+    let requires_ssl = connection_string.contains("sslmode=require")
         || connection_string.contains("sslmode=verify-ca")
         || connection_string.contains("sslmode=verify-full");
-    
+
     if requires_ssl {
         // Use TLS for secure connections
-        let connector = TlsConnector::builder()
-            .build()
-            .map_err(PgError::from)?;
+        let connector = TlsConnector::builder().build().map_err(PgError::from)?;
         let connector = MakeTlsConnector::new(connector);
-        
-        postgres::Client::connect(connection_string, connector)
-            .map_err(PgError::from)
+
+        postgres::Client::connect(connection_string, connector).map_err(PgError::from)
     } else {
         // Use NoTls for local/non-SSL connections
-        postgres::Client::connect(connection_string, postgres::NoTls)
-            .map_err(PgError::from)
+        postgres::Client::connect(connection_string, postgres::NoTls).map_err(PgError::from)
     }
 }
 
 #[tauri::command]
 async fn test_connection(connection_string: String) -> Result<bool, PgError> {
     let conn = connection_string.clone();
-    
+
     tokio::task::spawn_blocking(move || {
         create_secure_client(&conn)?;
         Ok(true)
@@ -157,12 +154,13 @@ async fn test_connection(connection_string: String) -> Result<bool, PgError> {
 #[tauri::command]
 async fn list_tables(connection_string: String) -> Result<Vec<PgTable>, PgError> {
     let conn = connection_string.clone();
-    
+
     tokio::task::spawn_blocking(move || {
         let mut client = create_secure_client(&conn)?;
-        
-        let rows = client.query(
-            "SELECT 
+
+        let rows = client
+            .query(
+                "SELECT 
                 table_schema as schema,
                 table_name as name,
                 table_type as type
@@ -173,14 +171,18 @@ async fn list_tables(connection_string: String) -> Result<Vec<PgTable>, PgError>
             ORDER BY 
                 table_schema,
                 table_name;",
-            &[],
-        ).map_err(PgError::from)?;
+                &[],
+            )
+            .map_err(PgError::from)?;
 
-        let tables = rows.iter().map(|row| PgTable {
-            schema: row.get("schema"),
-            name: row.get("name"),
-            table_type: row.get("type"),
-        }).collect();
+        let tables = rows
+            .iter()
+            .map(|row| PgTable {
+                schema: row.get("schema"),
+                name: row.get("name"),
+                table_type: row.get("type"),
+            })
+            .collect();
 
         Ok(tables)
     })
@@ -189,9 +191,13 @@ async fn list_tables(connection_string: String) -> Result<Vec<PgTable>, PgError>
 }
 
 #[tauri::command]
-async fn list_table_columns(connection_string: String, schema: String, table: String) -> Result<Vec<PgColumn>, PgError> {
+async fn list_table_columns(
+    connection_string: String,
+    schema: String,
+    table: String,
+) -> Result<Vec<PgColumn>, PgError> {
     let conn = connection_string.clone();
-    
+
     tokio::task::spawn_blocking(move || {
         let mut client = create_secure_client(&conn)?;
         
@@ -295,7 +301,10 @@ async fn list_table_columns(connection_string: String, schema: String, table: St
     .map_err(PgError::from)?
 }
 
-fn fetch_enum_values(client: &mut postgres::Client, enum_type: &str) -> Result<Vec<String>, PgError> {
+fn fetch_enum_values(
+    client: &mut postgres::Client,
+    enum_type: &str,
+) -> Result<Vec<String>, PgError> {
     let query = r#"
         SELECT e.enumlabel
         FROM pg_catalog.pg_type t
@@ -303,10 +312,9 @@ fn fetch_enum_values(client: &mut postgres::Client, enum_type: &str) -> Result<V
         WHERE t.typname = $1
         ORDER BY e.enumsortorder;
     "#;
-    
-    let rows = client.query(query, &[&enum_type])
-        .map_err(PgError::from)?;
-    
+
+    let rows = client.query(query, &[&enum_type]).map_err(PgError::from)?;
+
     Ok(rows.iter().map(|row| row.get("enumlabel")).collect())
 }
 
@@ -373,8 +381,7 @@ async fn raw_query(connection_string: String, sql: String) -> Result<i64, PgErro
 
         println!("psql > {}", sql_text);
 
-        let affected = client.execute(&sql_text, &[])
-            .map_err(PgError::from)?;
+        let affected = client.execute(&sql_text, &[]).map_err(PgError::from)?;
 
         Ok(affected as i64)
     })
@@ -385,9 +392,15 @@ async fn raw_query(connection_string: String, sql: String) -> Result<i64, PgErro
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_sql::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
+        .on_menu_event(|app, event| {
+            let event_id = event.id.0.as_str();
+            // emit all menu events to the frontend so the UI can react
+            let _ = app.emit("menu-event", event_id);
+        })
         .invoke_handler(tauri::generate_handler![
             test_connection,
             list_tables,

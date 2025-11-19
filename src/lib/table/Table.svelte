@@ -5,14 +5,58 @@
     import UnpluggedIcon from "$lib/icons/UnpluggedIcon.svelte";
     import CheckboxInput from "$lib/widgets/CheckboxInput.svelte";
     import Dialog from "$lib/widgets/Dialog.svelte";
+    import {listen} from "@tauri-apps/api/event";
+    import {Menu} from "@tauri-apps/api/menu";
+    import {writeText, readText} from "@tauri-apps/plugin-clipboard-manager";
 
-    import {getTableContext, type PgRow} from "./tableContext.svelte";
+    import {getTableContext, type PgColumn, type PgRow} from "./tableContext.svelte";
     import TableUpsert from "./TableUpsert.svelte";
 
     const pgTable = getTableContext();
 
     let rowToUpdate = $state<PgRow>();
     let isUpdateOpen = $state(false);
+
+    let lastMenuContext: {column?: PgColumn; row?: PgRow} = {};
+    const menuPromise = Menu.new({
+        items: [
+            {id: "table_copy_value", text: "Copy value"},
+            {id: "table_copy_row_to_json", text: "Copy row (JSON)"},
+        ],
+    });
+
+    const clickHandler = async (event: MouseEvent, column: PgColumn, row: PgRow) => {
+        event.preventDefault();
+        // save the context for when the menu item is selected
+        lastMenuContext = {column, row};
+        const menu = await menuPromise;
+        console.log("opening context menu for", lastMenuContext);
+        menu.popup();
+    };
+
+    $effect(() => {
+        const unlistenPromise = listen<string>("menu-event", async (event) => {
+            console.log("menu-event", event, "context:", lastMenuContext);
+            switch (event.payload) {
+                case "table_copy_value":
+                    if (lastMenuContext.column && lastMenuContext.row) {
+                        await writeText(lastMenuContext.row[lastMenuContext.column.column_name]?.toString() ?? "null");
+                    }
+                    break;
+                case "table_copy_row_to_json":
+                    await writeText(JSON.stringify(lastMenuContext.row));
+                    // TODO: toast
+                    break;
+                default:
+                    console.warn("Unhandled context menu event", event.payload, lastMenuContext);
+            }
+            lastMenuContext = {};
+        });
+
+        return () => {
+            unlistenPromise.then((unlisten) => unlisten());
+        };
+    });
 </script>
 
 {#if pgTable.current === undefined}
@@ -92,7 +136,7 @@
                     >
                         {#each pgTable.current.columns as column}
                             {@const value = row[column.column_name]}
-                            <td>
+                            <td oncontextmenu={(e) => clickHandler(e, column, row)}>
                                 {#if value === null}
                                     NULL
                                 {:else if typeof value === "object"}

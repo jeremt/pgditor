@@ -167,7 +167,6 @@ class TableContext {
         if (!this.current) {
             return;
         }
-        console.log("before insert, ", this.current.columns, row);
         const query = row.ctid
             ? // updae
               `UPDATE "${this.current.schema}"."${this.current.name}"
