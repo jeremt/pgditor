@@ -30,6 +30,8 @@ export type WhereFilters = {column: string; operator: string; value: string}[];
 class TableContext {
     list = $state<PgTable[]>([]);
     current = $state<PgTable & {columns: PgColumn[]; rows: PgRow[]; count: number}>();
+    isUseDialogOpen = $state(false);
+    isFilterPopover = $state(false);
 
     filters = $state({
         where: "",

@@ -9,22 +9,20 @@
 
     import {getTableContext} from "./tableContext.svelte";
 
-    let isPopoverOpen = $state(false);
-
     const pgTable = getTableContext();
 
     const applyFilters = () => {
         pgTable.applyWhere();
-        isPopoverOpen = false;
+        pgTable.isFilterPopover = false;
     };
 </script>
 
-<Popover bind:isOpen={isPopoverOpen} offsetY={10}>
+<Popover bind:isOpen={pgTable.isFilterPopover} offsetY={10}>
     {#snippet target()}
-        <button class="btn ghost" onclick={() => (isPopoverOpen = !isPopoverOpen)}
+        <button class="btn ghost" onclick={() => (pgTable.isFilterPopover = !pgTable.isFilterPopover)}
             ><FunnelIcon --size="1.2rem" /> <span>Filters</span>
             {#if pgTable.appliedFilters > 0}<span class="badge">{pgTable.appliedFilters}</span>{/if}
-            <ChevronIcon --size="1rem" direction={isPopoverOpen ? "top" : "bottom"} />
+            <ChevronIcon --size="1rem" direction={pgTable.isFilterPopover ? "top" : "bottom"} />
         </button>
     {/snippet}
     <div class="flex flex-col gap-2 pb-4 w-lg">

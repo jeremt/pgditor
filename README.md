@@ -1,6 +1,6 @@
 # 🐘 PG'ditor
 
-A simple, minimalistic, and fast editor to update your Postgres databases.
+A simple, minimalistic, and fast editor to work with your Postgres databases.
 
 ![](./screenshot.png)
 

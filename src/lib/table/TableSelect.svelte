@@ -8,8 +8,6 @@
 
     const pgTable = getTableContext();
 
-    let isDialogOpen = $state(false);
-
     let searchText = $state("");
     let searchResult = $derived(
         fuzzySearchWithHighlights(
@@ -30,13 +28,13 @@
             if (table) {
                 pgTable.use(table);
                 searchText = "";
-                isDialogOpen = false;
+                pgTable.isUseDialogOpen = false;
             }
         } else if (event.key === "ArrowUp" && selectedIndex > 0) {
             selectedIndex -= 1;
         } else if (
             event.key === "ArrowDown" &&
-            selectedIndex < (searchText === "" ? pgTable.list.length : searchResult.length)
+            selectedIndex + 1 < (searchText === "" ? pgTable.list.length : searchResult.length)
         ) {
             selectedIndex += 1;
         } else {
@@ -53,7 +51,7 @@
     {/if}
 {/snippet}
 
-<button class="btn ghost" onclick={() => (isDialogOpen = true)} disabled={!pgTable.current}>
+<button class="btn ghost" onclick={() => (pgTable.isUseDialogOpen = true)} disabled={!pgTable.current}>
     {#if pgTable.current}
         {@render icon(pgTable.current.type)} {pgTable.current.schema}.{pgTable.current.name}
     {:else}
@@ -61,7 +59,7 @@
     {/if}
 </button>
 
-<Dialog isOpen={isDialogOpen} onrequestclose={() => (isDialogOpen = false)}>
+<Dialog isOpen={pgTable.isUseDialogOpen} onrequestclose={() => (pgTable.isUseDialogOpen = false)}>
     <div class="flex flex-col gap-2 w-2xl">
         <input
             type="text"
@@ -78,7 +76,7 @@
                         class:selected-table={i === selectedIndex}
                         onclick={() => {
                             pgTable.use(table);
-                            isDialogOpen = false;
+                            pgTable.isUseDialogOpen = false;
                         }}
                     >
                         {@render icon(table.type)}
@@ -99,7 +97,7 @@
                                 if (table) {
                                     pgTable.use(table);
                                     searchText = "";
-                                    isDialogOpen = false;
+                                    pgTable.isUseDialogOpen = false;
                                 }
                             }}
                         >

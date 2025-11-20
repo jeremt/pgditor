@@ -9,7 +9,10 @@
         "opener:default",
         "sql:default",
         "store:default",
-        "clipboard-manager:allow-write-text"
+        "clipboard-manager:allow-write-text",
+        "global-shortcut:allow-is-registered",
+        "global-shortcut:allow-register",
+        "global-shortcut:allow-unregister"
     ],
     "extends": ["allow-dialogs-fs"]
 }
