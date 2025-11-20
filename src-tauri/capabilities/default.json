@@ -5,9 +5,11 @@
     "windows": ["main"],
     "permissions": [
         "core:default",
+        "core:menu:default",
         "opener:default",
         "sql:default",
         "store:default",
         "clipboard-manager:allow-write-text"
-    ]
+    ],
+    "extends": ["allow-dialogs-fs"]
 }

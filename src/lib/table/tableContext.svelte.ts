@@ -48,8 +48,45 @@ class TableContext {
     );
 
     selectedRows = $state<number[]>([]);
+    get selectedRowsJson() {
+        if (!this.current) {
+            return [];
+        }
+        return this.current.rows.filter((_, i) => this.selectedRows.includes(i)).map(({ctid, ...rest}) => rest);
+    }
+    get selectedRowsCsv() {
+        if (!this.current) {
+            return "";
+        }
+        return (
+            this.current.columns.map((col) => col.column_name).join(",") +
+            "\n" +
+            this.selectedRowsJson
+                .map((row) => this.current!.columns.map((col) => row[col.column_name]).join(","))
+                .join("\n")
+        );
+    }
+    get selectedRowsSql() {
+        if (!this.current) {
+            return "";
+        }
+        return `INSERT INTO ${this.fullName}
+(${this.current.columns.map((col) => col.column_name).join(",")})
+VALUES
+${this.selectedRowsJson
+    .map((row) => `(${this.current!.columns.map((col) => formatValue(col, row[col.column_name])).join(",")})`)
+    .join(",\n")}
+;`;
+    }
 
     private connections = getConnectionsContext();
+
+    get fullName() {
+        if (!this.current) {
+            return undefined;
+        }
+        return `"${this.current.schema}"."${this.current.name}"`;
+    }
 
     /**
      * Loads all available tables from every schemas for the current pg connection. The public schema appears before any users.
