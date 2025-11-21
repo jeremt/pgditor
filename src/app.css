@@ -40,10 +40,10 @@ body {
 .badge {
     color: var(--color-bg);
     background-color: var(--color-fg);
-    width: 1.5rem;
-    height: 1.5rem;
+    width: 1.2rem;
+    height: 1.2rem;
     display: grid;
     place-items: center;
     border-radius: 50%;
-    font-size: 0.75rem;
+    font-size: 0.6rem;
 }

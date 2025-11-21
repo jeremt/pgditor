@@ -54,7 +54,9 @@ class TableContext {
         if (!this.current) {
             return [];
         }
-        return this.current.rows.filter((_, i) => this.selectedRows.includes(i)).map(({ctid, ...rest}) => rest);
+        return this.current.rows
+            .filter((_, i) => this.selectedRows.length === 0 || this.selectedRows.includes(i))
+            .map(({ctid, ...rest}) => rest);
     }
     get selectedRowsCsv() {
         if (!this.current) {

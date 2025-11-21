@@ -13,8 +13,13 @@
     import RefreshIcon from "$lib/icons/RefreshIcon.svelte";
     import {defaultValues} from "$lib/table/values";
     import ActionButton from "$lib/widgets/ActionButton.svelte";
+    import DownloadIcon from "$lib/icons/DownloadIcon.svelte";
+    import Popover from "$lib/widgets/Popover.svelte";
+    import {getToastContext} from "$lib/widgets/Toaster.svelte";
+    import {saveToFile} from "$lib/helpers/saveToFile";
 
     const pgTable = getTableContext();
+    const {toast} = getToastContext();
     let rowToInsert = $derived<PgRow>(
         pgTable.current?.columns.reduce((result, column) => {
             return {
@@ -40,6 +45,8 @@ WHERE ctid = ANY(ARRAY[${pgTable.selectedRows.map((index) => `'${pgTable.current
         pgTable.selectedRows = [];
         pgTable.filters.where = "";
     };
+
+    let isExportOpen = $state(false);
 
     // for refresh
     let refreshing = $state(false);
@@ -97,14 +104,57 @@ WHERE ctid = ANY(ARRAY[${pgTable.selectedRows.map((index) => `'${pgTable.current
                     confirmClass: "btn error",
                     confirmText: "Confirm delete",
                 }}
-                ><TrashIcon --size="1.2rem" /> Delete rows
+                ><TrashIcon --size="1.2rem" /> Delete
                 <span class="badge">{pgTable.selectedRows.length}</span></ActionButton
             >
         {/if}
+        <Popover bind:isOpen={isExportOpen} offsetY={10}>
+            {#snippet target()}
+                <button class="btn ghost" onclick={() => (isExportOpen = !isExportOpen)}
+                    ><DownloadIcon --size="1.2rem" /> Export
+                    {#if pgTable.selectedRows.length}<span class="badge">{pgTable.selectedRows.length}</span>{/if}
+                </button>
+            {/snippet}
+            <div>
+                <button
+                    class="btn ghost"
+                    onclick={async () => {
+                        if (await saveToFile(JSON.stringify(pgTable.selectedRowsJson), ["json"])) {
+                            toast("Selected rows exported to JSON");
+                        } else {
+                            toast("Failed to export JSON", {kind: "error"});
+                        }
+                        isExportOpen = false;
+                    }}>Export to JSON</button
+                >
+                <button
+                    class="btn ghost"
+                    onclick={async () => {
+                        if (await saveToFile(pgTable.selectedRowsCsv, ["csv"])) {
+                            toast("Selected rows exported to CSV");
+                        } else {
+                            toast("Failed to export CSV", {kind: "error"});
+                        }
+                        isExportOpen = false;
+                    }}>Export to CSV</button
+                >
+                <button
+                    class="btn ghost"
+                    onclick={async () => {
+                        if (await saveToFile(pgTable.selectedRowsSql, ["sql"])) {
+                            toast("Selected rows exported to SQL");
+                        } else {
+                            toast("Failed to export SQL", {kind: "error"});
+                        }
+                        isExportOpen = false;
+                    }}>Export to SQL</button
+                >
+            </div>
+        </Popover>
         <button class="btn ghost" onclick={refresh}
             ><RefreshIcon --size="1.2rem" spinning={refreshing} /> Refresh</button
         >
-        <button class="btn" onclick={() => (isInsertOpen = true)}><PlusIcon /> Insert row</button>
+        <button class="btn" onclick={() => (isInsertOpen = true)}><PlusIcon /> Insert</button>
     {/if}
 </header>
 
