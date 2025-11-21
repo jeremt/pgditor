@@ -9,6 +9,7 @@ button.btn {
     font-weight: bold;
     color: var(--color-bg);
     background-color: var(--color-fg);
+    background-image: linear-gradient(transparent, var(--color-gold));
     border-radius: var(--radius-btn);
     cursor: pointer;
     outline: none;
@@ -24,7 +25,7 @@ button.btn {
     }
     &:hover,
     &:focus-visible {
-        filter: brightness(0.8);
+        translate: 0 -0.1rem;
     }
     &:active {
         translate: 0 0.15em;
@@ -43,6 +44,7 @@ button.btn {
     &.ghost {
         color: var(--color-fg);
         background-color: transparent;
+        background-image: none;
         &:hover {
             filter: brightness(1);
             background-color: var(--color-bg-1);
@@ -51,6 +53,7 @@ button.btn {
     &.secondary {
         color: var(--color-fg);
         background-color: var(--color-bg-1);
+        background-image: none;
         &:hover,
         &:focus-visible {
             filter: brightness(1.2);
