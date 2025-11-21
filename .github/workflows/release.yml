@@ -48,7 +48,7 @@ jobs:
                     patchelf
 
             - name: Build and release with Tauri
-              uses: tauri-apps/tauri-action@v2
+              uses: tauri-apps/tauri-action@v0
               with:
                   tagName: ${{ github.ref_name }}
                   releaseName: "PGditor ${{ github.ref_name }}"
