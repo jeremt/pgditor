@@ -5,6 +5,7 @@
 
     import {getTableContext} from "./tableContext.svelte";
     import Dialog from "$lib/widgets/Dialog.svelte";
+    import EnterIcon from "$lib/icons/EnterIcon.svelte";
 
     const pgTable = getTableContext();
 
@@ -66,7 +67,7 @@
             bind:value={searchText}
             onkeydown={handleKeys}
             autocorrect="off"
-            placeholder="Search table"
+            placeholder="Filter table by name and schema"
         />
         <div class="flex flex-col gap-2 overflow-auto h-80 py-2">
             {#if searchText === ""}
@@ -80,9 +81,12 @@
                         }}
                     >
                         {@render icon(table.type)}
-                        {table.schema}.{table.name}
+                        <span class="mr-auto">{table.schema}.{table.name}</span>
                         {#if pgTable.current && `${table.schema}.${table.name}` === `${pgTable?.current.schema}.${pgTable?.current.name}`}
-                            <span class="text-fg-1 font-normal ml-auto">current</span>
+                            <span class="text-fg-1 font-normal">current</span>
+                        {/if}
+                        {#if i === selectedIndex}
+                            <EnterIcon />
                         {/if}
                     </button>
                 {/each}
