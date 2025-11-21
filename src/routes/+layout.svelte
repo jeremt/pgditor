@@ -30,7 +30,26 @@
             }
         });
         await register("CommandOrControl+R", (event) => {
-            pgTable.loadTables();
+            if (event.state === "Pressed") {
+                pgTable.loadTables();
+            }
+        });
+        await register("CommandOrControl+ArrowLeft", (event) => {
+            if (event.state === "Pressed" && pgTable.filters.offset > 0) {
+                pgTable.filters.offset = Math.max(0, pgTable.filters.offset - pgTable.filters.limit);
+            }
+        });
+        await register("CommandOrControl+ArrowRight", (event) => {
+            if (
+                event.state === "Pressed" &&
+                pgTable.current &&
+                pgTable.filters.offset + pgTable.filters.limit < pgTable.current.count
+            ) {
+                pgTable.filters.offset = Math.min(
+                    pgTable.current.count,
+                    pgTable.filters.offset + pgTable.filters.limit
+                );
+            }
         });
     });
     $effect(() => {

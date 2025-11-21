@@ -71,7 +71,7 @@ WHERE ctid = ANY(ARRAY[${pgTable.selectedRows.map((index) => `'${pgTable.current
         <button
             class="btn icon ghost"
             disabled={pgTable.filters.offset === 0}
-            onclick={() => (pgTable.filters.offset -= pgTable.filters.limit)}
+            onclick={() => (pgTable.filters.offset = Math.max(0, pgTable.filters.offset - pgTable.filters.limit))}
         >
             <ChevronIcon direction="left" />
         </button>
@@ -79,7 +79,11 @@ WHERE ctid = ANY(ARRAY[${pgTable.selectedRows.map((index) => `'${pgTable.current
         <button
             class="btn icon ghost mr-auto"
             disabled={pgTable.filters.offset + pgTable.filters.limit > pgTable.current.count}
-            onclick={() => (pgTable.filters.offset += pgTable.filters.limit)}
+            onclick={() =>
+                (pgTable.filters.offset = Math.min(
+                    pgTable.current?.count ?? 0,
+                    pgTable.filters.offset + pgTable.filters.limit
+                ))}
         >
             <ChevronIcon direction="right" />
         </button>
