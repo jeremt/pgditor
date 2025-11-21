@@ -40,6 +40,7 @@ button.btn {
     }
     &.error {
         background-color: var(--color-error);
+        background-image: none;
     }
     &.ghost {
         color: var(--color-fg);

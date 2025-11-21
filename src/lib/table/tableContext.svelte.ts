@@ -208,6 +208,8 @@ ${this.selectedRowsJson
         if (!this.current) {
             return;
         }
+        const filterPK = (col: PgColumn) =>
+            col.is_primary_key === "NO" || (row[col.column_name] && col.column_default === null);
         const query = row.ctid
             ? // updae
               `UPDATE "${this.current.schema}"."${this.current.name}"
@@ -220,14 +222,12 @@ WHERE ctid = '${row.ctid}';`
             : // insert
               `INSERT INTO "${this.current.schema}"."${this.current.name}"
 (${this.current.columns
-                  // only send pk if not null
-                  .filter((col) => col.is_primary_key === "NO" || row[col.column_name])
+                  .filter(filterPK)
                   .map(({column_name}) => column_name)
                   .join(", ")})
 VALUES
 (${this.current.columns
-                  // only send pk if not null
-                  .filter((col) => col.is_primary_key === "NO" || row[col.column_name])
+                  .filter(filterPK)
                   .map((col) => formatValue(col, row[col.column_name]))
                   .join(", ")});`;
 

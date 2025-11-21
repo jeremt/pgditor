@@ -60,7 +60,7 @@
     {/if}
 </button>
 
-<Dialog isOpen={pgTable.isUseDialogOpen} onrequestclose={() => (pgTable.isUseDialogOpen = false)}>
+<Dialog isOpen={pgTable.isUseDialogOpen} onrequestclose={() => (pgTable.isUseDialogOpen = false)} --padding="1rem">
     <div class="flex flex-col gap-2 w-2xl">
         <input
             type="text"
@@ -121,6 +121,9 @@
 </Dialog>
 
 <style>
+    input[type="text"] {
+        background-color: transparent;
+    }
     .search-result {
         color: var(--color-fg-2);
         :global(b) {
