@@ -120,7 +120,7 @@ WHERE ctid = ANY(ARRAY[${pgTable.selectedRows.map((index) => `'${pgTable.current
                     class="btn ghost"
                     onclick={async () => {
                         if (await saveToFile(JSON.stringify(pgTable.selectedRowsJson), ["json"])) {
-                            toast("Selected rows exported to JSON");
+                            toast("Selected rows exported to JSON", {kind: "success"});
                         } else {
                             toast("Failed to export JSON", {kind: "error"});
                         }
@@ -131,7 +131,7 @@ WHERE ctid = ANY(ARRAY[${pgTable.selectedRows.map((index) => `'${pgTable.current
                     class="btn ghost"
                     onclick={async () => {
                         if (await saveToFile(pgTable.selectedRowsCsv, ["csv"])) {
-                            toast("Selected rows exported to CSV");
+                            toast("Selected rows exported to CSV", {kind: "success"});
                         } else {
                             toast("Failed to export CSV", {kind: "error"});
                         }
@@ -142,7 +142,7 @@ WHERE ctid = ANY(ARRAY[${pgTable.selectedRows.map((index) => `'${pgTable.current
                     class="btn ghost"
                     onclick={async () => {
                         if (await saveToFile(pgTable.selectedRowsSql, ["sql"])) {
-                            toast("Selected rows exported to SQL");
+                            toast("Selected rows exported to SQL", {kind: "success"});
                         } else {
                             toast("Failed to export SQL", {kind: "error"});
                         }

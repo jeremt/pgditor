@@ -27,6 +27,10 @@
     --font-mono: "Space Mono", monospace;
 }
 
+* {
+    outline: none; /* outline should be set specifically for each element with :focus-visible */
+}
+
 body {
     @apply flex flex-col h-dvh w-full;
     overflow: auto;

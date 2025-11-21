@@ -12,12 +12,13 @@ A simple, minimalistic, and fast editor to work with your Postgres databases.
 -   ⚡ Easily insert, update, and delete rows
 -   ⚡ Free & open-source — built with Svelte and Tauri
 
-### Roadmap (hopefully added soon 😬)
+### Priority roadmap (hopefully added soon 😬)
 
--   Import/export (CSV, SQL and Json)
--   Use LLM for data reconciliation in imports
--   Add context menu for fast actions on cells and rows (copy content, set to NULL, etc.)
--   Keyboard shortcuts
+-   Import (CSV, SQL and Json), ideally using LLM to help with table matching/normalization and data reconciliation
+-   Add custom monaco editor for easy edit for fields like jsonb
+-   Add some customisation features like light mode, font, compact toolbar, etc.
+
+Here is a public link access to the figma : https://www.figma.com/design/aWQAAUrvPCPeo62ykwJ6Dz/pgeditor?node-id=251-193&t=LbJTm8y4i4WAPX7I-1
 
 ## What it _doesn't_ do (on purpose)
 

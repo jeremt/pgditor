@@ -259,7 +259,7 @@ WHERE ctid = '${lastMenuContext.row.ctid}';
                             {@const value = row[column.column_name]}
                             <td oncontextmenu={(e) => clickHandler(e, column, row)}>
                                 {#if value === null}
-                                    NULL
+                                    null
                                 {:else if typeof value === "object"}
                                     {JSON.stringify(value)}
                                 {:else}
