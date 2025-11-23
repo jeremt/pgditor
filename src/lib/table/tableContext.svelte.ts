@@ -240,7 +240,7 @@ VALUES
                 result +
                 "\n" +
                 (result === "" ? "WHERE" : "AND") +
-                ` ${filter.column} ${filter.operator} '${filter.value}'`
+                ` ${filter.column} ${filter.operator} ${filter.value}`
             );
         }, "");
         this.appliedFilters = this.whereFilters.length;
