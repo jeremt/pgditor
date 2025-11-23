@@ -297,6 +297,13 @@ WHERE ctid = '${lastMenuContext.row.ctid}';
             </tbody>
         </table>
     </div>
+    {#if pgTable.current.rows.length === 0}
+        <div class="text-fg-1 grow">
+            <div class="border border-dashed border-bg-2 p-4 w-fit rounded-2xl mx-auto">
+                This table doesn't contain any rows, you can use <strong>Insert</strong> to add some!
+            </div>
+        </div>
+    {/if}
 {/if}
 
 {#if pgTable.current && rowToUpdate}
