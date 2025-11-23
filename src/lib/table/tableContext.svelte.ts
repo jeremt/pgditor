@@ -39,6 +39,7 @@ class TableContext {
         where: "",
         offset: 0,
         limit: 100,
+        orderBy: undefined as {column: string; direction: "asc" | "desc"} | undefined,
     });
     whereFilters = $state<WhereFilters>([]);
     appliedFilters = $state(0);
@@ -143,6 +144,7 @@ ${this.selectedRowsJson
             where: "",
             offset: 0,
             limit: 100,
+            orderBy: undefined,
         };
         await this.refreshData();
     };
@@ -167,6 +169,9 @@ ${this.selectedRowsJson
                 offset,
                 limit,
                 whereClause: where,
+                orderBy: this.filters.orderBy
+                    ? `ORDER BY ${this.filters.orderBy.column} ${this.filters.orderBy.direction}`
+                    : "",
             })
         );
         if (dataError) {

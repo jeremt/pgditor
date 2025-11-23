@@ -61,7 +61,20 @@
             <thead class="sticky top-0 bg-bg">
                 <tr>
                     {#each pgTable.current.columns as column}
-                        <th>
+                        <th
+                            class="cursor-pointer"
+                            onclick={() => {
+                                if (pgTable.filters.orderBy === undefined) {
+                                    pgTable.filters.orderBy = {column: column.column_name, direction: "asc"};
+                                } else if (pgTable.filters.orderBy.column !== column.column_name) {
+                                    pgTable.filters.orderBy = {column: column.column_name, direction: "asc"};
+                                } else if (pgTable.filters.orderBy.direction === "asc") {
+                                    pgTable.filters.orderBy.direction = "desc";
+                                } else {
+                                    pgTable.filters.orderBy = undefined;
+                                }
+                            }}
+                        >
                             <div class="flex gap-2 items-center px-1">
                                 {#if column.is_primary_key === "YES"}<KeyIcon --size="1.2rem" />{/if}
                                 {#if column.foreign_table_schema && column.foreign_table_name}
@@ -79,6 +92,11 @@
                                     {column.column_name}
                                     <span class="font-normal text-xs! pl-2">{column.data_type}</span>
                                 </div>
+                                {#if column.column_name === pgTable.filters.orderBy?.column}
+                                    <ArrowIcon
+                                        direction={pgTable.filters.orderBy.direction === "asc" ? "top" : "bottom"}
+                                    />
+                                {/if}
                             </div>
                         </th>
                     {/each}

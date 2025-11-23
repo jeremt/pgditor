@@ -345,12 +345,14 @@ async fn get_table_data(
     offset: Option<i64>,
     limit: Option<i64>,
     where_clause: Option<String>,
+    order_by: Option<String>
 ) -> Result<PgTableData, PgError> {
     let conn = connection_string.clone();
 
     let offset = offset.unwrap_or(0);
     let limit = limit.unwrap_or(100);
     let where_clause = where_clause.unwrap_or_default();
+    let order_by = order_by.unwrap_or_default();
 
     tokio::task::spawn_blocking(move || {
         let mut client = create_secure_client(&conn)?;
@@ -359,8 +361,8 @@ async fn get_table_data(
         let table_q = quote_ident(&table);
 
         let select_sql = format!(
-            "SELECT row_to_json(t)::text as json_text FROM (SELECT *, ctid::text as ctid FROM {}.{} {} OFFSET {} LIMIT {}) t",
-            schema_q, table_q, where_clause, offset, limit
+            "SELECT row_to_json(t)::text as json_text FROM (SELECT *, ctid::text as ctid FROM {}.{} {} {} OFFSET {} LIMIT {}) t",
+            schema_q, table_q, where_clause, order_by, offset, limit
         );
 
         println!("psql > {}", select_sql);
