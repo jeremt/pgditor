@@ -156,7 +156,7 @@
             padding: 0.5rem 1rem;
             border-radius: 0.5rem;
             opacity: 0;
-            animation: appear 0.3s ease-out 0s forwards;
+            animation: appear 0.2s ease-out 0s forwards;
         }
     }
 </style>
