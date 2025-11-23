@@ -6,6 +6,7 @@
     import {getTableContext} from "./tableContext.svelte";
     import Dialog from "$lib/widgets/Dialog.svelte";
     import EnterIcon from "$lib/icons/EnterIcon.svelte";
+    import CheckIcon from "$lib/icons/CheckIcon.svelte";
 
     const pgTable = getTableContext();
 
@@ -80,12 +81,15 @@
                             pgTable.isUseDialogOpen = false;
                         }}
                     >
-                        {@render icon(table.type)}
-                        <span class="mr-auto">{table.schema}.{table.name}</span>
                         {#if pgTable.current && `${table.schema}.${table.name}` === `${pgTable?.current.schema}.${pgTable?.current.name}`}
-                            <span class="text-fg-1 font-normal">current</span>
+                            <CheckIcon --size="1rem" />
                         {/if}
+                        {@render icon(table.type)}
+                        <span>{table.schema}.{table.name}</span>
                         {#if i === selectedIndex}
+                            <span class="font-normal text-xs text-fg-1 text-start grow overflow-hidden text-ellipsis"
+                                >{table.column_names.join(", ")}</span
+                            >
                             <EnterIcon />
                         {/if}
                     </button>
@@ -105,10 +109,17 @@
                                 }
                             }}
                         >
+                            {#if pgTable.current && text === `${pgTable.current.schema}.${pgTable.current.name}`}
+                                <CheckIcon --size="1rem" />
+                            {/if}
                             {@render icon(table.type)}
                             <span class="search-result">{@html html}</span>
-                            {#if pgTable.current && text === `${pgTable.current.schema}.${pgTable.current.name}`}
-                                <span class="ml-auto text-fg-1 font-normal">current</span>
+                            {#if i === selectedIndex}
+                                <span
+                                    class="font-normal text-xs text-fg-1 text-start grow overflow-hidden text-ellipsis"
+                                    >{table.column_names.join(", ")}</span
+                                >
+                                <EnterIcon />
                             {/if}
                         </button>
                     {/if}

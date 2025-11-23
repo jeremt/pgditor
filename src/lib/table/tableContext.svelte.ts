@@ -9,6 +9,8 @@ export type PgTable = {
     schema: string;
     name: string;
     type: "BASE TABLE" | "VIEW";
+    column_names: string[]; // just get the name of all tables for quick lookup
+    size: number;
 };
 
 export type PgColumn = {
@@ -117,7 +119,7 @@ ${this.selectedRowsJson
     /**
      * Select the given table and show its rows automatically.
      */
-    use = async (table: PgTable) => {
+    use = async (table: Pick<PgTable, "schema" | "name">) => {
         if (!this.connections.current) {
             return;
         }
@@ -132,7 +134,11 @@ ${this.selectedRowsJson
         if (columnsError) {
             throw columnsError; // TODO: toast
         }
-        this.current = {...table, columns, rows: [], count: 0};
+        const t = this.list.find((item) => item.schema === table.schema && item.name === table.name);
+        if (!t) {
+            throw new Error(`Invalid table ${table.schema}.${table.name}`);
+        }
+        this.current = {...t, columns, rows: [], count: 0};
         this.filters = {
             where: "",
             offset: 0,
