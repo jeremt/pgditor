@@ -45,10 +45,11 @@ jobs:
               run: |
                   sudo apt update
                   sudo apt install -y \
-                    libwebkitgtk-6.0-dev \
+                    libwebkit2gtk-4.1-dev \
                     libappindicator3-dev \
                     librsvg2-dev \
-                    patchelf
+                    patchelf \
+                    libssl-dev
 
             - name: Build and release with Tauri
               uses: tauri-apps/tauri-action@v0
