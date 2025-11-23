@@ -15,6 +15,19 @@
         pgTable.applyWhere();
         pgTable.isFilterPopover = false;
     };
+
+    const getPlaceholderByOperator = (operator: string) => {
+        if (["like", "ilike"].includes(operator)) {
+            return "'%value%'";
+        }
+        if (operator === "between") {
+            return "value1 and value2";
+        }
+        if (operator === "in") {
+            return `(value1, value2, value3)`;
+        }
+        return "value";
+    };
 </script>
 
 <Popover bind:isOpen={pgTable.isFilterPopover} offsetY={10}>
@@ -58,11 +71,11 @@
                     </optgroup>
                 </Select>
                 <input
-                    class="small w-60"
+                    class="small grow"
                     type="text"
                     autocorrect="off"
                     bind:value={pgTable.whereFilters[i].value}
-                    placeholder="value"
+                    placeholder={getPlaceholderByOperator(filter.operator)}
                 />
                 <button
                     type="button"
