@@ -98,8 +98,9 @@
                     >
                         {#if pgTable.current && `${table.schema}.${table.name}` === `${pgTable?.current.schema}.${pgTable?.current.name}`}
                             <CheckIcon --size="1rem" />
+                        {:else}
+                            {@render icon(table.type)}
                         {/if}
-                        {@render icon(table.type)}
                         <span>{table.schema}.{table.name}</span>
                         {#if i === selectedIndex}
                             <span class="font-normal text-xs text-fg-1 text-start grow overflow-hidden text-ellipsis"
@@ -127,8 +128,9 @@
                         >
                             {#if pgTable.current && text === `${pgTable.current.schema}.${pgTable.current.name}`}
                                 <CheckIcon --size="1rem" />
+                            {:else}
+                                {@render icon(table.type)}
                             {/if}
-                            {@render icon(table.type)}
                             <span class="search-result">{@html html}</span>
                             {#if i === selectedIndex}
                                 <span

@@ -16,5 +16,6 @@
     svg {
         width: var(--size);
         height: var(--size);
+        flex-shrink: 0;
     }
 </style>
