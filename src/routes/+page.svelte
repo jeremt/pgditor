@@ -85,7 +85,7 @@ WHERE ctid = ANY(ARRAY[${pgTable.selectedRows.map((index) => `'${pgTable.current
         <span class="text-sm text-fg-1 text-nowrap">{pgTable.filters.offset} - {pgTable.current.count}</span>
         <button
             class="btn icon ghost mr-auto"
-            disabled={pgTable.filters.offset + pgTable.filters.limit > pgTable.current.count}
+            disabled={pgTable.filters.offset + pgTable.filters.limit >= pgTable.current.count}
             onclick={() =>
                 (pgTable.filters.offset = Math.min(
                     pgTable.current?.count ?? 0,

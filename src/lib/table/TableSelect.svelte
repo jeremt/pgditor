@@ -19,6 +19,17 @@
     );
 
     let selectedIndex = $state(0);
+    let buttonRefs = $state<HTMLButtonElement[]>([]);
+
+    $effect(() => {
+        if (buttonRefs[selectedIndex]) {
+            buttonRefs[selectedIndex].scrollIntoView({
+                behavior: "instant",
+                block: "nearest",
+            });
+        }
+    });
+
     const handleKeys = (event: KeyboardEvent) => {
         if (event.key === "Enter") {
             const table =
@@ -32,8 +43,11 @@
                 searchText = "";
                 pgTable.isUseDialogOpen = false;
             }
-        } else if (event.key === "ArrowUp" && selectedIndex > 0) {
-            selectedIndex -= 1;
+        } else if (event.key === "ArrowUp") {
+            selectedIndex =
+                selectedIndex === 0
+                    ? (searchText === "" ? pgTable.list.length : searchResult.length) - 1
+                    : selectedIndex - 1;
         } else if (
             event.key === "ArrowDown" &&
             selectedIndex + 1 < (searchText === "" ? pgTable.list.length : searchResult.length)
@@ -62,7 +76,7 @@
 </button>
 
 <Dialog isOpen={pgTable.isUseDialogOpen} onrequestclose={() => (pgTable.isUseDialogOpen = false)} --padding="1rem">
-    <div class="flex flex-col gap-2 w-2xl">
+    <div class="flex flex-col gap-2 w-2xl overflow-hidden">
         <input
             type="text"
             bind:value={searchText}
@@ -74,6 +88,7 @@
             {#if searchText === ""}
                 {#each pgTable.list as table, i}
                     <button
+                        bind:this={buttonRefs[i]}
                         class="btn ghost justify-start!"
                         class:selected-table={i === selectedIndex}
                         onclick={() => {
@@ -99,6 +114,7 @@
                     {@const table = pgTable.list.find((table) => `${table.schema}.${table.name}` === text)}
                     {#if table}
                         <button
+                            bind:this={buttonRefs[i]}
                             class="btn ghost justify-start!"
                             class:selected-table={i === selectedIndex}
                             onclick={() => {
