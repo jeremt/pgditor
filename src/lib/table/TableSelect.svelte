@@ -97,7 +97,7 @@
                         }}
                     >
                         {#if pgTable.current && `${table.schema}.${table.name}` === `${pgTable?.current.schema}.${pgTable?.current.name}`}
-                            <CheckIcon --size="1rem" />
+                            <CheckIcon --size="1.2rem" />
                         {:else}
                             {@render icon(table.type)}
                         {/if}
@@ -127,7 +127,7 @@
                             }}
                         >
                             {#if pgTable.current && text === `${pgTable.current.schema}.${pgTable.current.name}`}
-                                <CheckIcon --size="1rem" />
+                                <CheckIcon --size="1.2rem" />
                             {:else}
                                 {@render icon(table.type)}
                             {/if}
