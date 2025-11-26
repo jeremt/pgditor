@@ -1,15 +1,15 @@
-<script>
+<script lang="ts">
     import "../app.css";
     import "@fontsource-variable/space-grotesk";
     import "@fontsource/space-mono/400.css";
     import "@fontsource/space-mono/700.css";
 
     import {onMount, onDestroy} from "svelte";
-    import {register, unregister, isRegistered} from "@tauri-apps/plugin-global-shortcut";
 
     import {setConnectionsContext} from "$lib/connection/connectionsContext.svelte";
     import {setTableContext} from "$lib/table/tableContext.svelte";
     import Toaster, {setToastContext} from "$lib/widgets/Toaster.svelte";
+    import {globalShortcuts} from "$lib/tauri/globalShortcuts";
 
     let {children} = $props();
 
@@ -17,68 +17,42 @@
     const pgTable = setTableContext();
     setToastContext();
 
-    const shortcuts = [
-        "CommandOrControl+T",
-        "CommandOrControl+F",
-        "CommandOrControl+R",
-        "CommandOrControl+ArrowLeft",
-        "CommandOrControl+ArrowRight",
-    ];
-
-    const registerShortcuts = async () => {
-        for (const shortcut of shortcuts) {
-            try {
-                const registered = await isRegistered(shortcut);
-                if (registered) {
-                    await unregister(shortcut);
-                }
-            } catch (err) {
-                console.warn(`Failed to check/unregister ${shortcut}:`, err);
-            }
-        }
-
-        try {
-            await register("CommandOrControl+T", (event) => {
+    const shortcuts = globalShortcuts([
+        {
+            keys: "CommandOrControl+T",
+            action: (event) => {
                 if (event.state === "Pressed") {
                     pgTable.isUseDialogOpen = true;
                 }
-            });
-        } catch (err) {
-            console.error("Failed to register CommandOrControl+T:", err);
-        }
-
-        try {
-            await register("CommandOrControl+F", (event) => {
+            },
+        },
+        {
+            keys: "CommandOrControl+F",
+            action: (event) => {
                 if (event.state === "Pressed") {
                     pgTable.isFilterPopover = true;
                 }
-            });
-        } catch (err) {
-            console.error("Failed to register CommandOrControl+F:", err);
-        }
-
-        try {
-            await register("CommandOrControl+R", (event) => {
+            },
+        },
+        {
+            keys: "CommandOrControl+R",
+            action: (event) => {
                 if (event.state === "Pressed") {
                     pgTable.loadTables();
                 }
-            });
-        } catch (err) {
-            console.error("Failed to register CommandOrControl+R:", err);
-        }
-
-        try {
-            await register("CommandOrControl+ArrowLeft", (event) => {
+            },
+        },
+        {
+            keys: "CommandOrControl+ArrowLeft",
+            action: (event) => {
                 if (event.state === "Pressed" && pgTable.filters.offset > 0) {
                     pgTable.filters.offset = Math.max(0, pgTable.filters.offset - pgTable.filters.limit);
                 }
-            });
-        } catch (err) {
-            console.error("Failed to register CommandOrControl+ArrowLeft:", err);
-        }
-
-        try {
-            await register("CommandOrControl+ArrowRight", (event) => {
+            },
+        },
+        {
+            keys: "CommandOrControl+ArrowRight",
+            action: (event) => {
                 if (
                     event.state === "Pressed" &&
                     pgTable.current &&
@@ -89,29 +63,17 @@
                         pgTable.filters.offset + pgTable.filters.limit
                     );
                 }
-            });
-        } catch (err) {
-            console.error("Failed to register CommandOrControl+ArrowRight:", err);
-        }
-    };
-
-    const unregisterShortcuts = async () => {
-        for (const shortcut of shortcuts) {
-            try {
-                await unregister(shortcut);
-            } catch (err) {
-                console.warn(`Failed to unregister ${shortcut}:`, err);
-            }
-        }
-    };
+            },
+        },
+    ]);
 
     onMount(async () => {
         await connections.load();
-        await registerShortcuts();
+        await shortcuts.mount();
     });
 
     onDestroy(async () => {
-        await unregisterShortcuts();
+        await shortcuts.unmount();
     });
 
     $effect(() => {
