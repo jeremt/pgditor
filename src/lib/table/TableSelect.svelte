@@ -82,7 +82,7 @@
             bind:value={searchText}
             onkeydown={handleKeys}
             autocorrect="off"
-            placeholder="Filter table by name and schema"
+            placeholder="Filter tables by name and schema"
         />
         <div class="flex flex-col gap-2 overflow-auto h-80 py-2">
             {#if searchText === ""}

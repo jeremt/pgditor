@@ -10,7 +10,7 @@ export type PgTable = {
     name: string;
     type: "BASE TABLE" | "VIEW";
     column_names: string[]; // just get the name of all tables for quick lookup
-    size: number;
+    size_mb: number;
 };
 
 export type PgColumn = {
