@@ -90,7 +90,7 @@
             {#if item.options.kind === "error"}
                 <div class="circle"><Error /></div>
             {:else if item.options.kind === "success"}
-                <div class="circle"><Check /></div>
+                <div class="circle"><Check --size="1.2rem" /></div>
             {/if}
             {#if item.options.thumbnailSrc}
                 <img src={item.options.thumbnailSrc} alt="" role="presentation" />

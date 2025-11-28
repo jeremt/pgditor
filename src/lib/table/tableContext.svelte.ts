@@ -4,6 +4,7 @@ import {debounced} from "$lib/helpers/debounced.svelte";
 import {invoke} from "@tauri-apps/api/core";
 import {getContext, setContext} from "svelte";
 import {formatValue, type PgType} from "./values";
+import {getToastContext} from "$lib/widgets/Toaster.svelte";
 
 export type PgTable = {
     schema: string;
@@ -30,6 +31,7 @@ export type PgRow = Record<string, object | string | bigint | number | boolean |
 export type WhereFilters = {column: string; operator: string; value: string}[];
 
 class TableContext {
+    toastContext = getToastContext();
     list = $state<PgTable[]>([]);
     current = $state<PgTable & {columns: PgColumn[]; rows: PgRow[]; count: number}>();
     isUseDialogOpen = $state(false);
@@ -109,7 +111,13 @@ ${this.selectedRowsJson
         const connectionString = this.connections.current.connectionString;
         const [tableError, unsortedTables] = await catchError(invoke<PgTable[]>("list_tables", {connectionString}));
         if (tableError) {
-            throw tableError; // TODO: toast
+            console.error(tableError.message);
+            this.toastContext.toast(`Server error: ${tableError.message} (${this.connections.current.name})`, {
+                kind: "error",
+            });
+            return;
+        } else {
+            this.toastContext.toast(`Connected to ${this.connections.current.name}`, {kind: "success", timeout: 2000});
         }
         this.list = unsortedTables.toSorted((table) => (table.schema === "public" ? -1 : 1));
         if (autoUse && this.list[0]) {
@@ -133,11 +141,15 @@ ${this.selectedRowsJson
             })
         );
         if (columnsError) {
-            throw columnsError; // TODO: toast
+            console.error(columnsError.message);
+            this.toastContext.toast(`Server error: ${columnsError.message}`, {kind: "error"});
+            return;
         }
         const t = this.list.find((item) => item.schema === table.schema && item.name === table.name);
         if (!t) {
-            throw new Error(`Invalid table ${table.schema}.${table.name}`);
+            console.error(`Table ${table.schema}.${table.name} not found`);
+            this.toastContext.toast(`Table ${table.schema}.${table.name} not found`);
+            return;
         }
         this.current = {...t, columns, rows: [], count: 0};
         this.filters = {
@@ -154,7 +166,6 @@ ${this.selectedRowsJson
      * @param where The where cause to apply (e.g. "WHERE id = 1 AND status = 'success'")
      * @param offset The offset to apply to the select query.
      * @param limit The maximal number of rows returns by the query.
-     * @returns
      */
     updateData = async (where: string, offset: number, limit: number) => {
         if (!this.connections.current || !this.current) {
@@ -175,7 +186,9 @@ ${this.selectedRowsJson
             })
         );
         if (dataError) {
-            throw dataError; // TODO: toast
+            console.error(dataError.message);
+            this.toastContext.toast(`SQL error: ${dataError.message}`, {kind: "error"});
+            return;
         }
         this.selectedRows = [];
         this.current.rows = data.rows;
@@ -192,8 +205,9 @@ ${this.selectedRowsJson
     /**
      * Run the given raw sql query and call `refresh()` to update the displayed rows.
      * @param sql The raw query string to run.
+     * @param throwError Throws an error by default, set to `false` if you want a toast like other helpers.
      */
-    rawQuery = async (sql: string) => {
+    rawQuery = async (sql: string, throwError = true) => {
         if (!this.connections.current || !this.current) {
             return;
         }
@@ -205,8 +219,12 @@ ${this.selectedRowsJson
             })
         );
         if (error) {
-            console.error(sql);
-            throw new Error(error.message); // TODO: toast
+            console.error(error.message, sql);
+            if (throwError) {
+                throw error;
+            }
+            this.toastContext.toast(`SQL error: ${error.message}`, {kind: "error", details: sql});
+            return;
         }
         // FIXME: this is a bit wasteful to refresh data, it could be done through optimistic update directly
         await this.refreshData();
@@ -215,7 +233,7 @@ ${this.selectedRowsJson
     /**
      * Simple helper function to do an insert into or an update depending on whether a ctid is specified or not.
      */
-    upsertRow = async (row: PgRow & {ctid?: string}) => {
+    upsertRow = async (row: PgRow & {ctid?: string}, throwError = true) => {
         if (!this.current) {
             return;
         }
@@ -242,7 +260,7 @@ VALUES
                   .map((col) => formatValue(col, row[col.column_name]))
                   .join(", ")});`;
 
-        return this.rawQuery(query);
+        return this.rawQuery(query, throwError);
     };
 
     applyWhere = () => {

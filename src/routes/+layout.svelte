@@ -13,9 +13,10 @@
 
     let {children} = $props();
 
+    setToastContext();
+
     const connections = setConnectionsContext();
     const pgTable = setTableContext();
-    setToastContext();
 
     const shortcuts = globalShortcuts([
         {

@@ -16,15 +16,22 @@
 
     let {row, onclose}: Props = $props();
 
+    let errorMessage = $state("");
+
     // type is lost if not specified here
     let localRow: PgRow & {ctid?: string} = $derived.by(() => {
         const value = $state($state.snapshot(row)); // recreate a deeply reactive value separated from the prop
         return value;
     });
 
+    $effect(() => {
+        if (localRow) {
+            errorMessage = ""; // reset error message whenever row changes
+        }
+    });
+
     const pgTable = getTableContext();
 
-    let errorMessage = $state("");
     const insertOrUpdate = async () => {
         const [error] = await catchError(pgTable.upsertRow(localRow));
         if (error) {
