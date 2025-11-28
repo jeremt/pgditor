@@ -37,7 +37,7 @@
 
 <header class="flex flex-col">
     <div class="flex gap-2 items-center w-md pb-4">
-        <button class="btn icon ghost" aria-label="Cancel" onclick={onclose}><CrossIcon /></button>
+        <button class="btn icon ghost" type="button" aria-label="Cancel" onclick={onclose}><CrossIcon /></button>
         <h2>
             {localRow.ctid === undefined ? "Insert into" : "Update row from"}
             {#if pgTable.current}<span class="font-mono text-sm bg-bg-1 py-0.5 px-2 rounded-md ml-1"

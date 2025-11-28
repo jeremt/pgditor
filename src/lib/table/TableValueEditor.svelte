@@ -1,4 +1,7 @@
 <script lang="ts">
+    import CrossIcon from "$lib/icons/CrossIcon.svelte";
+    import MonacoEditor from "$lib/monaco/MonacoEditor.svelte";
+    import Dialog from "$lib/widgets/Dialog.svelte";
     import MultilinesInput from "$lib/widgets/MultilinesInput.svelte";
     import Select from "$lib/widgets/Select.svelte";
     import type {PgColumn, PgRow} from "./tableContext.svelte";
@@ -46,6 +49,8 @@
         }
         return "Enter a value";
     });
+
+    let isMonacoOpen = $state(false);
 </script>
 
 {#if column.enum_values && row[column.column_name] !== null}
@@ -68,7 +73,7 @@
             <option value="" disabled>null</option>
         {/if}
     </Select>
-{:else if ["text", "json", "jsonb", "xml"].includes(column.data_type)}
+{:else if ["text", "xml"].includes(column.data_type)}
     <MultilinesInput
         id={column.column_name}
         class="font-mono!"
@@ -77,6 +82,80 @@
         minRows={1}
         bind:value={rowValue.value}
     />
+{:else if ["json", "jsonb"].includes(column.data_type)}
+    <div class="min-h-40 border border-bg-1">
+        <MonacoEditor
+            bind:value={rowValue.value}
+            selectedFile="value.json"
+            files={[{path: "value.json", value: ""}]}
+            fontFamily="Space Mono"
+            fontSize={12}
+            showLineNumbers={false}
+            onchange={(value, path) => {
+                switch (path) {
+                    case "value.json":
+                        rowValue.value = value;
+                        break;
+                    default:
+                        throw new Error(`File ${path} not found.`);
+                }
+            }}
+        />
+    </div>
+    <!-- <div class="relative">
+        <MultilinesInput
+            id={column.column_name}
+            class="font-mono!"
+            {disabled}
+            {placeholder}
+            minRows={1}
+            bind:value={rowValue.value}
+        />
+        {#if ["json", "jsonb", "xml"].includes(column.data_type)}
+            <button
+                class="cursor-pointer absolute top-2 right-2 bg-bg border border-bg-1 rounded-xl text-sm! px-2 py-1"
+                onclick={() => (isMonacoOpen = true)}>Edit</button
+            >
+            <Dialog
+                isOpen={isMonacoOpen}
+                onrequestclose={() => (isMonacoOpen = false)}
+                position="right"
+                animation="right"
+            >
+                <header class="flex gap-4 w-xl pb-2 items-center">
+                    <button
+                        type="button"
+                        class="btn icon ghost"
+                        aria-label="Close"
+                        onclick={(e) => {
+                            isMonacoOpen = false;
+                            e.stopPropagation();
+                        }}><CrossIcon /></button
+                    >
+                    <h2 class="flex gap-2">
+                        <span>Editing</span>
+                        <span class="font-mono text-sm bg-bg-1 py-0.5 px-2 rounded-md ml-1">{column.column_name}</span>
+                        <span class="font-normal">{column.data_type}</span>
+                    </h2>
+                </header>
+                <MonacoEditor
+                    bind:value={rowValue.value}
+                    selectedFile="value.json"
+                    files={[{path: "value.json", value: ""}]}
+                    fontSize={12}
+                    onchange={(value, path) => {
+                        switch (path) {
+                            case "value.json":
+                                rowValue.value = value;
+                                break;
+                            default:
+                                throw new Error(`File ${path} not found.`);
+                        }
+                    }}
+                />
+            </Dialog>
+        {/if}
+    </div> -->
 {:else}
     <input
         id={column.column_name}

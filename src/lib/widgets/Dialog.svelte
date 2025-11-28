@@ -5,6 +5,7 @@
     interface Props extends HTMLDialogAttributes {
         isOpen: boolean;
         children?: Snippet;
+        disableBodyScrolling?: boolean;
         /**
          * Disable click outside the modal or cancel to close.
          */
@@ -36,11 +37,10 @@
         onclosed,
         children,
         disableCancel = false,
+        disableBodyScrolling = true,
         ...props
     }: Props = $props();
-
     let dialog: HTMLDialogElement;
-    let justOpened = $state(false);
 
     const animations = {
         top: {
@@ -67,8 +67,10 @@
 
     const handleClose = (event: Event) => {
         event.preventDefault();
+        event.stopPropagation();
         onrequestclose?.(event);
     };
+
     const handleAnimationEnd = () => {
         if (!isOpen) {
             dialog.close();
@@ -85,54 +87,54 @@
         }
     };
 
-    const handleWindowClick = (event: MouseEvent) => {
-        if ((event as PointerEvent).pointerId === -1) {
-            // prevent closing the dialog when selecting stuff with tab/enter.
-            return;
-        }
-        if (!isOpen || justOpened || disableCancel) {
-            justOpened = false;
-            return;
-        }
-        // Sometimes, when clicking on a select inside a dialog, clientX and clientY = 0
-        // So we just go up the tree to check if the element is contained in the dialog
-        if (event.clientX === 0 && event.clientY === 0) {
-            for (
-                let el = event.target as HTMLElement | null;
-                el !== null;
-                el = el.parentElement as HTMLElement | null
-            ) {
-                if (el === dialog) {
-                    return;
-                }
-            }
-        }
+    const handleClick = (event: MouseEvent) => {
         const rect = dialog.getBoundingClientRect();
-        const clickedInDialog =
-            rect.top <= event.clientY &&
-            event.clientY <= rect.top + rect.height &&
-            rect.left <= event.clientX &&
-            event.clientX <= rect.left + rect.width;
+        const isInDialog =
+            event.clientY >= rect.top &&
+            event.clientY <= rect.bottom &&
+            event.clientX >= rect.left &&
+            event.clientX <= rect.right;
+        const isTargetInsideDialog = event.target ? dialog.contains(event.target as HTMLElement) : true;
 
-        if (!clickedInDialog) {
+        // check clientY and clientX !== 0 for Firefox bug when clicking in an option inside a dialog
+        if ((event.clientY !== 0 && event.clientX !== 0 && !isInDialog) || !isTargetInsideDialog) {
             onrequestclose?.(event);
+            event.preventDefault();
+            event.stopPropagation();
         }
     };
 
     $effect(() => {
         if (isOpen) {
             dialog.showModal();
-            justOpened = true;
         }
+    });
+
+    $effect(() => {
+        const currentValue = document.documentElement.getAttribute("data-scroll");
+        const resetValue = () => {
+            if (currentValue === null) {
+                document.documentElement.removeAttribute("data-scroll");
+            } else {
+                document.documentElement.setAttribute("data-scroll", currentValue);
+            }
+        };
+        if (isOpen && disableBodyScrolling) {
+            document.documentElement.setAttribute("data-scroll", "false");
+        } else if (!isOpen && disableBodyScrolling) {
+            resetValue();
+        }
+
+        return resetValue;
     });
 </script>
 
-<svelte:window onclick={handleWindowClick} />
 <dialog
     bind:this={dialog}
     class:closing={!isOpen}
     class:fullscreen={type === "fullscreen"}
     onclose={handleClose}
+    onclick={handleClick}
     onanimationend={handleAnimationEnd}
     oncancel={handleCancel}
     style:--animation-in={animations[animation].in}
