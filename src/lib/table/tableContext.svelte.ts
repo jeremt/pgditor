@@ -115,6 +115,8 @@ ${this.selectedRowsJson
             this.toastContext.toast(`Server error: ${tableError.message} (${this.connections.current.name})`, {
                 kind: "error",
             });
+            this.list = [];
+            this.current = undefined;
             return;
         } else {
             this.toastContext.toast(`Connected to ${this.connections.current.name}`, {kind: "success", timeout: 2000});
