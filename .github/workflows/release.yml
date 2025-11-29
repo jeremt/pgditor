@@ -53,10 +53,11 @@ jobs:
 
             - name: Build and release with Tauri
               uses: tauri-apps/tauri-action@v0
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  NODE_OPTIONS: "--max-old-space-size=4096"
               with:
                   tagName: ${{ github.ref_name }}
                   releaseName: "PGditor ${{ github.ref_name }}"
                   releaseBody: "Automated release for ${{ github.ref_name }}."
                   prerelease: true
-              env:
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
