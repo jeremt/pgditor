@@ -68,6 +68,7 @@ Examples
 -->
 <script lang="ts" module>
     import type monaco from "monaco-editor";
+    import {addSqliteAutocomplete} from "./sqlAutocomplete";
 
     // Module-level singletons so everything is initialized only once
     let _monacoPromise: Promise<typeof monaco> | undefined;
@@ -90,9 +91,11 @@ Examples
 
                 // monaco-sql-languages
                 // const {setupLanguageFeatures, LanguageIdEnum} = await import("monaco-sql-languages");
+                // const {completionService} = await import("$lib/monaco/sqlAutocomplete");
                 // setupLanguageFeatures(LanguageIdEnum.PG, {
                 //     completionItems: {
                 //         enable: true,
+                //         completionService: completionService,
                 //     },
                 // });
 
@@ -134,6 +137,7 @@ Examples
     import cssWorker from "monaco-editor/esm/vs/language/css/css.worker?worker";
     import htmlWorker from "monaco-editor/esm/vs/language/html/html.worker?worker";
     import jsonWorker from "monaco-editor/esm/vs/language/json/json.worker?worker";
+    import {getTableContext} from "$lib/table/tableContext.svelte";
 
     type FileData = {path: string; value: string};
 
@@ -210,6 +214,8 @@ Examples
          */
         onready?: () => void;
     };
+
+    const pgTable = getTableContext();
 
     let {
         files = [],
@@ -289,8 +295,9 @@ Examples
             } else {
                 text = String(file.value);
             }
-
+            console.log("mounting sql", model, text);
             if (!model) {
+                console.log("Set language to ", language);
                 model = Monaco.editor.createModel(text, language, uri);
             } else if (model.getValue() !== text) {
                 model.setValue(text);
@@ -344,6 +351,16 @@ Examples
         return () => {
             editor?.dispose();
         };
+    });
+
+    let sqlAutocomplete: ReturnType<typeof addSqliteAutocomplete> | undefined = undefined;
+    $effect(() => {
+        if (Monaco) {
+            if (sqlAutocomplete) {
+                sqlAutocomplete.dispose();
+            }
+            sqlAutocomplete = addSqliteAutocomplete(Monaco, pgTable.list);
+        }
     });
 
     // Do not dispose shared models here — models are reused across editor instances.
