@@ -17,7 +17,7 @@
         title={mode === "tables" ? "Manage sql scripts" : "Visualize tables"}
         onclick={() => (mode = mode === "script" ? "tables" : "script")}
     >
-        {#if mode === "tables"}<TerminalIcon />{:else}<TablesIcon />{/if}
+        {#if mode === "tables"}<TerminalIcon --size="1.2rem" />{:else}<TablesIcon --size="1.2rem" />{/if}
     </button>
     {#if mode === "tables"}
         <TablesMenu />

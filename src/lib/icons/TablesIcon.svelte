@@ -14,3 +14,10 @@
         d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17"
     ></path></svg
 >
+
+<style>
+    svg {
+        width: var(--size);
+        height: var(--size);
+    }
+</style>

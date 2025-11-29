@@ -14,6 +14,9 @@ importers:
       '@fontsource/space-mono':
         specifier: ^5.2.9
         version: 5.2.9
+      '@rich_harris/svelte-split-pane':
+        specifier: ^3.0.0
+        version: 3.0.0(svelte@5.43.4)
       '@shikijs/monaco':
         specifier: ^3.15.0
         version: 3.15.0
@@ -343,6 +346,11 @@ packages:
 
   '@polka/url@1.0.0-next.29':
     resolution: {integrity: sha512-wwQAWhWSuHaag8c4q/KN/vCoeOJYshAIvMQwD4GpSb3OiZklFfvAgmj0VCBBImRpuF/aFgIRzllXlVX93Jevww==}
+
+  '@rich_harris/svelte-split-pane@3.0.0':
+    resolution: {integrity: sha512-5/kiPS3qgmnNJxGCFacON7EvMTo0nzNSIHrGpjRtm4baERvVx3KMWHc9qtO4F+HXPvrGHuzUU8egrJtB3SmVDA==}
+    peerDependencies:
+      svelte: ^5.43.6
 
   '@rollup/rollup-android-arm-eabi@4.53.1':
     resolution: {integrity: sha512-bxZtughE4VNVJlL1RdoSE545kc4JxL7op57KKoi59/gwuU5rV6jLWFXXc8jwgFoT6vtj+ZjO+Z2C5nrY0Cl6wA==}
@@ -1514,6 +1522,10 @@ snapshots:
       '@jridgewell/sourcemap-codec': 1.5.5
 
   '@polka/url@1.0.0-next.29': {}
+
+  '@rich_harris/svelte-split-pane@3.0.0(svelte@5.43.4)':
+    dependencies:
+      svelte: 5.43.4
 
   '@rollup/rollup-android-arm-eabi@4.53.1':
     optional: true
