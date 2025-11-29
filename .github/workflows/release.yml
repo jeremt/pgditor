@@ -59,5 +59,13 @@ jobs:
               with:
                   tagName: ${{ github.ref_name }}
                   releaseName: "PGditor ${{ github.ref_name }}"
-                  releaseBody: "Automated release for ${{ github.ref_name }}."
+                  releaseBody: |
+                      Automated release for ${{ github.ref_name }}.
+
+                      **macOS Installation:**
+                      1. Download the .dmg file
+                      2. Open Terminal and run: `xattr -cr ~/Downloads/YourApp_*.dmg`
+                      3. Open the .dmg and drag the app to Applications
+                      4. If still blocked, run: `xattr -cr /Applications/YourApp.app`
+                      5. Right-click the app and select "Open"
                   prerelease: true
