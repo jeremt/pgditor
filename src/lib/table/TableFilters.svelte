@@ -74,7 +74,12 @@
                     class="small grow"
                     type="text"
                     autocorrect="off"
-                    bind:value={pgTable.whereFilters[i].value}
+                    autocapitalize="off"
+                    autocomplete="off"
+                    bind:value={
+                        () => pgTable.whereFilters[i].value,
+                        (newValue) => (pgTable.whereFilters[i].value = newValue.replace(/[‘’]/g, "'"))
+                    }
                     placeholder={getPlaceholderByOperator(filter.operator)}
                 />
                 <button
