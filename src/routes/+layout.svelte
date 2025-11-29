@@ -10,6 +10,7 @@
     import {setTableContext} from "$lib/table/tableContext.svelte";
     import Toaster, {setToastContext} from "$lib/widgets/Toaster.svelte";
     import {globalShortcuts} from "$lib/tauri/globalShortcuts";
+    import {setScriptsContext} from "$lib/scripts/scriptsContext.svelte";
 
     let {children} = $props();
 
@@ -17,6 +18,7 @@
 
     const connections = setConnectionsContext();
     const pgTable = setTableContext();
+    setScriptsContext();
 
     const shortcuts = globalShortcuts([
         {
@@ -74,7 +76,7 @@
     });
 
     onDestroy(async () => {
-        await shortcuts.unmount();
+        shortcuts.unmount();
     });
 
     $effect(() => {

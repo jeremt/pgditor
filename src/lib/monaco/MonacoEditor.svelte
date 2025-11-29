@@ -88,6 +88,14 @@ Examples
 
                 const Monaco = await import("monaco-editor");
 
+                // monaco-sql-languages
+                // const {setupLanguageFeatures, LanguageIdEnum} = await import("monaco-sql-languages");
+                // setupLanguageFeatures(LanguageIdEnum.PG, {
+                //     completionItems: {
+                //         enable: true,
+                //     },
+                // });
+
                 // shiki -> monaco conversion should be done once
                 if (!_shikiInitialized) {
                     const {createHighlighter} = await import("shiki");
@@ -258,6 +266,7 @@ Examples
             const mapExtension: Record<string, string> = {
                 js: "typescript",
                 md: "markdown",
+                sql: "pgsql",
             };
             const language = mapExtension[ext] ?? ext;
 

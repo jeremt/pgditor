@@ -66,6 +66,8 @@ The architecture is intentionally simple:
 -   UI components are in `src/lib/widgets`.
 -   Postgres connection logic lives in `src/lib/connection`.
 -   Table-editing functionality lives in `src/lib/table`.
+-   Icons are added in `src/lib/icons` as svg svelte componenets
+-   Random utilities are in `src/lib/helpers`
 -   The backend is in `src-tauri/src/lib.rs`, containing commands to store connections locally and interact with the selected Postgres database.
 
 ## 🫵 Contribute

@@ -207,13 +207,13 @@ ${this.selectedRowsJson
      * @param sql The raw query string to run.
      * @param throwError Throws an error by default, set to `false` if you want a toast like other helpers.
      */
-    rawQuery = async (sql: string, throwError = true) => {
+    rawQuery = async (sql: string, {throwError = true, refresh = true} = {}) => {
         if (!this.connections.current || !this.current) {
             return;
         }
         const connectionString = this.connections.current.connectionString;
-        const [error] = await catchError(
-            invoke("raw_query", {
+        const [error, data] = await catchError(
+            invoke<Record<string, string | null>[]>("raw_query", {
                 connectionString,
                 sql,
             })
@@ -226,14 +226,17 @@ ${this.selectedRowsJson
             this.toastContext.toast(`SQL error: ${error.message}`, {kind: "error", details: sql});
             return;
         }
-        // FIXME: this is a bit wasteful to refresh data, it could be done through optimistic update directly
-        await this.refreshData();
+        if (refresh) {
+            // FIXME: this is a bit wasteful to refresh data, it could be done through optimistic update directly
+            await this.refreshData();
+        }
+        return data;
     };
 
     /**
      * Simple helper function to do an insert into or an update depending on whether a ctid is specified or not.
      */
-    upsertRow = async (row: PgRow & {ctid?: string}, throwError = true) => {
+    upsertRow = async (row: PgRow & {ctid?: string}, {throwError = true} = {}) => {
         if (!this.current) {
             return;
         }
@@ -260,7 +263,7 @@ VALUES
                   .map((col) => formatValue(col, row[col.column_name]))
                   .join(", ")});`;
 
-        return this.rawQuery(query, throwError);
+        return this.rawQuery(query, {throwError});
     };
 
     applyWhere = () => {

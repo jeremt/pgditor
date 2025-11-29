@@ -67,7 +67,7 @@
     {/if}
 {/snippet}
 
-<button class="btn ghost" onclick={() => (pgTable.isUseDialogOpen = true)} disabled={!pgTable.current}>
+<button class="btn ghost" title="⌘T" onclick={() => (pgTable.isUseDialogOpen = true)} disabled={!pgTable.current}>
     {#if pgTable.current}
         {@render icon(pgTable.current.type)} {pgTable.current.schema}.{pgTable.current.name}
     {:else}

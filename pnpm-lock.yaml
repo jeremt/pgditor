@@ -50,6 +50,9 @@ importers:
       monaco-editor:
         specifier: ^0.55.1
         version: 0.55.1
+      monaco-sql-languages:
+        specifier: ^0.15.1
+        version: 0.15.1(antlr4ng-cli@1.0.7)(monaco-editor@0.55.1)
       shiki:
         specifier: ^3.15.0
         version: 3.15.0
@@ -762,6 +765,19 @@ packages:
     engines: {node: '>=0.4.0'}
     hasBin: true
 
+  antlr4-c3@3.3.7:
+    resolution: {integrity: sha512-F3ndE38wwA6z6AjUbL3heSdEGl4TxulGDPf9xB0/IY4dbRHWBh6XNaqFwur8vHKQk9FS5yNABHeg2wqlqIYO0w==}
+
+  antlr4ng-cli@1.0.7:
+    resolution: {integrity: sha512-qN2FsDBmLvsQcA5CWTrPz8I8gNXeS1fgXBBhI78VyxBSBV/EJgqy8ks6IDTC9jyugpl40csCQ4sL5K4i2YZ/2w==}
+    deprecated: 'This package is deprecated and will no longer be updated. Please use the new antlr-ng package instead: https://github.com/mike-lischke/antlr-ng'
+    hasBin: true
+
+  antlr4ng@2.0.11:
+    resolution: {integrity: sha512-9jM91VVtHSqHkAHQsXHaoaiewFETMvUTI1/tXvwTiFw4f7zke3IGlwEyoKN9NS0FqIwDKFvUNW2e1cKPniTkVQ==}
+    peerDependencies:
+      antlr4ng-cli: 1.0.7
+
   aria-query@5.3.2:
     resolution: {integrity: sha512-COROpnaoap1E2F000S62r6A60uHZnmlvomhfyT2DlTcrY1OrBKn2UhH7qn5wTC9zMvD0AY7csdPSNwKP+7WiQw==}
     engines: {node: '>= 0.4'}
@@ -850,6 +866,10 @@ packages:
 
   dompurify@3.2.7:
     resolution: {integrity: sha512-WhL/YuveyGXJaerVlMYGWhvQswa7myDG17P7Vu65EWC05o8vfeNbvNf4d/BOvH99+ZW+LlQsc1GDKMa1vNK6dw==}
+
+  dt-sql-parser@4.3.1:
+    resolution: {integrity: sha512-WlFB9of+ChwWtc5M222jHGIpzqHx51szLe/11GAwwbA+4hRaVkMpWMf2bbYj4i855edSoTQ52zyLJVOpe+4OVg==}
+    engines: {node: '>=18'}
 
   electron-to-chromium@1.5.249:
     resolution: {integrity: sha512-5vcfL3BBe++qZ5kuFhD/p8WOM1N9m3nwvJPULJx+4xf2usSlZFJ0qoNYO2fOX4hi3ocuDcmDobtA+5SFr4OmBg==}
@@ -1040,6 +1060,12 @@ packages:
 
   monaco-editor@0.55.1:
     resolution: {integrity: sha512-jz4x+TJNFHwHtwuV9vA9rMujcZRb0CEilTEwG2rRSpe/A7Jdkuj8xPKttCgOh+v/lkHy7HsZ64oj+q3xoAFl9A==}
+
+  monaco-sql-languages@0.15.1:
+    resolution: {integrity: sha512-BJ/jksowxNQ/p1LWAFWTRJo9xpblTwinBYe+M/sTpbnRqyZ98yJg353I3Uqpsc43Ks7dtmf4NAy9hNRSRBIRtw==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      monaco-editor: '>=0.31.0'
 
   mri@1.2.0:
     resolution: {integrity: sha512-tzzskb3bG8LvYGFF/mDTpq3jpI6Q9wc3LEmBaghu+DdCssd1FakN7Bc0hVNmEyGq1bq3RgfkCb3cmQLpNPOroA==}
@@ -1857,6 +1883,18 @@ snapshots:
 
   acorn@8.15.0: {}
 
+  antlr4-c3@3.3.7(antlr4ng-cli@1.0.7):
+    dependencies:
+      antlr4ng: 2.0.11(antlr4ng-cli@1.0.7)
+    transitivePeerDependencies:
+      - antlr4ng-cli
+
+  antlr4ng-cli@1.0.7: {}
+
+  antlr4ng@2.0.11(antlr4ng-cli@1.0.7):
+    dependencies:
+      antlr4ng-cli: 1.0.7
+
   aria-query@5.3.2: {}
 
   assertion-error@2.0.1: {}
@@ -1922,6 +1960,13 @@ snapshots:
   dompurify@3.2.7:
     optionalDependencies:
       '@types/trusted-types': 2.0.7
+
+  dt-sql-parser@4.3.1(antlr4ng-cli@1.0.7):
+    dependencies:
+      antlr4-c3: 3.3.7(antlr4ng-cli@1.0.7)
+      antlr4ng: 2.0.11(antlr4ng-cli@1.0.7)
+    transitivePeerDependencies:
+      - antlr4ng-cli
 
   electron-to-chromium@1.5.249: {}
 
@@ -2118,6 +2163,13 @@ snapshots:
     dependencies:
       dompurify: 3.2.7
       marked: 14.0.0
+
+  monaco-sql-languages@0.15.1(antlr4ng-cli@1.0.7)(monaco-editor@0.55.1):
+    dependencies:
+      dt-sql-parser: 4.3.1(antlr4ng-cli@1.0.7)
+      monaco-editor: 0.55.1
+    transitivePeerDependencies:
+      - antlr4ng-cli
 
   mri@1.2.0: {}
 
