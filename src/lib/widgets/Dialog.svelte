@@ -96,8 +96,40 @@
             event.clientX <= rect.right;
         const isTargetInsideDialog = event.target ? dialog.contains(event.target as HTMLElement) : true;
 
-        // check clientY and clientX !== 0 for Firefox bug when clicking in an option inside a dialog
-        if ((event.clientY !== 0 && event.clientX !== 0 && !isInDialog) || !isTargetInsideDialog) {
+        // Check if the click target or any of its parents is a Monaco editor element
+        let isMonacoElement = false;
+        if (event.target instanceof HTMLElement) {
+            let element: HTMLElement | null = event.target;
+            while (element) {
+                const classList = element.classList;
+                // Monaco editor elements have classes starting with 'monaco-' or contain 'editor'
+                if (
+                    classList.contains('monaco-editor') ||
+                    classList.contains('monaco-scrollable-element') ||
+                    classList.contains('view-lines') ||
+                    classList.contains('view-line') ||
+                    classList.contains('editor') ||
+                    element.closest('.monaco-editor') !== null
+                ) {
+                    isMonacoElement = true;
+                    break;
+                }
+                element = element.parentElement;
+            }
+        }
+
+        // Only close if we're confident the click was outside:
+        // - Not a Monaco element
+        // - Not contained in the dialog DOM
+        // - Click coordinates are outside the dialog rect (and not 0,0 for Firefox bug)
+        const shouldClose = 
+            !isMonacoElement && 
+            !isTargetInsideDialog && 
+            event.clientY !== 0 && 
+            event.clientX !== 0 && 
+            !isInDialog;
+
+        if (shouldClose) {
             onrequestclose?.(event);
             event.preventDefault();
             event.stopPropagation();

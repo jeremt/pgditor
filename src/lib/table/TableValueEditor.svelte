@@ -70,6 +70,8 @@
         class="font-mono!"
         {disabled}
         {placeholder}
+        autocomplete="off"
+        autocapitalize="off"
         minRows={1}
         bind:value={rowValue.value}
     />
@@ -81,6 +83,8 @@
         type="text"
         class="font-mono!"
         autocorrect="off"
+        autocomplete="off"
+        autocapitalize="off"
         {disabled}
         {placeholder}
         bind:value={rowValue.value}
