@@ -6,11 +6,11 @@
     import CheckboxInput from "$lib/widgets/CheckboxInput.svelte";
     import Dialog from "$lib/widgets/Dialog.svelte";
 
-    import {getTableContext, type PgColumn, type PgRow} from "./tableContext.svelte";
+    import {getPgContext, type PgColumn, type PgRow} from "./pgContext.svelte";
     import TableUpsert from "./TableUpsert.svelte";
     import {createContextMenu} from "./tableContextMenu.svelte";
 
-    const pgTable = getTableContext();
+    const pg = getPgContext();
 
     const {oncontextmenu} = createContextMenu();
 
@@ -18,7 +18,7 @@
     let isUpdateOpen = $state(false);
 </script>
 
-{#if pgTable.current === undefined}
+{#if pg.currentTable === undefined}
     <div class="w-full h-full flex flex-col gap-4 items-center justify-center text-fg-1">
         <UnpluggedIcon --size="3rem" --thickness="1.2" />
         <div>The database is empty or not started.</div>
@@ -28,29 +28,27 @@
         <div>
             <div class="grid items-center px-2 h-10">
                 <CheckboxInput
-                    checked={pgTable.selectedRows.length === pgTable.current.rows.length &&
-                        pgTable.current.rows.length > 0}
-                    disabled={pgTable.current.rows.length === 0}
-                    indeterminate={pgTable.selectedRows.length > 0 &&
-                        pgTable.selectedRows.length !== pgTable.current.rows.length}
+                    checked={pg.selectedRows.length === pg.currentTable.rows.length && pg.currentTable.rows.length > 0}
+                    disabled={pg.currentTable.rows.length === 0}
+                    indeterminate={pg.selectedRows.length > 0 && pg.selectedRows.length !== pg.currentTable.rows.length}
                     onchange={() => {
-                        if (!pgTable.current || pgTable.selectedRows.length === pgTable.current.rows.length) {
-                            pgTable.selectedRows = [];
+                        if (!pg.currentTable || pg.selectedRows.length === pg.currentTable.rows.length) {
+                            pg.selectedRows = [];
                         } else {
-                            pgTable.selectedRows = Array.from(new Array(pgTable.current.rows.length)).map((_, i) => i);
+                            pg.selectedRows = Array.from(new Array(pg.currentTable.rows.length)).map((_, i) => i);
                         }
                     }}
                 />
             </div>
-            {#each pgTable.current.rows as _, i}
+            {#each pg.currentTable.rows as _, i}
                 <div class="grid items-center px-2 h-10">
                     <CheckboxInput
-                        checked={pgTable.selectedRows.indexOf(i) !== -1}
+                        checked={pg.selectedRows.indexOf(i) !== -1}
                         onchange={(e) => {
                             if (e.currentTarget.checked) {
-                                pgTable.selectedRows.push(i);
+                                pg.selectedRows.push(i);
                             } else {
-                                pgTable.selectedRows.splice(pgTable.selectedRows.indexOf(i), 1);
+                                pg.selectedRows.splice(pg.selectedRows.indexOf(i), 1);
                             }
                         }}
                     />
@@ -60,18 +58,18 @@
         <table class="h-fit">
             <thead class="sticky top-0 bg-bg">
                 <tr>
-                    {#each pgTable.current.columns as column}
+                    {#each pg.currentTable.columns as column}
                         <th
                             class="cursor-pointer"
                             onclick={() => {
-                                if (pgTable.filters.orderBy === undefined) {
-                                    pgTable.filters.orderBy = {column: column.column_name, direction: "asc"};
-                                } else if (pgTable.filters.orderBy.column !== column.column_name) {
-                                    pgTable.filters.orderBy = {column: column.column_name, direction: "asc"};
-                                } else if (pgTable.filters.orderBy.direction === "asc") {
-                                    pgTable.filters.orderBy.direction = "desc";
+                                if (pg.filters.orderBy === undefined) {
+                                    pg.filters.orderBy = {column: column.column_name, direction: "asc"};
+                                } else if (pg.filters.orderBy.column !== column.column_name) {
+                                    pg.filters.orderBy = {column: column.column_name, direction: "asc"};
+                                } else if (pg.filters.orderBy.direction === "asc") {
+                                    pg.filters.orderBy.direction = "desc";
                                 } else {
-                                    pgTable.filters.orderBy = undefined;
+                                    pg.filters.orderBy = undefined;
                                 }
                             }}
                         >
@@ -80,7 +78,7 @@
                                 {#if column.foreign_table_schema && column.foreign_table_name}
                                     <button
                                         onclick={() =>
-                                            pgTable.use({
+                                            pg.use({
                                                 schema: column.foreign_table_schema!,
                                                 name: column.foreign_table_name!,
                                             })}
@@ -92,10 +90,8 @@
                                     {column.column_name}
                                     <span class="font-normal text-xs! pl-2">{column.data_type}</span>
                                 </div>
-                                {#if column.column_name === pgTable.filters.orderBy?.column}
-                                    <ArrowIcon
-                                        direction={pgTable.filters.orderBy.direction === "asc" ? "top" : "bottom"}
-                                    />
+                                {#if column.column_name === pg.filters.orderBy?.column}
+                                    <ArrowIcon direction={pg.filters.orderBy.direction === "asc" ? "top" : "bottom"} />
                                 {/if}
                             </div>
                         </th>
@@ -103,14 +99,14 @@
                 </tr>
             </thead>
             <tbody>
-                {#each pgTable.current.rows as row}
+                {#each pg.currentTable.rows as row}
                     <tr
                         onclick={() => {
                             rowToUpdate = row;
                             isUpdateOpen = true;
                         }}
                     >
-                        {#each pgTable.current.columns as column}
+                        {#each pg.currentTable.columns as column}
                             {@const value = row[column.column_name]}
                             <td oncontextmenu={(e) => oncontextmenu(e, column, row)}>
                                 {#if value === null}
@@ -125,18 +121,18 @@
                                                 class="my-auto cursor-pointer"
                                                 onclick={(event) => {
                                                     event.stopPropagation();
-                                                    pgTable.use({
+                                                    pg.use({
                                                         schema: column.foreign_table_schema!,
                                                         name: column.foreign_table_name!,
                                                     });
-                                                    pgTable.whereFilters = [
+                                                    pg.whereFilters = [
                                                         {
                                                             column: column.foreign_column_name!,
                                                             operator: "=",
                                                             value: `${value}`,
                                                         },
                                                     ];
-                                                    pgTable.applyWhere();
+                                                    pg.applyWhere();
                                                 }}
                                                 title="{column.foreign_table_schema}.{column.foreign_table_name}.{column.foreign_column_name}"
                                                 ><ArrowIcon direction="right" --size="1rem" /></button
@@ -151,7 +147,7 @@
             </tbody>
         </table>
     </div>
-    {#if pgTable.current.rows.length === 0}
+    {#if pg.currentTable.rows.length === 0}
         <div class="text-fg-2 grow">
             <div class="border border-dashed border-bg-2 p-4 w-fit rounded-2xl mx-auto">
                 This table doesn't contain any rows, you can use <strong>Insert</strong> to add some!
@@ -160,7 +156,7 @@
     {/if}
 {/if}
 
-{#if pgTable.current && rowToUpdate}
+{#if pg.currentTable && rowToUpdate}
     <Dialog isOpen={isUpdateOpen} onrequestclose={() => (isUpdateOpen = false)} position="right" animation="right">
         <TableUpsert row={rowToUpdate} onclose={() => (isUpdateOpen = false)} />
     </Dialog>

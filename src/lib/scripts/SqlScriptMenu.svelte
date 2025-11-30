@@ -1,16 +1,16 @@
 <script lang="ts">
     import PlayIcon from "$lib/icons/PlayIcon.svelte";
-    import {getTableContext} from "$lib/table/tableContext.svelte";
+    import {getPgContext} from "$lib/table/pgContext.svelte";
     import {getScriptsContext} from "./scriptsContext.svelte";
 
     const scripts = getScriptsContext();
-    const pgTable = getTableContext();
+    const pg = getPgContext();
 </script>
 
 <button
     class="btn ml-auto"
     onclick={async () => {
-        const result = await pgTable.rawQuery(scripts.currentScript, {throwError: false});
+        const result = await pg.rawQuery(scripts.currentScript, {throwError: false});
         if (result) {
             scripts.lastResult = result;
         }

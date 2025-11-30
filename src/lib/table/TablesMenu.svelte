@@ -2,7 +2,7 @@
     import ChevronIcon from "$lib/icons/ChevronIcon.svelte";
     import TrashIcon from "$lib/icons/TrashIcon.svelte";
     import TableSelect from "$lib/table/TableSelect.svelte";
-    import {getTableContext, type PgRow} from "$lib/table/tableContext.svelte";
+    import {getPgContext, type PgRow} from "$lib/table/pgContext.svelte";
     import TableFilters from "$lib/table/TableFilters.svelte";
     import NumberInput from "$lib/widgets/NumberInput.svelte";
     import TableUpsert from "$lib/table/TableUpsert.svelte";
@@ -16,10 +16,10 @@
     import {getToastContext} from "$lib/widgets/Toaster.svelte";
     import {saveToFile} from "$lib/helpers/saveToFile";
 
-    const pgTable = getTableContext();
+    const pg = getPgContext();
     const {toast} = getToastContext();
     let rowToInsert = $derived<PgRow>(
-        pgTable.current?.columns.reduce((result, column) => {
+        pg.currentTable?.columns.reduce((result, column) => {
             return {
                 ...result,
                 [column.column_name]: column.column_default
@@ -33,15 +33,15 @@
     let isInsertOpen = $state(false);
 
     const deleteRows = async () => {
-        if (!pgTable.current) {
+        if (!pg.currentTable) {
             return;
         }
         // TODO: check for cascading foreign keys and show a warning dialog before deleting if any
-        const query = `DELETE FROM "${pgTable.current.schema}"."${pgTable.current.name}"
-WHERE ctid = ANY(ARRAY[${pgTable.selectedRows.map((index) => `'${pgTable.current!.rows[index].ctid}'`).join(", ")}]::tid[]);`;
-        await pgTable.rawQuery(query);
-        pgTable.selectedRows = [];
-        pgTable.filters.where = "";
+        const query = `DELETE FROM "${pg.currentTable.schema}"."${pg.currentTable.name}"
+WHERE ctid = ANY(ARRAY[${pg.selectedRows.map((index) => `'${pg.currentTable!.rows[index].ctid}'`).join(", ")}]::tid[]);`;
+        await pg.rawQuery(query);
+        pg.selectedRows = [];
+        pg.filters.where = "";
     };
 
     let isExportOpen = $state(false);
@@ -53,44 +53,33 @@ WHERE ctid = ANY(ARRAY[${pgTable.selectedRows.map((index) => `'${pgTable.current
         setTimeout(() => {
             refreshing = false;
         }, 500);
-        await pgTable.loadTables(false);
+        await pg.loadTables(false);
     };
 </script>
 
 <TableSelect />
 
-{#if pgTable.current}
+{#if pg.currentTable}
     <TableFilters />
     <label for="limit" class="text-sm pl-2">limit</label>
-    <NumberInput
-        --width="5rem"
-        id="limit"
-        type="text"
-        step={10}
-        min={0}
-        max={1000}
-        bind:value={pgTable.filters.limit}
-    />
+    <NumberInput --width="5rem" id="limit" type="text" step={10} min={0} max={1000} bind:value={pg.filters.limit} />
     <button
         class="btn icon ghost"
-        disabled={pgTable.filters.offset === 0}
-        onclick={() => (pgTable.filters.offset = Math.max(0, pgTable.filters.offset - pgTable.filters.limit))}
+        disabled={pg.filters.offset === 0}
+        onclick={() => (pg.filters.offset = Math.max(0, pg.filters.offset - pg.filters.limit))}
     >
         <ChevronIcon direction="left" />
     </button>
-    <span class="text-sm text-fg-1 text-nowrap">{pgTable.filters.offset} - {pgTable.current.count}</span>
+    <span class="text-sm text-fg-1 text-nowrap">{pg.filters.offset} - {pg.currentTable.count}</span>
     <button
         class="btn icon ghost mr-auto"
-        disabled={pgTable.filters.offset + pgTable.filters.limit >= pgTable.current.count}
+        disabled={pg.filters.offset + pg.filters.limit >= pg.currentTable.count}
         onclick={() =>
-            (pgTable.filters.offset = Math.min(
-                pgTable.current?.count ?? 0,
-                pgTable.filters.offset + pgTable.filters.limit
-            ))}
+            (pg.filters.offset = Math.min(pg.currentTable?.count ?? 0, pg.filters.offset + pg.filters.limit))}
     >
         <ChevronIcon direction="right" />
     </button>
-    {#if pgTable.selectedRows.length > 0}
+    {#if pg.selectedRows.length > 0}
         <ActionButton
             class="btn ghost"
             onaction={deleteRows}
@@ -101,21 +90,21 @@ WHERE ctid = ANY(ARRAY[${pgTable.selectedRows.map((index) => `'${pgTable.current
                 confirmText: "Confirm delete",
             }}
             ><TrashIcon --size="1.2rem" /> Delete
-            <span class="badge">{pgTable.selectedRows.length}</span></ActionButton
+            <span class="badge">{pg.selectedRows.length}</span></ActionButton
         >
     {/if}
     <Popover bind:isOpen={isExportOpen} offsetY={10}>
         {#snippet target()}
             <button class="btn ghost" onclick={() => (isExportOpen = !isExportOpen)}
                 ><DownloadIcon --size="1.2rem" /> Export
-                {#if pgTable.selectedRows.length}<span class="badge">{pgTable.selectedRows.length}</span>{/if}
+                {#if pg.selectedRows.length}<span class="badge">{pg.selectedRows.length}</span>{/if}
             </button>
         {/snippet}
         <div>
             <button
                 class="btn ghost"
                 onclick={async () => {
-                    if (await saveToFile(JSON.stringify(pgTable.selectedRowsJson), ["json"])) {
+                    if (await saveToFile(JSON.stringify(pg.selectedRowsJson), ["json"])) {
                         toast("Selected rows exported to JSON", {kind: "success"});
                     } else {
                         toast("Failed to export JSON", {kind: "error"});
@@ -126,7 +115,7 @@ WHERE ctid = ANY(ARRAY[${pgTable.selectedRows.map((index) => `'${pgTable.current
             <button
                 class="btn ghost"
                 onclick={async () => {
-                    if (await saveToFile(pgTable.selectedRowsCsv, ["csv"])) {
+                    if (await saveToFile(pg.selectedRowsCsv, ["csv"])) {
                         toast("Selected rows exported to CSV", {kind: "success"});
                     } else {
                         toast("Failed to export CSV", {kind: "error"});
@@ -137,7 +126,7 @@ WHERE ctid = ANY(ARRAY[${pgTable.selectedRows.map((index) => `'${pgTable.current
             <button
                 class="btn ghost"
                 onclick={async () => {
-                    if (await saveToFile(pgTable.selectedRowsSql, ["sql"])) {
+                    if (await saveToFile(pg.selectedRowsSql, ["sql"])) {
                         toast("Selected rows exported to SQL", {kind: "success"});
                     } else {
                         toast("Failed to export SQL", {kind: "error"});
@@ -151,7 +140,7 @@ WHERE ctid = ANY(ARRAY[${pgTable.selectedRows.map((index) => `'${pgTable.current
     <button class="btn" onclick={() => (isInsertOpen = true)}><PlusIcon /> Insert</button>
 {/if}
 
-{#if pgTable.current}
+{#if pg.currentTable}
     <Dialog isOpen={isInsertOpen} onrequestclose={() => (isInsertOpen = false)} position="right" animation="right">
         <TableUpsert row={rowToInsert} onclose={() => (isInsertOpen = false)} />
     </Dialog>

@@ -1,6 +1,6 @@
 import {describe, expect, it} from "vitest";
 import {formatValue} from "./values";
-import type {PgColumn} from "./tableContext.svelte";
+import type {PgColumn} from "./pgContext.svelte";
 
 describe("formatValue", () => {
     // Helper to create a column

@@ -7,13 +7,13 @@
     import Popover from "$lib/widgets/Popover.svelte";
     import Select from "$lib/widgets/Select.svelte";
 
-    import {getTableContext} from "./tableContext.svelte";
+    import {getPgContext} from "./pgContext.svelte";
 
-    const pgTable = getTableContext();
+    const pg = getPgContext();
 
     const applyFilters = () => {
-        pgTable.applyWhere();
-        pgTable.isFilterPopover = false;
+        pg.applyWhere();
+        pg.isFilterPopover = false;
     };
 
     const getPlaceholderByOperator = (operator: string) => {
@@ -30,19 +30,19 @@
     };
 </script>
 
-<Popover bind:isOpen={pgTable.isFilterPopover} offsetY={10}>
+<Popover bind:isOpen={pg.isFilterPopover} offsetY={10}>
     {#snippet target()}
-        <button class="btn ghost" onclick={() => (pgTable.isFilterPopover = !pgTable.isFilterPopover)}
+        <button class="btn ghost" onclick={() => (pg.isFilterPopover = !pg.isFilterPopover)}
             ><FunnelIcon --size="1.2rem" /> <span>Filters</span>
-            {#if pgTable.appliedFilters > 0}<span class="badge">{pgTable.appliedFilters}</span>{/if}
-            <ChevronIcon --size="1rem" direction={pgTable.isFilterPopover ? "top" : "bottom"} />
+            {#if pg.appliedFilters > 0}<span class="badge">{pg.appliedFilters}</span>{/if}
+            <ChevronIcon --size="1rem" direction={pg.isFilterPopover ? "top" : "bottom"} />
         </button>
     {/snippet}
     <div class="flex flex-col gap-2 pb-4 w-lg">
-        {#each pgTable.whereFilters as filter, i}
+        {#each pg.whereFilters as filter, i}
             <div class="flex gap-2">
-                <Select class="w-40" bind:value={pgTable.whereFilters[i].column} placeholder="column name">
-                    {#each pgTable.current?.columns ?? [] as column}
+                <Select class="w-40" bind:value={pg.whereFilters[i].column} placeholder="column name">
+                    {#each pg.currentTable?.columns ?? [] as column}
                         <option>{column.column_name}</option>
                     {/each}
                 </Select>
@@ -77,8 +77,8 @@
                     autocapitalize="off"
                     autocomplete="off"
                     bind:value={
-                        () => pgTable.whereFilters[i].value,
-                        (newValue) => (pgTable.whereFilters[i].value = newValue.replace(/[‘’]/g, "'"))
+                        () => pg.whereFilters[i].value,
+                        (newValue) => (pg.whereFilters[i].value = newValue.replace(/[‘’]/g, "'"))
                     }
                     placeholder={getPlaceholderByOperator(filter.operator)}
                 />
@@ -88,7 +88,7 @@
                     class="btn icon ghost"
                     onclick={(e) => {
                         e.preventDefault();
-                        pgTable.whereFilters.splice(i, 1);
+                        pg.whereFilters.splice(i, 1);
                     }}><CrossIcon --size="1.2rem" /></button
                 >
             </div>
@@ -100,15 +100,15 @@
         <button
             class="btn ghost self-start"
             onclick={() =>
-                pgTable.whereFilters.push({
-                    column: pgTable.current?.columns[0].column_name ?? "",
+                pg.whereFilters.push({
+                    column: pg.currentTable?.columns[0].column_name ?? "",
                     operator: "=",
                     value: "",
                 })}><PlusIcon /> Ajouter un filtre</button
         >
         <button
             class="btn small"
-            disabled={!pgTable.whereFilters.every((filter) => filter.column && filter.value)}
+            disabled={!pg.whereFilters.every((filter) => filter.column && filter.value)}
             onclick={applyFilters}><CheckIcon /> Apply filter</button
         >
     </div>

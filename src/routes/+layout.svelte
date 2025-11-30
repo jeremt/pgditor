@@ -7,7 +7,7 @@
     import {onMount, onDestroy} from "svelte";
 
     import {setConnectionsContext} from "$lib/connection/connectionsContext.svelte";
-    import {setTableContext} from "$lib/table/tableContext.svelte";
+    import {setPgContext} from "$lib/table/pgContext.svelte";
     import Toaster, {setToastContext} from "$lib/widgets/Toaster.svelte";
     import {globalShortcuts} from "$lib/tauri/globalShortcuts";
     import {setScriptsContext} from "$lib/scripts/scriptsContext.svelte";
@@ -17,7 +17,7 @@
     setToastContext();
 
     const connections = setConnectionsContext();
-    const pgTable = setTableContext();
+    const pg = setPgContext();
     setScriptsContext();
 
     const shortcuts = globalShortcuts([
@@ -25,7 +25,7 @@
             keys: "CommandOrControl+T",
             action: (event) => {
                 if (event.state === "Pressed") {
-                    pgTable.isUseDialogOpen = true;
+                    pg.isUseDialogOpen = true;
                 }
             },
         },
@@ -33,7 +33,7 @@
             keys: "CommandOrControl+F",
             action: (event) => {
                 if (event.state === "Pressed") {
-                    pgTable.isFilterPopover = true;
+                    pg.isFilterPopover = true;
                 }
             },
         },
@@ -41,15 +41,15 @@
             keys: "CommandOrControl+R",
             action: (event) => {
                 if (event.state === "Pressed") {
-                    pgTable.loadTables();
+                    pg.loadTables();
                 }
             },
         },
         {
             keys: "CommandOrControl+ArrowLeft",
             action: (event) => {
-                if (event.state === "Pressed" && pgTable.filters.offset > 0) {
-                    pgTable.filters.offset = Math.max(0, pgTable.filters.offset - pgTable.filters.limit);
+                if (event.state === "Pressed" && pg.filters.offset > 0) {
+                    pg.filters.offset = Math.max(0, pg.filters.offset - pg.filters.limit);
                 }
             },
         },
@@ -58,13 +58,10 @@
             action: (event) => {
                 if (
                     event.state === "Pressed" &&
-                    pgTable.current &&
-                    pgTable.filters.offset + pgTable.filters.limit < pgTable.current.count
+                    pg.currentTable &&
+                    pg.filters.offset + pg.filters.limit < pg.currentTable.count
                 ) {
-                    pgTable.filters.offset = Math.min(
-                        pgTable.current.count,
-                        pgTable.filters.offset + pgTable.filters.limit
-                    );
+                    pg.filters.offset = Math.min(pg.currentTable.count, pg.filters.offset + pg.filters.limit);
                 }
             },
         },
@@ -80,7 +77,7 @@
     });
 
     $effect(() => {
-        pgTable.loadTables();
+        pg.loadTables();
     });
 </script>
 

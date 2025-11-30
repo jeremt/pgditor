@@ -1,4 +1,4 @@
-import type {PgColumn} from "./tableContext.svelte";
+import type {PgColumn} from "./pgContext.svelte";
 
 export const defaultValues = {
     // 🧮 Numeric

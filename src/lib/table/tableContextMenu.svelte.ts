@@ -3,10 +3,10 @@ import {Menu} from "@tauri-apps/api/menu";
 import {writeText} from "@tauri-apps/plugin-clipboard-manager";
 import {saveToFile} from "$lib/helpers/saveToFile";
 import {getToastContext} from "$lib/widgets/Toaster.svelte";
-import {getTableContext, type PgColumn, type PgRow} from "./tableContext.svelte";
+import {getPgContext, type PgColumn, type PgRow} from "./pgContext.svelte";
 
 export const createContextMenu = () => {
-    const pgTable = getTableContext();
+    const pg = getPgContext();
     const {toast} = getToastContext();
     let lastMenuContext: {column?: PgColumn; row?: PgRow} = {};
 
@@ -43,9 +43,9 @@ export const createContextMenu = () => {
 
         items.push({item: "Separator"}); // Predefined separator
 
-        if (pgTable.selectedRows.length) {
+        if (pg.selectedRows.length) {
             items.push({
-                text: `Copy ${pgTable.selectedRows.length} row${pgTable.selectedRows.length > 1 ? "s" : ""}`,
+                text: `Copy ${pg.selectedRows.length} row${pg.selectedRows.length > 1 ? "s" : ""}`,
                 items: [
                     {id: "copy_json", text: "JSON"},
                     {id: "copy_csv", text: "CSV"},
@@ -53,7 +53,7 @@ export const createContextMenu = () => {
                 ],
             });
             items.push({
-                text: `Export ${pgTable.selectedRows.length} row${pgTable.selectedRows.length > 1 ? "s" : ""}`,
+                text: `Export ${pg.selectedRows.length} row${pg.selectedRows.length > 1 ? "s" : ""}`,
                 items: [
                     {id: "export_json", text: "JSON"},
                     {id: "export_csv", text: "CSV"},
@@ -81,8 +81,8 @@ export const createContextMenu = () => {
                     toast("Row copied to clipboard (in JSON)");
                     break;
                 case "table_set_null":
-                    if (lastMenuContext.column && lastMenuContext.row?.ctid && pgTable.current) {
-                        pgTable.rawQuery(`UPDATE ${pgTable.fullName} SET
+                    if (lastMenuContext.column && lastMenuContext.row?.ctid && pg.currentTable) {
+                        pg.rawQuery(`UPDATE ${pg.fullName} SET
 ${lastMenuContext.column.column_name} = null
 WHERE ctid = '${lastMenuContext.row.ctid}';
                         `);
@@ -90,8 +90,8 @@ WHERE ctid = '${lastMenuContext.row.ctid}';
                     }
                     break;
                 case "table_set_default":
-                    if (lastMenuContext.column && lastMenuContext.row?.ctid && pgTable.current) {
-                        pgTable.rawQuery(`UPDATE ${pgTable.fullName} SET
+                    if (lastMenuContext.column && lastMenuContext.row?.ctid && pg.currentTable) {
+                        pg.rawQuery(`UPDATE ${pg.fullName} SET
 ${lastMenuContext.column.column_name} = ${lastMenuContext.column.column_default}
 WHERE ctid = '${lastMenuContext.row.ctid}';
                         `);
@@ -99,42 +99,40 @@ WHERE ctid = '${lastMenuContext.row.ctid}';
                     }
                     break;
                 case "table_set_all_null":
-                    if (lastMenuContext.column && lastMenuContext.row?.ctid && pgTable.current) {
-                        pgTable.rawQuery(
-                            `UPDATE ${pgTable.fullName} SET ${lastMenuContext.column.column_name} = null;`
-                        );
+                    if (lastMenuContext.column && lastMenuContext.row?.ctid && pg.currentTable) {
+                        pg.rawQuery(`UPDATE ${pg.fullName} SET ${lastMenuContext.column.column_name} = null;`);
                         toast(`All values of column ${lastMenuContext.column.column_name} set to NULL`);
                     }
                     break;
                 case "table_set_all_default":
-                    if (lastMenuContext.column && lastMenuContext.row?.ctid && pgTable.current) {
-                        pgTable.rawQuery(
-                            `UPDATE ${pgTable.fullName} SET ${lastMenuContext.column.column_name} = ${lastMenuContext.column.column_default};`
+                    if (lastMenuContext.column && lastMenuContext.row?.ctid && pg.currentTable) {
+                        pg.rawQuery(
+                            `UPDATE ${pg.fullName} SET ${lastMenuContext.column.column_name} = ${lastMenuContext.column.column_default};`
                         );
                         toast(`All values of column ${lastMenuContext.column.column_name} set to default`);
                     }
                     break;
                 case "copy_json":
-                    if (pgTable.current) {
-                        await writeText(JSON.stringify(pgTable.selectedRowsJson));
+                    if (pg.currentTable) {
+                        await writeText(JSON.stringify(pg.selectedRowsJson));
                         toast("Selected rows copied to JSON");
                     }
                     break;
                 case "copy_csv":
-                    if (pgTable.current) {
-                        await writeText(pgTable.selectedRowsCsv);
+                    if (pg.currentTable) {
+                        await writeText(pg.selectedRowsCsv);
                         toast("Selected rows copied to CSV");
                     }
                     break;
                 case "copy_sql":
-                    if (pgTable.current) {
-                        await writeText(pgTable.selectedRowsSql);
+                    if (pg.currentTable) {
+                        await writeText(pg.selectedRowsSql);
                         toast("Selected rows copied to SQL");
                     }
                     break;
                 case "export_json":
-                    if (pgTable.current) {
-                        if (await saveToFile(JSON.stringify(pgTable.selectedRowsJson), ["json"])) {
+                    if (pg.currentTable) {
+                        if (await saveToFile(JSON.stringify(pg.selectedRowsJson), ["json"])) {
                             toast("Selected rows exported to JSON");
                         } else {
                             toast("Failed to export JSON", {kind: "error"});
@@ -142,14 +140,14 @@ WHERE ctid = '${lastMenuContext.row.ctid}';
                     }
                     break;
                 case "export_csv":
-                    if (await saveToFile(pgTable.selectedRowsCsv, ["csv"])) {
+                    if (await saveToFile(pg.selectedRowsCsv, ["csv"])) {
                         toast("Selected rows exported to CSV");
                     } else {
                         toast("Failed to export CSV", {kind: "error"});
                     }
                     break;
                 case "export_sql":
-                    if (await saveToFile(pgTable.selectedRowsSql, ["sql"])) {
+                    if (await saveToFile(pg.selectedRowsSql, ["sql"])) {
                         toast("Selected rows exported to SQL");
                     } else {
                         toast("Failed to export SQL", {kind: "error"});

@@ -4,7 +4,7 @@
     import JsonFileIcon from "$lib/icons/JsonFileIcon.svelte";
     import MonacoEditor from "$lib/monaco/MonacoEditor.svelte";
     import Dialog from "$lib/widgets/Dialog.svelte";
-    import {getTableContext, type PgColumn, type PgRow} from "./tableContext.svelte";
+    import {getPgContext, type PgColumn, type PgRow} from "./pgContext.svelte";
 
     type Props = {
         column: PgColumn;
@@ -12,7 +12,7 @@
     };
     let {column, value = $bindable()}: Props = $props();
 
-    const pgTable = getTableContext();
+    const pg = getPgContext();
     let isEditorOpen = $state(false);
 
     let localValue = $derived.by(() => {
@@ -52,13 +52,13 @@
     <div class="grow border border-bg-1">
         <MonacoEditor
             bind:value={localValue}
-            selectedFile="{pgTable.current!.name}-{column}.json"
-            files={[{path: `${pgTable.current!.name}-${column}.json`, value: ""}]}
+            selectedFile="{pg.currentTable!.name}-{column}.json"
+            files={[{path: `${pg.currentTable!.name}-${column}.json`, value: ""}]}
             fontFamily="Space Mono"
             fontSize={12}
             showLineNumbers={false}
             onchange={(newValue, path) => {
-                if (path === `${pgTable.current!.name}-${column}.json`) {
+                if (path === `${pg.currentTable!.name}-${column}.json`) {
                     localValue = newValue;
                 } else {
                     throw new Error(`File ${path} not found.`);

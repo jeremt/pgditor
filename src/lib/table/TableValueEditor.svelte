@@ -2,7 +2,7 @@
     import MultilinesInput from "$lib/widgets/MultilinesInput.svelte";
     import Select from "$lib/widgets/Select.svelte";
     import JsonValueEditor from "./JsonValueEditor.svelte";
-    import type {PgColumn, PgRow} from "./tableContext.svelte";
+    import type {PgColumn, PgRow} from "./pgContext.svelte";
     import {formatValue} from "./values";
 
     type Props = {

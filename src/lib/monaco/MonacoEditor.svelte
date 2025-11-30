@@ -137,7 +137,7 @@ Examples
     import cssWorker from "monaco-editor/esm/vs/language/css/css.worker?worker";
     import htmlWorker from "monaco-editor/esm/vs/language/html/html.worker?worker";
     import jsonWorker from "monaco-editor/esm/vs/language/json/json.worker?worker";
-    import {getTableContext} from "$lib/table/tableContext.svelte";
+    import {getPgContext} from "$lib/table/pgContext.svelte";
 
     type FileData = {path: string; value: string};
 
@@ -215,7 +215,7 @@ Examples
         onready?: () => void;
     };
 
-    const pgTable = getTableContext();
+    const pg = getPgContext();
 
     let {
         files = [],
@@ -359,7 +359,7 @@ Examples
             if (sqlAutocomplete) {
                 sqlAutocomplete.dispose();
             }
-            sqlAutocomplete = addSqliteAutocomplete(Monaco, pgTable.list);
+            sqlAutocomplete = addSqliteAutocomplete(Monaco, pg.tables);
         }
     });
 

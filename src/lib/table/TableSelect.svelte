@@ -3,18 +3,18 @@
     import TableIcon from "$lib/icons/TableIcon.svelte";
     import {fuzzySearchWithHighlights, renderHighlightedMatch} from "$lib/helpers/fuzzySearch";
 
-    import {getTableContext} from "./tableContext.svelte";
+    import {getPgContext} from "./pgContext.svelte";
     import Dialog from "$lib/widgets/Dialog.svelte";
     import EnterIcon from "$lib/icons/EnterIcon.svelte";
     import CheckIcon from "$lib/icons/CheckIcon.svelte";
 
-    const pgTable = getTableContext();
+    const pg = getPgContext();
 
     let searchText = $state("");
     let searchResult = $derived(
         fuzzySearchWithHighlights(
             searchText,
-            pgTable.list.map((item) => `${item.schema}.${item.name}`)
+            pg.tables.map((item) => `${item.schema}.${item.name}`)
         ).map(({item, ranges}) => ({text: item, html: renderHighlightedMatch(item, ranges)}))
     );
 
@@ -34,23 +34,21 @@
         if (event.key === "Enter") {
             const table =
                 searchText === ""
-                    ? pgTable.list[selectedIndex]
-                    : pgTable.list.find(
-                          (table) => `${table.schema}.${table.name}` === searchResult[selectedIndex].text
-                      );
+                    ? pg.tables[selectedIndex]
+                    : pg.tables.find((table) => `${table.schema}.${table.name}` === searchResult[selectedIndex].text);
             if (table) {
-                pgTable.use(table);
+                pg.use(table);
                 searchText = "";
-                pgTable.isUseDialogOpen = false;
+                pg.isUseDialogOpen = false;
             }
         } else if (event.key === "ArrowUp") {
             selectedIndex =
                 selectedIndex === 0
-                    ? (searchText === "" ? pgTable.list.length : searchResult.length) - 1
+                    ? (searchText === "" ? pg.tables.length : searchResult.length) - 1
                     : selectedIndex - 1;
         } else if (
             event.key === "ArrowDown" &&
-            selectedIndex + 1 < (searchText === "" ? pgTable.list.length : searchResult.length)
+            selectedIndex + 1 < (searchText === "" ? pg.tables.length : searchResult.length)
         ) {
             selectedIndex += 1;
         } else {
@@ -67,15 +65,15 @@
     {/if}
 {/snippet}
 
-<button class="btn ghost" title="⌘T" onclick={() => (pgTable.isUseDialogOpen = true)} disabled={!pgTable.current}>
-    {#if pgTable.current}
-        {@render icon(pgTable.current.type)} {pgTable.current.schema}.{pgTable.current.name}
+<button class="btn ghost" title="⌘T" onclick={() => (pg.isUseDialogOpen = true)} disabled={!pg.currentTable}>
+    {#if pg.currentTable}
+        {@render icon(pg.currentTable.type)} {pg.currentTable.schema}.{pg.currentTable.name}
     {:else}
         no tables
     {/if}
 </button>
 
-<Dialog isOpen={pgTable.isUseDialogOpen} onrequestclose={() => (pgTable.isUseDialogOpen = false)} --padding="1rem">
+<Dialog isOpen={pg.isUseDialogOpen} onrequestclose={() => (pg.isUseDialogOpen = false)} --padding="1rem">
     <div class="flex flex-col gap-2 w-2xl overflow-hidden">
         <input
             type="text"
@@ -86,17 +84,17 @@
         />
         <div class="flex flex-col gap-2 overflow-auto h-80 py-2">
             {#if searchText === ""}
-                {#each pgTable.list as table, i}
+                {#each pg.tables as table, i}
                     <button
                         bind:this={buttonRefs[i]}
                         class="btn ghost justify-start!"
                         class:selected-table={i === selectedIndex}
                         onclick={() => {
-                            pgTable.use(table);
-                            pgTable.isUseDialogOpen = false;
+                            pg.use(table);
+                            pg.isUseDialogOpen = false;
                         }}
                     >
-                        {#if pgTable.current && `${table.schema}.${table.name}` === `${pgTable?.current.schema}.${pgTable?.current.name}`}
+                        {#if pg.currentTable && `${table.schema}.${table.name}` === `${pg.currentTable.schema}.${pg.currentTable.name}`}
                             <CheckIcon --size="1.2rem" />
                         {:else}
                             {@render icon(table.type)}
@@ -112,7 +110,7 @@
                 {/each}
             {:else}
                 {#each searchResult as { text, html }, i}
-                    {@const table = pgTable.list.find((table) => `${table.schema}.${table.name}` === text)}
+                    {@const table = pg.tables.find((table) => `${table.schema}.${table.name}` === text)}
                     {#if table}
                         <button
                             bind:this={buttonRefs[i]}
@@ -120,13 +118,13 @@
                             class:selected-table={i === selectedIndex}
                             onclick={() => {
                                 if (table) {
-                                    pgTable.use(table);
+                                    pg.use(table);
                                     searchText = "";
-                                    pgTable.isUseDialogOpen = false;
+                                    pg.isUseDialogOpen = false;
                                 }
                             }}
                         >
-                            {#if pgTable.current && text === `${pgTable.current.schema}.${pgTable.current.name}`}
+                            {#if pg.currentTable && text === `${pg.currentTable.schema}.${pg.currentTable.name}`}
                                 <CheckIcon --size="1.2rem" />
                             {:else}
                                 {@render icon(table.type)}

@@ -30,10 +30,10 @@ export type PgRow = Record<string, object | string | bigint | number | boolean |
 
 export type WhereFilters = {column: string; operator: string; value: string}[];
 
-class TableContext {
+class PgContext {
     toastContext = getToastContext();
-    list = $state<PgTable[]>([]);
-    current = $state<PgTable & {columns: PgColumn[]; rows: PgRow[]; count: number}>();
+    tables = $state<PgTable[]>([]);
+    currentTable = $state<PgTable & {columns: PgColumn[]; rows: PgRow[]; count: number}>();
     isUseDialogOpen = $state(false);
     isFilterPopover = $state(false);
 
@@ -56,34 +56,34 @@ class TableContext {
 
     selectedRows = $state<number[]>([]);
     get selectedRowsJson() {
-        if (!this.current) {
+        if (!this.currentTable) {
             return [];
         }
-        return this.current.rows
+        return this.currentTable.rows
             .filter((_, i) => this.selectedRows.length === 0 || this.selectedRows.includes(i))
             .map(({ctid, ...rest}) => rest);
     }
     get selectedRowsCsv() {
-        if (!this.current) {
+        if (!this.currentTable) {
             return "";
         }
         return (
-            this.current.columns.map((col) => col.column_name).join(",") +
+            this.currentTable.columns.map((col) => col.column_name).join(",") +
             "\n" +
             this.selectedRowsJson
-                .map((row) => this.current!.columns.map((col) => row[col.column_name]).join(","))
+                .map((row) => this.currentTable!.columns.map((col) => row[col.column_name]).join(","))
                 .join("\n")
         );
     }
     get selectedRowsSql() {
-        if (!this.current) {
+        if (!this.currentTable) {
             return "";
         }
         return `INSERT INTO ${this.fullName}
-(${this.current.columns.map((col) => col.column_name).join(",")})
+(${this.currentTable.columns.map((col) => col.column_name).join(",")})
 VALUES
 ${this.selectedRowsJson
-    .map((row) => `(${this.current!.columns.map((col) => formatValue(col, row[col.column_name])).join(",")})`)
+    .map((row) => `(${this.currentTable!.columns.map((col) => formatValue(col, row[col.column_name])).join(",")})`)
     .join(",\n")}
 ;`;
     }
@@ -91,10 +91,10 @@ ${this.selectedRowsJson
     private connections = getConnectionsContext();
 
     get fullName() {
-        if (!this.current) {
+        if (!this.currentTable) {
             return undefined;
         }
-        return `"${this.current.schema}"."${this.current.name}"`;
+        return `"${this.currentTable.schema}"."${this.currentTable.name}"`;
     }
 
     /**
@@ -115,15 +115,15 @@ ${this.selectedRowsJson
             this.toastContext.toast(`Server error: ${tableError.message} (${this.connections.current.name})`, {
                 kind: "error",
             });
-            this.list = [];
-            this.current = undefined;
+            this.tables = [];
+            this.currentTable = undefined;
             return;
         } else {
             this.toastContext.toast(`Connected to ${this.connections.current.name}`, {kind: "success", timeout: 2000});
         }
-        this.list = unsortedTables.toSorted((table) => (table.schema === "public" ? -1 : 1));
-        if (autoUse && this.list[0]) {
-            this.use(this.list[0]);
+        this.tables = unsortedTables.toSorted((table) => (table.schema === "public" ? -1 : 1));
+        if (autoUse && this.tables[0]) {
+            this.use(this.tables[0]);
         }
     };
 
@@ -147,13 +147,13 @@ ${this.selectedRowsJson
             this.toastContext.toast(`Server error: ${columnsError.message}`, {kind: "error"});
             return;
         }
-        const t = this.list.find((item) => item.schema === table.schema && item.name === table.name);
+        const t = this.tables.find((item) => item.schema === table.schema && item.name === table.name);
         if (!t) {
             console.error(`Table ${table.schema}.${table.name} not found`);
             this.toastContext.toast(`Table ${table.schema}.${table.name} not found`);
             return;
         }
-        this.current = {...t, columns, rows: [], count: 0};
+        this.currentTable = {...t, columns, rows: [], count: 0};
         this.filters = {
             where: "",
             offset: 0,
@@ -170,15 +170,15 @@ ${this.selectedRowsJson
      * @param limit The maximal number of rows returns by the query.
      */
     updateData = async (where: string, offset: number, limit: number) => {
-        if (!this.connections.current || !this.current) {
+        if (!this.connections.current || !this.currentTable) {
             return;
         }
         const connectionString = this.connections.current.connectionString;
         const [dataError, data] = await catchError(
             invoke<{rows: PgRow[]; count: number}>("get_table_data", {
                 connectionString,
-                schema: this.current.schema,
-                table: this.current.name,
+                schema: this.currentTable.schema,
+                table: this.currentTable.name,
                 offset,
                 limit,
                 whereClause: where,
@@ -193,8 +193,8 @@ ${this.selectedRowsJson
             return;
         }
         this.selectedRows = [];
-        this.current.rows = data.rows;
-        this.current.count = data.count;
+        this.currentTable.rows = data.rows;
+        this.currentTable.count = data.count;
     };
 
     /**
@@ -210,7 +210,7 @@ ${this.selectedRowsJson
      * @param throwError Throws an error by default, set to `false` if you want a toast like other helpers.
      */
     rawQuery = async (sql: string, {throwError = true, refresh = true} = {}) => {
-        if (!this.connections.current || !this.current) {
+        if (!this.connections.current || !this.currentTable) {
             return;
         }
         const connectionString = this.connections.current.connectionString;
@@ -239,28 +239,28 @@ ${this.selectedRowsJson
      * Simple helper function to do an insert into or an update depending on whether a ctid is specified or not.
      */
     upsertRow = async (row: PgRow & {ctid?: string}, {throwError = true} = {}) => {
-        if (!this.current) {
+        if (!this.currentTable) {
             return;
         }
         const filterPK = (col: PgColumn) =>
             col.is_primary_key === "NO" || (row[col.column_name] && col.column_default === null);
         const query = row.ctid
             ? // updae
-              `UPDATE "${this.current.schema}"."${this.current.name}"
+              `UPDATE "${this.currentTable.schema}"."${this.currentTable.name}"
 SET
-  ${this.current.columns
+  ${this.currentTable.columns
       .filter((col) => col.is_primary_key === "NO")
       .map((col) => `${col.column_name} = ${formatValue(col, row[col.column_name])}`)
       .join(",\n  ")}
 WHERE ctid = '${row.ctid}';`
             : // insert
-              `INSERT INTO "${this.current.schema}"."${this.current.name}"
-(${this.current.columns
+              `INSERT INTO "${this.currentTable.schema}"."${this.currentTable.name}"
+(${this.currentTable.columns
                   .filter(filterPK)
                   .map(({column_name}) => column_name)
                   .join(", ")})
 VALUES
-(${this.current.columns
+(${this.currentTable.columns
                   .filter(filterPK)
                   .map((col) => formatValue(col, row[col.column_name]))
                   .join(", ")});`;
@@ -280,7 +280,7 @@ VALUES
         this.appliedFilters = this.whereFilters.length;
     };
 }
-const key = Symbol("tableContext");
+const key = Symbol("pgContext");
 
-export const getTableContext = () => getContext<TableContext>(key);
-export const setTableContext = () => setContext(key, new TableContext());
+export const getPgContext = () => getContext<PgContext>(key);
+export const setPgContext = () => setContext(key, new PgContext());

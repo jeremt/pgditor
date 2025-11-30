@@ -5,7 +5,7 @@
     import LinkIcon from "$lib/icons/LinkIcon.svelte";
     import CheckboxInput from "$lib/widgets/CheckboxInput.svelte";
     import {defaultValues, formatValue} from "./values";
-    import {getTableContext, type PgRow} from "./tableContext.svelte";
+    import {getPgContext, type PgRow} from "./pgContext.svelte";
     import TableValueEditor from "./TableValueEditor.svelte";
     import {catchError} from "$lib/helpers/catchError";
 
@@ -30,10 +30,10 @@
         }
     });
 
-    const pgTable = getTableContext();
+    const pg = getPgContext();
 
     const insertOrUpdate = async () => {
-        const [error] = await catchError(pgTable.upsertRow(localRow));
+        const [error] = await catchError(pg.upsertRow(localRow));
         if (error) {
             errorMessage = error.message;
         } else {
@@ -47,8 +47,8 @@
         <button class="btn icon ghost" type="button" aria-label="Cancel" onclick={onclose}><CrossIcon /></button>
         <h2>
             {localRow.ctid === undefined ? "Insert into" : "Update row from"}
-            {#if pgTable.current}<span class="font-mono text-sm bg-bg-1 py-0.5 px-2 rounded-md ml-1"
-                    >{pgTable.current.schema}.{pgTable.current.name}</span
+            {#if pg.currentTable}<span class="font-mono text-sm bg-bg-1 py-0.5 px-2 rounded-md ml-1"
+                    >{pg.currentTable.schema}.{pg.currentTable.name}</span
                 >{/if}
         </h2>
         <button class="btn ml-auto" onclick={insertOrUpdate}>
@@ -58,7 +58,7 @@
     {#if errorMessage !== ""}<div class="text-error pb-2 text-sm">{errorMessage}</div>{/if}
 </header>
 <div class="flex flex-col gap-2 flex-1 overflow-auto">
-    {#each pgTable.current?.columns ?? [] as column}
+    {#each pg.currentTable?.columns ?? [] as column}
         <label class="text-sm flex gap-2 items-center pt-2" for={column.column_name}>
             {#if column.is_primary_key === "YES"}<KeyIcon --size="1.2rem" />{/if}
             {#if column.foreign_column_name !== null}
