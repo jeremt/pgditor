@@ -11,10 +11,12 @@
         {#snippet a()}
             <MonacoEditor
                 bind:value={scripts.currentScript}
+                bind:selection={scripts.currentSelection}
                 selectedFile="script.sql"
                 files={[{path: "script.sql", value: ""}]}
                 fontFamily="Space Mono"
                 fontSize={14}
+                onrun={scripts.run}
                 onchange={(newValue, path) => {
                     switch (path) {
                         case "script.sql":
@@ -29,7 +31,11 @@
 
         {#snippet b()}
             <div class="flex border-t border-bg-1 w-full min-h-0 overflow-auto">
-                {#if scripts.lastResult === undefined}
+                {#if scripts.errorMessage !== ""}
+                    <div class="text-error m-auto">
+                        SQL Error: {scripts.errorMessage}
+                    </div>
+                {:else if scripts.lastResult === undefined}
                     <div class="text-fg-1 m-auto">
                         No results yet, press <strong>Run query</strong> to execute your query and get results
                     </div>

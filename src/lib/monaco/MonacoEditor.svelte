@@ -163,6 +163,11 @@ Examples
         value?: string | undefined;
 
         /**
+         * The currently selected text from the editor.
+         */
+        selection?: string | undefined;
+
+        /**
          * The code font size in pixels.
          */
         fontFamily?: string;
@@ -221,6 +226,7 @@ Examples
         files = [],
         selectedFile,
         value = $bindable(),
+        selection = $bindable(""),
         fontSize,
         theme = "dark",
         showLineNumbers = true,
@@ -337,12 +343,22 @@ Examples
 
         // call on:change and apply debounce if specified
         editor.onDidChangeModelContent(() => {
-            clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(() => {
-                if (editor) {
-                    onchange?.(editor.getValue(), selectedFile);
-                }
-            }, debounce);
+            console.log("IN CHANGE", editor?.getValue());
+            onchange?.(editor?.getValue() ?? "", selectedFile);
+            // clearTimeout(debounceTimer);
+            // debounceTimer = setTimeout(() => {
+            //     if (editor) {
+            //     }
+            // }, debounce);
+        });
+
+        editor.onDidChangeCursorSelection((event) => {
+            const model = editor?.getModel();
+            if (!model) {
+                return;
+            }
+            console.log("IN", model.getValueInRange(event.selection));
+            selection = model.getValueInRange(event.selection);
         });
 
         if (editor) {
