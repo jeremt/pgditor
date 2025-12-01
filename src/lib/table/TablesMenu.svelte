@@ -79,7 +79,7 @@ WHERE ctid = ANY(ARRAY[${pg.selectedRows.map((index) => `'${pg.currentTable!.row
     >
         <ChevronIcon direction="right" />
     </button>
-    {#if pg.selectedRows.length > 0}
+    {#if pg.selectedRows.length > 0 && pg.currentTable.type === "BASE TABLE"}
         <ActionButton
             class="btn ghost"
             onaction={deleteRows}
@@ -137,7 +137,9 @@ WHERE ctid = ANY(ARRAY[${pg.selectedRows.map((index) => `'${pg.currentTable!.row
         </div>
     </Popover>
     <button class="btn ghost" onclick={refresh}><RefreshIcon --size="1.2rem" spinning={refreshing} /> Refresh</button>
-    <button class="btn" onclick={() => (isInsertOpen = true)}><PlusIcon /> Insert</button>
+    <button class="btn" disabled={pg.currentTable.type !== "BASE TABLE"} onclick={() => (isInsertOpen = true)}
+        ><PlusIcon /> Insert</button
+    >
 {/if}
 
 {#if pg.currentTable}

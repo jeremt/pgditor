@@ -26,10 +26,27 @@ pub async fn get_table_data(
         let schema_q = quote_ident(&schema);
         let table_q = quote_ident(&table);
 
-        let select_sql = format!(
-            "SELECT row_to_json(t)::text as json_text FROM (SELECT *, ctid::text as ctid FROM {}.{} {} {} OFFSET {} LIMIT {}) t",
-            schema_q, table_q, where_clause, order_by, offset, limit
+        // Check if it's a view or a table
+        let check_sql = format!(
+            "SELECT table_type FROM information_schema.tables WHERE table_schema = $1 AND table_name = $2"
         );
+        
+        let check_row = client.query_one(&check_sql, &[&schema, &table]).map_err(PgError::from)?;
+        let table_type: String = check_row.get("table_type");
+        let is_view = table_type.contains("VIEW");
+
+        // Build SELECT query based on whether it's a view or table
+        let select_sql = if is_view {
+            format!(
+                "SELECT row_to_json(t)::text as json_text FROM (SELECT * FROM {}.{} {} {} OFFSET {} LIMIT {}) t",
+                schema_q, table_q, where_clause, order_by, offset, limit
+            )
+        } else {
+            format!(
+                "SELECT row_to_json(t)::text as json_text FROM (SELECT *, ctid::text as ctid FROM {}.{} {} {} OFFSET {} LIMIT {}) t",
+                schema_q, table_q, where_clause, order_by, offset, limit
+            )
+        };
 
         println!("psql > {}", select_sql);
 

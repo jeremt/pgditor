@@ -101,7 +101,11 @@
             <tbody>
                 {#each pg.currentTable.rows as row}
                     <tr
+                        aria-disabled={pg.currentTable.type !== "BASE TABLE"}
                         onclick={() => {
+                            if (pg.currentTable?.type !== "BASE TABLE") {
+                                return;
+                            }
                             rowToUpdate = row;
                             isUpdateOpen = true;
                         }}
@@ -170,7 +174,7 @@
 {/if}
 
 <style>
-    table > tbody > tr {
+    table > tbody > tr:not([aria-disabled="true"]) {
         cursor: pointer;
         transition: 0.3s all;
         &:hover {
