@@ -60,6 +60,7 @@
                                     <tr>
                                         {#each columns as column}
                                             <td
+                                                title={row[column]}
                                                 onclick={async () => {
                                                     await writeText(row[column] === null ? "null" : row[column]);
                                                     toast(`Copied ${column}[${i}] to clipboard`, {

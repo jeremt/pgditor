@@ -108,7 +108,14 @@
                     >
                         {#each pg.currentTable.columns as column}
                             {@const value = row[column.column_name]}
-                            <td oncontextmenu={(e) => oncontextmenu(e, column, row)}>
+                            <td
+                                title={typeof value === "object"
+                                    ? JSON.stringify(value)
+                                    : value === null
+                                      ? "null"
+                                      : value.toString()}
+                                oncontextmenu={(e) => oncontextmenu(e, column, row)}
+                            >
                                 {#if value === null}
                                     null
                                 {:else if typeof value === "object"}
