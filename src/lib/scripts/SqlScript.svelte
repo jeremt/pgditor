@@ -1,9 +1,12 @@
 <script lang="ts">
     import MonacoEditor from "$lib/monaco/MonacoEditor.svelte";
+    import {writeText} from "@tauri-apps/plugin-clipboard-manager";
     import {getScriptsContext} from "./scriptsContext.svelte";
     import {SplitPane} from "@rich_harris/svelte-split-pane";
+    import {getToastContext} from "$lib/widgets/Toaster.svelte";
 
-    let scripts = getScriptsContext();
+    const scripts = getScriptsContext();
+    const {toast} = getToastContext();
 </script>
 
 <div class="grow overflow-hidden">
@@ -43,26 +46,45 @@
                     <div class="text-fg-1 m-auto">No result, succesfully executed.</div>
                 {:else}
                     {@const columns = Object.keys(scripts.lastResult[0])}
-                    <table class="h-fit min-h-0">
-                        <thead>
-                            <tr>
-                                {#each columns as column}
-                                    <th>{column}</th>
-                                {/each}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {#each scripts.lastResult as row}
+                    <div class="overflow-auto">
+                        <table class="h-fit">
+                            <thead class="sticky top-0 bg-bg">
                                 <tr>
                                     {#each columns as column}
-                                        <td>{row[column] === null ? "null" : row[column]}</td>
+                                        <th>{column}</th>
                                     {/each}
                                 </tr>
-                            {/each}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                {#each scripts.lastResult as row, i}
+                                    <tr>
+                                        {#each columns as column}
+                                            <td
+                                                onclick={async () => {
+                                                    await writeText(row[column] === null ? "null" : row[column]);
+                                                    toast(`Copied ${column}[${i}] to clipboard`, {
+                                                        kind: "success",
+                                                    });
+                                                }}>{row[column] === null ? "null" : row[column]}</td
+                                            >
+                                        {/each}
+                                    </tr>
+                                {/each}
+                            </tbody>
+                        </table>
+                    </div>
                 {/if}
             </div>
         {/snippet}
     </SplitPane>
 </div>
+
+<style>
+    td {
+        cursor: pointer;
+        transition: 0.3s all;
+        &:hover {
+            background-color: var(--color-bg-1);
+        }
+    }
+</style>

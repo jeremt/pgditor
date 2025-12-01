@@ -161,3 +161,13 @@
         <TableUpsert row={rowToUpdate} onclose={() => (isUpdateOpen = false)} />
     </Dialog>
 {/if}
+
+<style>
+    table > tbody > tr {
+        cursor: pointer;
+        transition: 0.3s all;
+        &:hover {
+            background-color: var(--color-bg-1);
+        }
+    }
+</style>
