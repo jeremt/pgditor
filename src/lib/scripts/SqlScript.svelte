@@ -63,9 +63,7 @@
                                                 title={row[column]}
                                                 onclick={async () => {
                                                     await writeText(row[column] === null ? "null" : row[column]);
-                                                    toast(`Copied ${column}[${i}] to clipboard`, {
-                                                        kind: "success",
-                                                    });
+                                                    toast(`Copied ${column}[${i}] to clipboard`);
                                                 }}>{row[column] === null ? "null" : row[column]}</td
                                             >
                                         {/each}
