@@ -88,6 +88,13 @@
     };
 
     const handleClick = (event: MouseEvent) => {
+        // check if the click target is within a different dialog element
+        const targetDialog = (event.target as HTMLElement)?.closest("dialog");
+        if (targetDialog && targetDialog !== dialog) {
+            // click is inside a nested dialog, ignore it
+            return;
+        }
+
         const rect = dialog.getBoundingClientRect();
         const isInDialog =
             event.clientY >= rect.top &&
@@ -96,40 +103,8 @@
             event.clientX <= rect.right;
         const isTargetInsideDialog = event.target ? dialog.contains(event.target as HTMLElement) : true;
 
-        // Check if the click target or any of its parents is a Monaco editor element
-        let isMonacoElement = false;
-        if (event.target instanceof HTMLElement) {
-            let element: HTMLElement | null = event.target;
-            while (element) {
-                const classList = element.classList;
-                // Monaco editor elements have classes starting with 'monaco-' or contain 'editor'
-                if (
-                    classList.contains('monaco-editor') ||
-                    classList.contains('monaco-scrollable-element') ||
-                    classList.contains('view-lines') ||
-                    classList.contains('view-line') ||
-                    classList.contains('editor') ||
-                    element.closest('.monaco-editor') !== null
-                ) {
-                    isMonacoElement = true;
-                    break;
-                }
-                element = element.parentElement;
-            }
-        }
-
-        // Only close if we're confident the click was outside:
-        // - Not a Monaco element
-        // - Not contained in the dialog DOM
-        // - Click coordinates are outside the dialog rect (and not 0,0 for Firefox bug)
-        const shouldClose = 
-            !isMonacoElement && 
-            !isTargetInsideDialog && 
-            event.clientY !== 0 && 
-            event.clientX !== 0 && 
-            !isInDialog;
-
-        if (shouldClose) {
+        // check clientY and clientX !== 0 for Firefox bug when clicking in an option inside a dialog
+        if ((event.clientY !== 0 && event.clientX !== 0 && !isInDialog) || !isTargetInsideDialog) {
             onrequestclose?.(event);
             event.preventDefault();
             event.stopPropagation();
