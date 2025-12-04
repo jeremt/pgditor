@@ -1,52 +1,79 @@
 <script lang="ts">
     import type {HTMLButtonAttributes} from "svelte/elements";
     import Dialog from "./Dialog.svelte";
+    import ProgressCircle from "./ProgressCircle.svelte";
 
     type Props = {
         onaction: () => Promise<void>;
         confirm?: {
             title: string;
             description: string;
-            confirmText?: string;
-            confirmClass?: string;
+            buttonText?: string;
+            buttonClass?: string;
         };
+        loadingText?: string;
+        loadingDelay?: number;
     } & Omit<HTMLButtonAttributes, "onclick">;
 
-    let {confirm, onaction, children, class: btnClass, ...btnProps}: Props = $props();
+    let {
+        confirm,
+        loadingText = "Loading…",
+        loadingDelay = 100,
+        onaction,
+        children,
+        class: btnClass,
+        ...btnProps
+    }: Props = $props();
 
     let isLoading = $state(false);
     let isConfirmOpen = $state(false);
+
+    const runAction = async () => {
+        const t = setTimeout(() => {
+            isLoading = true;
+        }, loadingDelay);
+        await onaction();
+        clearTimeout(t);
+        isLoading = false;
+    };
 </script>
 
 <button
     {...btnProps}
     class={btnClass}
-    disabled={isLoading}
-    onclick={async () => {
+    disabled={btnProps.disabled || (isLoading && isConfirmOpen === false)}
+    onclick={() => {
         if (confirm) {
             isConfirmOpen = true;
         } else {
-            isLoading = true;
-            await onaction();
-            isLoading = false;
+            runAction();
         }
-    }}>{@render children?.()}</button
+    }}
+    >{#if isLoading && isConfirmOpen === false}<ProgressCircle
+            --size="1.2rem"
+            thickness={0.07}
+            infinite={true}
+            showValue={false}
+        />{loadingText}
+    {:else}{@render children?.()}{/if}</button
 >
 
 {#if confirm}
     <Dialog isOpen={isConfirmOpen} onrequestclose={() => (isConfirmOpen = false)}>
         <h2 class="text-2xl pb-2">{confirm.title}</h2>
-        <p>{confirm.description}</p>
+        <p class="whitespace-pre-line">{confirm.description}</p>
         <footer class="flex justify-between pt-2">
-            <button class="btn secondary" onclick={() => (isConfirmOpen = false)}>Cancel</button>
+            <button class="btn secondary" disabled={isLoading} onclick={() => (isConfirmOpen = false)}>Annuler</button>
+
             <button
-                class={confirm.confirmClass ?? btnClass}
+                class={confirm.buttonClass ?? btnClass}
                 disabled={isLoading}
                 onclick={async () => {
-                    isLoading = true;
-                    await onaction();
-                    isLoading = false;
-                }}>{confirm.confirmText ?? "Confirm"}</button
+                    await runAction();
+                    isConfirmOpen = false;
+                }}
+                >{#if isLoading}<ProgressCircle --size="1.5rem" thickness={0.05} infinite={true} showValue={false} />
+                    {loadingText}{:else}{confirm.buttonText ?? "Confirmer"}{/if}</button
             >
         </footer>
     </Dialog>

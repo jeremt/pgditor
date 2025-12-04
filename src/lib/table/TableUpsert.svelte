@@ -4,10 +4,11 @@
     import KeyIcon from "$lib/icons/KeyIcon.svelte";
     import LinkIcon from "$lib/icons/LinkIcon.svelte";
     import CheckboxInput from "$lib/widgets/CheckboxInput.svelte";
-    import {defaultValues, formatValue} from "./values";
+    import {defaultValues} from "./values";
     import {getPgContext, type PgRow} from "./pgContext.svelte";
     import TableValueEditor from "./TableValueEditor.svelte";
     import {catchError} from "$lib/helpers/catchError";
+    import ActionButton from "$lib/widgets/ActionButton.svelte";
 
     type Props = {
         row: PgRow & {ctid?: string};
@@ -51,9 +52,10 @@
                     >{pg.currentTable.schema}.{pg.currentTable.name}</span
                 >{/if}
         </h2>
-        <button class="btn ml-auto" onclick={insertOrUpdate}>
-            <CheckIcon --size="1.2rem" /> Apply
-        </button>
+        <ActionButton class="btn ml-auto" onaction={insertOrUpdate}>
+            <CheckIcon --size="1.2rem" />
+            Apply
+        </ActionButton>
     </div>
     {#if errorMessage !== ""}<div class="text-error pb-2 text-sm">{errorMessage}</div>{/if}
 </header>

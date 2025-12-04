@@ -86,8 +86,8 @@ WHERE ctid = ANY(ARRAY[${pg.selectedRows.map((index) => `'${pg.currentTable!.row
             confirm={{
                 title: "Are you sure?",
                 description: "Once you delete the selected rows, it can't be undone.",
-                confirmClass: "btn error",
-                confirmText: "Confirm delete",
+                buttonClass: "btn error",
+                buttonText: "Confirm delete",
             }}
             ><TrashIcon --size="1.2rem" /> Delete
             <span class="badge">{pg.selectedRows.length}</span></ActionButton

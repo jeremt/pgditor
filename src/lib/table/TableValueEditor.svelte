@@ -42,8 +42,6 @@
         }
         return "Enter a value";
     });
-
-    let isMonacoOpen = $state(false);
 </script>
 
 {#if column.is_nullable === "YES" && row[column.column_name] === null}

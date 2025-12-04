@@ -343,13 +343,7 @@ Examples
 
         // call on:change and apply debounce if specified
         editor.onDidChangeModelContent(() => {
-            console.log("IN CHANGE", editor?.getValue());
             onchange?.(editor?.getValue() ?? "", selectedFile);
-            // clearTimeout(debounceTimer);
-            // debounceTimer = setTimeout(() => {
-            //     if (editor) {
-            //     }
-            // }, debounce);
         });
 
         editor.onDidChangeCursorSelection((event) => {
@@ -357,7 +351,6 @@ Examples
             if (!model) {
                 return;
             }
-            console.log("IN", model.getValueInRange(event.selection));
             selection = model.getValueInRange(event.selection);
         });
 
