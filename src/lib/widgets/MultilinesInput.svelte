@@ -12,10 +12,20 @@
 
     let rowHeight = $state(0);
 
+    const calculateRowHeight = () => {
+        if (!shadowElement) return;
+        const rect = shadowElement.getBoundingClientRect();
+        if (rect.height > 0) {
+            rowHeight = rect.height;
+        }
+    };
+
     const resize = () => {
+        if (!element) return;
+
         element.style.height = "auto";
         const style = window.getComputedStyle(element);
-        const paddingBlock = 0; //parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
+        const paddingBlock = 0;
         const borderBlock = parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth);
 
         const height = Math.max(
@@ -27,31 +37,75 @@
 
     const handleInput = (event: Event & {currentTarget: HTMLTextAreaElement}) => {
         resize();
-        props.onchange?.(event);
+        props.oninput?.(event);
     };
 
     $effect(() => {
-        if (ResizeObserver) {
-            const observer = new ResizeObserver((entries) => {
-                for (const entry of entries) {
-                    if (entry.target.classList.contains("hidden") && entry.contentRect.height !== 0) {
-                        rowHeight = entry.contentRect.height;
-                        entry.target.parentElement?.removeChild(entry.target);
+        if (!element || !shadowElement) return;
+
+        // Calculate row height from shadow element
+        calculateRowHeight();
+
+        // Set up IntersectionObserver to detect when textarea becomes visible
+        const intersectionObserver = new IntersectionObserver(
+            (entries) => {
+                entries.forEach((entry) => {
+                    if (entry.isIntersecting) {
+                        // Element is visible, recalculate everything
+                        calculateRowHeight();
+                        requestAnimationFrame(() => {
+                            resize();
+                        });
                     }
-                    if (entry.contentRect.height) {
-                        resize();
-                        observer.disconnect();
-                    }
+                });
+            },
+            {
+                threshold: 0.01, // Trigger when at least 1% is visible
+            }
+        );
+
+        // Set up ResizeObserver to handle size changes
+        const resizeObserver = new ResizeObserver((entries) => {
+            for (const entry of entries) {
+                if (entry.target === shadowElement && entry.contentRect.height > 0) {
+                    rowHeight = entry.contentRect.height;
                 }
-            });
-            observer.observe(shadowElement);
-            observer.observe(element);
+                if (entry.target === element && entry.contentRect.width > 0) {
+                    requestAnimationFrame(resize);
+                }
+            }
+        });
+
+        // Observe both elements
+        intersectionObserver.observe(element);
+        resizeObserver.observe(shadowElement);
+        resizeObserver.observe(element);
+
+        // Initial resize attempt
+        requestAnimationFrame(() => {
+            if (rowHeight === 0) {
+                calculateRowHeight();
+            }
+            resize();
+        });
+
+        // Cleanup
+        return () => {
+            intersectionObserver.disconnect();
+            resizeObserver.disconnect();
+        };
+    });
+
+    // Watch for value changes from outside (e.g., programmatic updates)
+    $effect(() => {
+        if (value !== undefined) {
+            requestAnimationFrame(resize);
         }
     });
 </script>
 
 <svelte:window onresize={resize} />
-<textarea class="hidden" bind:this={shadowElement} rows="1"></textarea>
+<textarea bind:this={shadowElement} rows="1" aria-hidden="true" tabindex="-1"></textarea>
 <textarea bind:this={element} bind:value oninput={handleInput} rows={minRows ?? rows} {...props}></textarea>
 
 <style>
@@ -63,9 +117,11 @@
         padding-block: 0.5rem;
     }
 
-    textarea.hidden {
+    textarea[aria-hidden="true"] {
         opacity: 0;
+        position: absolute;
         box-sizing: content-box;
         pointer-events: none;
+        left: -9999px;
     }
 </style>
