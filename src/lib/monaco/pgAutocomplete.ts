@@ -307,8 +307,69 @@ const pgFunctions = [
     },
 ];
 
-export const addSqliteAutocomplete = (Monaco: typeof monaco, tables: PgTable[]) => {
-    return Monaco.languages.registerCompletionItemProvider("pgsql", {
+// Store the disposable so we can clean it up
+let currentDisposable: monaco.IDisposable | null = null;
+
+// Helper function to get context from the current line and previous text
+function analyzeContext(model: monaco.editor.ITextModel, position: monaco.Position) {
+    const lineContent = model
+        .getLineContent(position.lineNumber)
+        .slice(0, position.column - 1)
+        .toLowerCase();
+    const textBeforeCursor = model
+        .getValueInRange({
+            startLineNumber: 1,
+            startColumn: 1,
+            endLineNumber: position.lineNumber,
+            endColumn: position.column,
+        })
+        .toLowerCase();
+
+    return {
+        afterSelect: /\bselect\b/.test(textBeforeCursor) && !/\bfrom\b/.test(textBeforeCursor.split("select").pop()!),
+        afterFrom: /\bfrom\b(?!.*\bwhere\b)/.test(textBeforeCursor),
+        afterWhere: /\bwhere\b/.test(textBeforeCursor.split(/\b(from|join)\b/).pop()!),
+        afterJoin: /\b(join|inner join|left join|right join|full join)\s+\S*$/.test(lineContent),
+        afterOn: /\bon\s+\S*$/.test(lineContent),
+        afterGroupBy:
+            /\bgroup\s+by\b/.test(textBeforeCursor) && !/\bhaving\b/.test(textBeforeCursor.split("group by").pop()!),
+        afterOrderBy: /\border\s+by\b/.test(textBeforeCursor.split(/\blimit\b/).shift()!),
+        afterInsertInto: /\binsert\s+into\s+\S*$/.test(lineContent),
+        afterUpdate: /\bupdate\s+\S*$/.test(lineContent),
+        afterSet: /\bset\b/.test(textBeforeCursor.split(/\bwhere\b/).shift()!),
+        inSelectClause:
+            /\bselect\b/.test(textBeforeCursor) && !/\bfrom\b/.test(textBeforeCursor.split("select").pop()!),
+    };
+}
+
+// Helper to extract table references from the query
+function getReferencedTables(text: string, tables: PgTable[]): PgTable[] {
+    const referencedTables: PgTable[] = [];
+    const lowerText = text.toLowerCase();
+
+    for (const table of tables) {
+        const fullName = `${table.schema}.${table.name}`;
+        const patterns = [
+            new RegExp(`\\b${table.name}\\b`, "i"),
+            new RegExp(`\\b${fullName.replace(".", "\\.")}\\b`, "i"),
+        ];
+
+        if (patterns.some((p) => p.test(lowerText))) {
+            referencedTables.push(table);
+        }
+    }
+
+    return referencedTables;
+}
+
+export const addPgAutocomplete = (Monaco: typeof monaco, tables: PgTable[]) => {
+    // Dispose of the previous provider if it exists
+    if (currentDisposable) {
+        currentDisposable.dispose();
+    }
+
+    // Register the new provider and store its disposable
+    currentDisposable = Monaco.languages.registerCompletionItemProvider("pgsql", {
         provideCompletionItems: (
             model: monaco.editor.ITextModel,
             position: monaco.Position
@@ -322,16 +383,115 @@ export const addSqliteAutocomplete = (Monaco: typeof monaco, tables: PgTable[]) 
                 wordInfo.endColumn
             );
 
+            const context = analyzeContext(model, position);
+            const textBeforeCursor = model.getValueInRange({
+                startLineNumber: 1,
+                startColumn: 1,
+                endLineNumber: position.lineNumber,
+                endColumn: position.column,
+            });
+            const referencedTables = getReferencedTables(textBeforeCursor, tables);
+
+            // Add keywords based on context
             for (const keyword of keywords) {
-                suggestions.push({
-                    kind: Monaco.languages.CompletionItemKind.Keyword,
-                    insertText: keyword,
-                    label: keyword,
-                    detail: "Keyword",
-                    range: wordRange,
-                });
+                let shouldInclude = true;
+                let sortPriority = "5"; // Default priority
+
+                // Context-specific filtering
+                if (context.afterFrom && ["select", "from", "insert into", "update", "delete from"].includes(keyword)) {
+                    shouldInclude = false;
+                } else if (context.afterSelect && keyword === "from") {
+                    sortPriority = "1"; // High priority
+                } else if (
+                    context.afterFrom &&
+                    ["where", "join", "inner join", "left join", "group by", "order by"].includes(keyword)
+                ) {
+                    sortPriority = "2";
+                } else if (context.afterWhere && ["and", "or", "group by", "order by", "limit"].includes(keyword)) {
+                    sortPriority = "2";
+                } else if (context.afterJoin && keyword === "on") {
+                    sortPriority = "1";
+                } else if (context.afterGroupBy && ["having", "order by"].includes(keyword)) {
+                    sortPriority = "2";
+                } else if (context.afterOrderBy && ["limit", "offset"].includes(keyword)) {
+                    sortPriority = "2";
+                }
+
+                if (shouldInclude) {
+                    suggestions.push({
+                        kind: Monaco.languages.CompletionItemKind.Keyword,
+                        insertText: keyword,
+                        label: keyword,
+                        detail: "Keyword",
+                        range: wordRange,
+                        sortText: sortPriority + keyword,
+                    });
+                }
             }
+
+            // Add tables (especially after FROM, JOIN, INSERT INTO, UPDATE)
+            if (
+                context.afterFrom ||
+                context.afterJoin ||
+                context.afterInsertInto ||
+                context.afterUpdate ||
+                !context.inSelectClause
+            ) {
+                for (const table of tables) {
+                    suggestions.push({
+                        label: `${table.schema}.${table.name}`,
+                        kind: Monaco.languages.CompletionItemKind.Class,
+                        insertText: `${table.schema}.${table.name}`,
+                        detail: table.type === "BASE TABLE" ? "table" : "view",
+                        range: wordRange,
+                        sortText: "1" + table.name,
+                    });
+                    if (table.schema === "public") {
+                        suggestions.push({
+                            label: `${table.name}`,
+                            kind: Monaco.languages.CompletionItemKind.Class,
+                            insertText: `${table.name}`,
+                            detail: table.type === "BASE TABLE" ? "table" : "view",
+                            range: wordRange,
+                            sortText: "1" + table.name,
+                        });
+                    }
+                }
+            }
+
+            // Add columns (prioritize from referenced tables)
+            if (
+                context.afterSelect ||
+                context.afterWhere ||
+                context.afterOn ||
+                context.afterGroupBy ||
+                context.afterOrderBy ||
+                context.afterSet
+            ) {
+                const columnsToShow = referencedTables.length > 0 ? referencedTables : tables;
+
+                for (const table of columnsToShow) {
+                    const sortPrefix = referencedTables.includes(table) ? "1" : "3";
+
+                    for (const column of table.column_names) {
+                        suggestions.push({
+                            label: column,
+                            kind: Monaco.languages.CompletionItemKind.Field,
+                            insertText: column,
+                            detail: `${table.schema}.${table.name}`,
+                            range: wordRange,
+                            sortText: sortPrefix + column,
+                        });
+                    }
+                }
+            }
+
+            // Add functions (prioritize aggregate functions in SELECT after GROUP BY)
+            const showAggregateFunctions = context.inSelectClause;
+
             for (const {category, functions} of pgFunctions) {
+                const sortPrefix = showAggregateFunctions && category === "aggregate function" ? "2" : "4";
+
                 for (const func of functions) {
                     suggestions.push({
                         label: func,
@@ -340,29 +500,14 @@ export const addSqliteAutocomplete = (Monaco: typeof monaco, tables: PgTable[]) 
                         detail: category,
                         insertTextRules: Monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
                         range: wordRange,
+                        sortText: sortPrefix + func,
                     });
                 }
             }
 
-            for (const table of tables) {
-                suggestions.push({
-                    label: `${table.schema}.${table.name}`,
-                    kind: Monaco.languages.CompletionItemKind.Class,
-                    insertText: `${table.schema}.${table.name}`,
-                    detail: table.type === "BASE TABLE" ? "🗃️ table" : "👁️ view",
-                    range: wordRange,
-                });
-                for (const column of table.column_names) {
-                    suggestions.push({
-                        label: column,
-                        kind: Monaco.languages.CompletionItemKind.Field,
-                        insertText: column,
-                        detail: `${table.type === "BASE TABLE" ? "🗃️" : "👁️"} ${table.schema}.${table.name}`,
-                        range: wordRange,
-                    });
-                }
-            }
             return {suggestions};
         },
     });
+
+    return currentDisposable;
 };
