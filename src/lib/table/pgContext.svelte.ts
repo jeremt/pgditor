@@ -123,7 +123,9 @@ ${this.selectedRowsJson
         }
         this.tables = unsortedTables.toSorted((table) => (table.schema === "public" ? -1 : 1));
         if (autoUse && this.tables[0]) {
-            this.use(this.tables[0]);
+            const selectedTable = await this.connections.getSelectedTable();
+            const index = this.tables.findIndex((table) => `${table.schema}.${table.name}` === selectedTable);
+            this.use(this.tables[index === -1 ? 0 : index]);
         }
     };
 
@@ -154,6 +156,7 @@ ${this.selectedRowsJson
             return;
         }
         this.currentTable = {...t, columns, rows: [], count: 0};
+        this.connections.saveSelectedTable(this.currentTable);
         this.filters = {
             where: "",
             offset: 0,
