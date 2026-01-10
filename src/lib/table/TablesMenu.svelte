@@ -54,6 +54,7 @@ WHERE ctid = ANY(ARRAY[${pg.selectedRows.map((index) => `'${pg.currentTable!.row
             refreshing = false;
         }, 500);
         await pg.loadTables(false);
+        await pg.refreshData();
     };
 </script>
 
