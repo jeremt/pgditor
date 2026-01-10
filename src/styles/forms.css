@@ -25,7 +25,7 @@ button.btn {
     }
     &:hover,
     &:focus-visible {
-        translate: 0 -0.1rem;
+        background-image: linear-gradient(var(--color-gold), transparent);
     }
     &:active {
         translate: 0 0.15em;

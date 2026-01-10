@@ -13,7 +13,7 @@
     <SplitPane type="rows" id="main" min="100px" max="-100px" pos="50%">
         {#snippet a()}
             <MonacoEditor
-                bind:value={scripts.currentScript}
+                bind:value={scripts.currentValue}
                 bind:selection={scripts.currentSelection}
                 selectedFile="script.sql"
                 files={[{path: "script.sql", value: ""}]}
@@ -23,7 +23,7 @@
                 onchange={(newValue, path) => {
                     switch (path) {
                         case "script.sql":
-                            scripts.currentScript = newValue;
+                            scripts.currentValue = newValue;
                             break;
                         default:
                             throw new Error(`File ${path} not found.`);

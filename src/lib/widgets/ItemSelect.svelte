@@ -7,8 +7,10 @@
         itemToString: (item: ItemType) => string;
         onselect: (item: ItemType) => void;
         renderItem: Snippet<[item: ItemType, index: number, selectedIndex: number, highlights?: string]>;
+        renderAction?: Snippet;
         placeholder?: string;
         noResult?: string;
+        noItems?: string;
     };
 
     let {
@@ -16,8 +18,10 @@
         itemToString,
         onselect,
         renderItem,
+        renderAction,
         placeholder = "Filter items",
         noResult = "No result found",
+        noItems = "No items",
     }: Props = $props();
 
     let searchText = $state("");
@@ -65,7 +69,17 @@
 </script>
 
 <div class="flex flex-col gap-2 w-2xl overflow-hidden">
-    <input type="text" bind:value={searchText} onkeydown={handleKeys} autocorrect="off" {placeholder} />
+    <div class="flex gap-4">
+        <input
+            type="text"
+            class="grow"
+            bind:value={searchText}
+            onkeydown={handleKeys}
+            autocorrect="off"
+            {placeholder}
+        />
+        {@render renderAction?.()}
+    </div>
     <div class="flex flex-col gap-2 overflow-auto h-80 py-2">
         {#if searchText === ""}
             {#each items as item, i}
@@ -79,6 +93,8 @@
                 >
                     {@render renderItem(item, i, selectedIndex)}
                 </button>
+            {:else}
+                <p class="text-sm text-center text-fg-2">{noItems}</p>
             {/each}
         {:else}
             {#each searchResult as { text, html }, i}

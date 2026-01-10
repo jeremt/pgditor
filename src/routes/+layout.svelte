@@ -18,7 +18,7 @@
 
     const connections = setConnectionsContext();
     const pg = setPgContext();
-    setScriptsContext();
+    const scripts = setScriptsContext();
 
     const shortcuts = globalShortcuts([
         {

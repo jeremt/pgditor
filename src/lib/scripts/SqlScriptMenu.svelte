@@ -2,44 +2,110 @@
     import CheckIcon from "$lib/icons/CheckIcon.svelte";
     import ClearIcon from "$lib/icons/ClearIcon.svelte";
     import EnterIcon from "$lib/icons/EnterIcon.svelte";
-    import JsonFileIcon from "$lib/icons/JsonFileIcon.svelte";
     import PlayIcon from "$lib/icons/PlayIcon.svelte";
     import Dialog from "$lib/widgets/Dialog.svelte";
-    import {getScriptsContext} from "./scriptsContext.svelte";
+    import {getScriptsContext, type ScriptFile} from "./scriptsContext.svelte";
     import ItemSelect from "$lib/widgets/ItemSelect.svelte";
+    import FileIcon from "$lib/icons/FileIcon.svelte";
+    import {open} from "@tauri-apps/plugin-dialog";
+    // import TrashIcon from "$lib/icons/TrashIcon.svelte";
+    // import PlusIcon from "$lib/icons/PlusIcon.svelte";
+    // import SaveIcon from "$lib/icons/SaveIcon.svelte";
+    // import SearchIcon from "$lib/icons/SearchIcon.svelte";
 
     const scripts = getScriptsContext();
 
-    type FileRow = {name: string; path: string};
-    let currentFile = $state<FileRow>({name: "test.sql", path: "~/Downloads"});
-    const files: FileRow[] = [
-        {name: "test.sql", path: "~/Downloads"},
-        {name: "lol.sql", path: "~/Projects/lol/sql"},
-    ];
-
     let isFileSelectOpen = $state(false);
-    const itemToString = (item: FileRow) => `${item.name} ${item.path}`;
-    const onselect = (item: FileRow) => {
-        currentFile = item;
+    const itemToString = (item: ScriptFile) => item.path;
+    const onselect = (item: ScriptFile) => {
+        scripts.selectFile(item);
         isFileSelectOpen = false;
-        console.log("TODO: select ", item);
     };
+
+    const newScript = () => {
+        scripts.emptyFile();
+        isFileSelectOpen = false;
+    };
+
+    const importScript = async () => {
+        const scriptPath = await open({
+            multiple: false,
+            filters: [
+                {
+                    name: "Text",
+                    extensions: ["sql"],
+                },
+            ],
+        });
+        if (scriptPath !== null) {
+            scripts.add(scriptPath);
+        }
+    };
+    const lastSlash = (path: string) => {
+        let lastIndex = 0;
+        let inElement = false;
+        for (let i = 0; i < path.length; i++) {
+            if (path[i] === "<") {
+                inElement = true;
+            }
+            if (path[i] === ">") {
+                inElement = false;
+            }
+            if (!inElement && path[i] === "/") {
+                lastIndex = i;
+            }
+        }
+        return lastIndex;
+    };
+    const filename = (path: string) => path.slice(lastSlash(path) + 1);
+    const folderpath = (path: string) => path.slice(0, lastSlash(path));
 </script>
 
 <!-- <button class="btn ghost" title="⌘P" onclick={() => (isFileSelectOpen = true)} disabled={false}>
-    {currentFile.name}
-</button> -->
+    {#if scripts.currentFile}
+        <FileIcon --size="1.2rem" />
+        {filename(scripts.currentFile.path)}
+    {:else}
+        <SearchIcon --size="1.2rem" />
+        Select file
+    {/if}
+</button>
+
+{#if scripts.currentFile === undefined}
+    <button class="btn ghost">
+        <SaveIcon --size="1.2rem" />
+        Save
+    </button>
+{/if} -->
 
 <Dialog isOpen={isFileSelectOpen} onrequestclose={() => (isFileSelectOpen = false)} --padding="1rem">
-    <ItemSelect items={files} {itemToString} {onselect}>
+    <ItemSelect items={scripts.files} {itemToString} {onselect} noItems="No scripts imported yet for this database.">
+        {#snippet renderAction()}
+            {#if scripts.currentFile !== undefined}
+                <button class="btn secondary overflow-visible" onclick={newScript}>New</button>
+            {/if}
+            <button class="btn overflow-visible" onclick={importScript}>Import</button>
+        {/snippet}
         {#snippet renderItem(item, index, selectedIndex, highlights)}
-            {#if currentFile && itemToString(currentFile) === itemToString(item)}
+            {#if scripts.currentFile && itemToString(scripts.currentFile) === itemToString(item)}
                 <CheckIcon --size="1.2rem" />
             {:else}
-                <JsonFileIcon --size="1.2rem" />
+                <FileIcon --size="1.2rem" />
             {/if}
-            {#if highlights}<span class="search-result">{@html highlights}</span>{:else}{item.name}{/if}
-            <span class="font-normal text-xs text-fg-1 text-start grow overflow-hidden text-ellipsis">{item.path}</span>
+            {#if highlights}
+                <span class="search-result">{@html filename(highlights)}</span>
+            {:else}
+                {filename(item.path)}
+            {/if}
+            {#if highlights}
+                <span class="search-result font-normal text-xs text-fg-1 text-start grow overflow-hidden text-ellipsis">
+                    {@html folderpath(highlights)}
+                </span>
+            {:else}
+                <span class="font-normal text-xs text-fg-1 text-start grow overflow-hidden text-ellipsis">
+                    {folderpath(item.path)}
+                </span>
+            {/if}
             {#if index === selectedIndex}
                 <EnterIcon />
             {/if}

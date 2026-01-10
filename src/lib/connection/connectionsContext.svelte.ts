@@ -1,6 +1,6 @@
 import {catchError} from "$lib/helpers/catchError";
+import {StoreContext} from "$lib/helpers/StoreContext";
 import {invoke} from "@tauri-apps/api/core";
-import {load, type Store} from "@tauri-apps/plugin-store";
 import {getContext, setContext} from "svelte";
 
 export type Connection = {
@@ -13,9 +13,7 @@ const storePath = "connections.json";
 const connectionsKey = "connections";
 const selectedIdKey = "selected_connection_id";
 
-class ConnectionsContext {
-    private store?: Store;
-
+class ConnectionsContext extends StoreContext {
     list = $state<Connection[]>([]);
     currentId = $state<string>();
 
@@ -125,36 +123,6 @@ class ConnectionsContext {
             return "Connection string is invalid";
         }
     };
-
-    /**
-     * Returns the value for the given key or undefined if the key does not exist.
-     */
-    private getFromStore = async <T>(key: string) => {
-        if (!this.store) {
-            this.store = await load(storePath);
-        }
-        return this.store.get<T>(key);
-    };
-
-    /**
-     * Inserts a key-value pair into the store.
-     */
-    private setToStore = async <T>(key: string, value: T) => {
-        if (!this.store) {
-            this.store = await load(storePath);
-        }
-        await this.store.set(key, value);
-    };
-
-    /**
-     * Saves the store to disk at the store's path.
-     */
-    saveToStore = async () => {
-        if (!this.store) {
-            this.store = await load(storePath);
-        }
-        await this.store.save();
-    };
 }
 
 const key = Symbol("connectionsContext");
@@ -173,4 +141,4 @@ export const getConnectionsContext = () => getContext<ConnectionsContext>(key);
  * This must be called in order to use `getConnectionsContext()`.
  * @returns the context
  */
-export const setConnectionsContext = () => setContext(key, new ConnectionsContext());
+export const setConnectionsContext = () => setContext(key, new ConnectionsContext(storePath));

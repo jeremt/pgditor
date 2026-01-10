@@ -5,10 +5,11 @@
         isOpen: boolean;
         target: Snippet;
         offsetY?: number;
+        anchor?: "start" | "center" | "end";
         children: Snippet;
     };
 
-    let {isOpen = $bindable(), target, children, offsetY = 0}: Props = $props();
+    let {isOpen = $bindable(), target, children, offsetY = 0, anchor = "center"}: Props = $props();
     let cardElement: HTMLDivElement;
     let el: HTMLDivElement;
     let position = $state({x: 0, y: 0});
@@ -32,9 +33,18 @@
     const restrictContainerPosition = () => {
         const targetBounds = el.getBoundingClientRect();
         const childrenBounds = cardElement.getBoundingClientRect();
-        const spaceRight = window.innerWidth - targetBounds.right;
-        const expectedX =
-            spaceRight >= childrenBounds.width ? targetBounds.left : window.innerWidth - childrenBounds.width - 16;
+        const margin = 16;
+        // horizontal anchor: 'start' | 'center' | 'end'
+        let expectedX: number;
+        if (anchor === "start") {
+            expectedX = targetBounds.left;
+        } else if (anchor === "end") {
+            expectedX = targetBounds.right - childrenBounds.width;
+        } else {
+            expectedX = targetBounds.left + (targetBounds.width - childrenBounds.width) / 2;
+        }
+        // clamp to viewport with a safe margin
+        expectedX = Math.max(margin, Math.min(expectedX, window.innerWidth - childrenBounds.width - margin));
 
         const spaceBelow = window.innerHeight - targetBounds.bottom;
         const expectedY =
@@ -42,6 +52,7 @@
                 ? targetBounds.bottom + offsetY
                 : targetBounds.top - childrenBounds.height - offsetY;
 
+        // apply positions (never negative)
         position.x = Math.max(expectedX, 0);
         position.y = Math.max(expectedY, 0);
         if (expectedY < 0) {
@@ -49,8 +60,11 @@
         } else {
             maxHeight = undefined;
         }
-        if (expectedX < 0) {
-            maxWidth = `${childrenBounds.width - Math.abs(expectedX)}px`;
+        // adjust max width when horizontally constrained
+        if (expectedX < margin) {
+            maxWidth = `${childrenBounds.width - Math.abs(expectedX - margin)}px`;
+        } else if (expectedX + childrenBounds.width + margin > window.innerWidth) {
+            maxWidth = `${childrenBounds.width - (expectedX + childrenBounds.width + margin - window.innerWidth)}px`;
         } else {
             maxWidth = undefined;
         }
@@ -66,11 +80,11 @@
 <svelte:document onclick={clickOut} onkeydown={closeOnEsc} />
 <svelte:window onresize={restrictContainerPosition} />
 
-<div bind:this={el} role="button" tabindex="-1">
+<div class="popover" bind:this={el} role="button" tabindex="-1">
     {@render target()}
     <div
         bind:this={cardElement}
-        class="popoverCard"
+        class="popoverCard card"
         class:open={isOpen}
         style:top={`${position.y}px`}
         style:left={`${position.x}px`}
@@ -82,28 +96,28 @@
 </div>
 
 <style>
+    .popover {
+        display: inline-flex;
+    }
     .popoverCard {
         position: fixed;
+        background-color: var(--color-bg);
         left: 0;
         opacity: 0;
-        padding: 1rem;
-        border: 1px solid var(--color-bg-1);
-        border-radius: var(--radius-card);
+        padding: var(--padding, 1rem);
         display: flex;
         flex-direction: column;
         transition:
-            0.3s all,
-            top 0s,
-            left 0s;
-        translate: 0 -1rem;
+            opacity 0.18s ease,
+            transform 0.18s ease;
+        transform: translateY(-0.75rem);
+        will-change: transform, opacity;
         pointer-events: none;
-        background-color: #181818aa;
-        backdrop-filter: blur(1rem);
-        z-index: 1;
+        z-index: 50;
     }
     .popoverCard.open {
         opacity: 1;
-        translate: 0;
+        transform: translateY(0);
         pointer-events: all;
     }
 </style>
