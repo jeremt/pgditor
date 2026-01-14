@@ -74,3 +74,4 @@ jobs:
                       4. If still blocked, run: `xattr -cr /Applications/YourApp.app`
                       5. Right-click the app and select "Open"
                   prerelease: true
+                  args: ${{ matrix.args }}
