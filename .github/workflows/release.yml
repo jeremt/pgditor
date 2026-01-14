@@ -16,7 +16,7 @@ jobs:
                 include:
                     - platform: "macos-latest" # for Arm based macs (M1 and above).
                       args: "--target aarch64-apple-darwin"
-                    - platform: "macos-latest" # for Intel based macs.
+                    - platform: "macos-11" # Intel macOS runner (x86_64)
                       args: "--target x86_64-apple-darwin"
                     - platform: "ubuntu-latest"
                       args: ""
@@ -44,6 +44,12 @@ jobs:
 
             - name: Install Rust stable
               uses: dtolnay/rust-toolchain@stable
+
+            - name: Add macOS Rust targets
+              if: startsWith(matrix.platform, 'macos')
+              run: |
+                  rustup target add aarch64-apple-darwin || true
+                  rustup target add x86_64-apple-darwin || true
 
             - name: Install Tauri dependencies (Linux only)
               if: matrix.platform == 'ubuntu-latest'
