@@ -191,6 +191,7 @@ ${this.selectedRowsJson
         const connectionString = this.connections.current.connectionString;
         const startTime = performance.now();
         this.isLoading = true;
+        const primary_key = this.currentTable.columns.find((col) => col.is_primary_key === "YES");
         const [dataError, data] = await catchError(
             invoke<{rows: PgRow[]; count: number}>("get_table_data", {
                 connectionString,
@@ -201,6 +202,8 @@ ${this.selectedRowsJson
                 whereClause: where,
                 orderBy: this.filters.orderBy
                     ? `ORDER BY ${this.filters.orderBy.column} ${this.filters.orderBy.direction}`
+                    : primary_key !== undefined
+                    ? `ORDER BY ${primary_key.column_name} ASC`
                     : "",
             })
         );
