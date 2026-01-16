@@ -18,30 +18,27 @@
 
     const pg = getPgContext();
     const {toast} = getToastContext();
-    let rowToInsert = $derived<PgRow>(
+
+    $inspect("before");
+    const rowToInsert = $derived<PgRow>(
         pg.currentTable?.columns.reduce((result, column) => {
             return {
                 ...result,
-                [column.column_name]: column.column_default
-                    ? column.column_default
-                    : column.is_nullable === "YES"
-                      ? null
-                      : defaultValues[column.data_type],
+                [column.column_name]:
+                    column.column_default && column.is_primary_key === "NO"
+                        ? column.column_default
+                        : column.is_nullable === "YES" || column.is_primary_key === "YES"
+                          ? null
+                          : defaultValues[column.data_type],
             };
         }, {}) ?? {}
     );
+    $inspect("rowToInsert", rowToInsert);
+
     let isInsertOpen = $state(false);
 
     const deleteRows = async () => {
-        if (!pg.currentTable) {
-            return;
-        }
-        // TODO: check for cascading foreign keys and show a warning dialog before deleting if any
-        const query = `DELETE FROM "${pg.currentTable.schema}"."${pg.currentTable.name}"
-WHERE ctid = ANY(ARRAY[${pg.selectedRows.map((index) => `'${pg.currentTable!.rows[index].ctid}'`).join(", ")}]::tid[]);`;
-        await pg.rawQuery(query);
-        pg.selectedRows = [];
-        pg.filters.where = "";
+        pg.deleteSelection();
     };
 
     let isExportOpen = $state(false);

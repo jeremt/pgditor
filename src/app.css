@@ -31,6 +31,39 @@
     outline: none; /* outline should be set specifically for each element with :focus-visible */
 }
 
+* {
+    &::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+
+        background-color: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+        border-radius: 3px;
+
+        background-color: rgba(130, 130, 130, 0.4);
+
+        transition: background-color 0.15s;
+    }
+
+    &::-webkit-scrollbar-thumb:hover {
+        border-radius: 3px;
+
+        background-color: rgba(130, 130, 130, 0.5);
+    }
+
+    &::-webkit-scrollbar-button {
+        width: 0;
+        height: 0;
+        display: none;
+    }
+
+    &::-webkit-scrollbar-corner {
+        background-color: transparent;
+    }
+}
+
 body {
     @apply flex flex-col h-dvh w-full;
     overflow: auto;

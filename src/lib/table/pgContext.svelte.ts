@@ -59,9 +59,7 @@ class PgContext {
         if (!this.currentTable) {
             return [];
         }
-        return this.currentTable.rows
-            .filter((_, i) => this.selectedRows.length === 0 || this.selectedRows.includes(i))
-            .map(({ctid, ...rest}) => rest);
+        return this.currentTable.rows.filter((_, i) => this.selectedRows.length === 0 || this.selectedRows.includes(i));
     }
     get selectedRowsCsv() {
         if (!this.currentTable) {
@@ -238,33 +236,81 @@ ${this.selectedRowsJson
         return data;
     };
 
-    /**
-     * Simple helper function to do an insert into or an update depending on whether a ctid is specified or not.
-     */
-    upsertRow = async (row: PgRow & {ctid?: string}, {throwError = true} = {}) => {
+    getPrimaryKey = () => {
         if (!this.currentTable) {
             return;
         }
-        const filterPK = (col: PgColumn) =>
-            col.is_primary_key === "NO" || (row[col.column_name] && col.column_default === null);
-        const query = row.ctid
+        const primary_key = this.currentTable.columns.find((col) => col.is_primary_key === "YES");
+        if (primary_key === undefined) {
+            this.toastContext.toast(`Cannot update row without primary key.`, {kind: "error"});
+            return;
+        }
+        return primary_key;
+    };
+
+    deleteSelection = async () => {
+        const pk = this.getPrimaryKey();
+        if (!pk || !this.currentTable) {
+            return;
+        }
+        // TODO: check for cascading foreign keys and show a warning dialog before deleting if any
+        const query = `DELETE FROM ${this.fullName}
+WHERE ${pk.column_name} = ANY(ARRAY[${this.selectedRows
+            .map((index) => formatValue(pk, this.currentTable!.rows[index][pk.column_name]))
+            .join(", ")}]);`;
+        await this.rawQuery(query);
+        this.selectedRows = [];
+        this.filters.where = "";
+    };
+
+    updateRow = async (row: PgRow, {throwError = true} = {}) => {
+        const pk = this.getPrimaryKey();
+        if (!pk || !this.currentTable) {
+            return;
+        }
+        this.rawQuery(
+            `UPDATE ${this.fullName} SET
+${this.currentTable.columns
+    .filter((col) => col.is_primary_key === "NO")
+    .map((col) => `${col.column_name} = ${formatValue(col, row[col.column_name])}`)
+    .join(",\n  ")}
+WHERE ${pk.column_name} = ${formatValue(pk, row[pk.column_name])};
+                        `,
+            {throwError}
+        );
+    };
+
+    /**
+     * Simple helper function to do an insert into or an update depending on whether there is a primary key or not.
+     */
+    upsertRow = async (row: PgRow, {throwError = true} = {}) => {
+        if (!this.currentTable) {
+            return;
+        }
+        const primary_key = this.getPrimaryKey();
+        if (!primary_key) {
+            this.toastContext.toast(`Can't update row without primary key`);
+            return;
+        }
+        const primary_key_value = primary_key ? row[primary_key.column_name] : null;
+        const query = primary_key_value
             ? // updae
-              `UPDATE "${this.currentTable.schema}"."${this.currentTable.name}"
+              `UPDATE ${this.fullName}
 SET
   ${this.currentTable.columns
       .filter((col) => col.is_primary_key === "NO")
       .map((col) => `${col.column_name} = ${formatValue(col, row[col.column_name])}`)
       .join(",\n  ")}
-WHERE ctid = '${row.ctid}';`
+WHERE ${primary_key!.column_name} = ${formatValue(primary_key!, primary_key_value)};`
             : // insert
-              `INSERT INTO "${this.currentTable.schema}"."${this.currentTable.name}"
+              `INSERT INTO ${this.fullName}
 (${this.currentTable.columns
-                  .filter(filterPK)
+                  .filter((col) => col.is_primary_key === "NO")
                   .map(({column_name}) => column_name)
                   .join(", ")})
 VALUES
 (${this.currentTable.columns
-                  .filter(filterPK)
+                  .filter((col) => col.is_primary_key === "NO")
                   .map((col) => formatValue(col, row[col.column_name]))
                   .join(", ")});`;
 

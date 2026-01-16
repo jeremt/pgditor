@@ -46,6 +46,17 @@
 
 {#if column.is_nullable === "YES" && row[column.column_name] === null}
     <div></div>
+{:else if column.is_primary_key === "YES" && row[column.column_name] === null}
+    <input
+        id={column.column_name}
+        type="text"
+        class="font-mono!"
+        autocorrect="off"
+        autocomplete="off"
+        autocapitalize="off"
+        {disabled}
+        placeholder="generated"
+    />
 {:else if column.enum_values}
     <Select class="font-mono font-normal!" id={column.column_name} {disabled} bind:value={row[column.column_name]}>
         {#each column.enum_values as enumValue}

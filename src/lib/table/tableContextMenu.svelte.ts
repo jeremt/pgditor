@@ -80,34 +80,36 @@ export const createContextMenu = () => {
                     await writeText(JSON.stringify(lastMenuContext.row));
                     toast("Row copied to clipboard (in JSON)");
                     break;
-                case "table_set_null":
-                    if (lastMenuContext.column && lastMenuContext.row?.ctid && pg.currentTable) {
-                        pg.rawQuery(`UPDATE ${pg.fullName} SET
-${lastMenuContext.column.column_name} = null
-WHERE ctid = '${lastMenuContext.row.ctid}';
-                        `);
+                case "table_set_null": {
+                    if (lastMenuContext.column) {
+                        await pg.updateRow({[lastMenuContext.column.column_name]: null}, {throwError: false});
                         toast("Value set to NULL");
                     }
                     break;
-                case "table_set_default":
-                    if (lastMenuContext.column && lastMenuContext.row?.ctid && pg.currentTable) {
-                        pg.rawQuery(`UPDATE ${pg.fullName} SET
-${lastMenuContext.column.column_name} = ${lastMenuContext.column.column_default}
-WHERE ctid = '${lastMenuContext.row.ctid}';
-                        `);
+                }
+                case "table_set_default": {
+                    if (lastMenuContext.column) {
+                        await pg.updateRow(
+                            {[lastMenuContext.column.column_name]: lastMenuContext.column.column_default},
+                            {throwError: false}
+                        );
                         toast("Value set to default");
                     }
                     break;
+                }
                 case "table_set_all_null":
-                    if (lastMenuContext.column && lastMenuContext.row?.ctid && pg.currentTable) {
-                        pg.rawQuery(`UPDATE ${pg.fullName} SET ${lastMenuContext.column.column_name} = null;`);
+                    if (lastMenuContext.column && pg.currentTable) {
+                        await pg.rawQuery(`UPDATE ${pg.fullName} SET ${lastMenuContext.column.column_name} = null;`, {
+                            throwError: false,
+                        });
                         toast(`All values of column ${lastMenuContext.column.column_name} set to NULL`);
                     }
                     break;
                 case "table_set_all_default":
-                    if (lastMenuContext.column && lastMenuContext.row?.ctid && pg.currentTable) {
-                        pg.rawQuery(
-                            `UPDATE ${pg.fullName} SET ${lastMenuContext.column.column_name} = ${lastMenuContext.column.column_default};`
+                    if (lastMenuContext.column && pg.currentTable) {
+                        await pg.rawQuery(
+                            `UPDATE ${pg.fullName} SET ${lastMenuContext.column.column_name} = ${lastMenuContext.column.column_default};`,
+                            {throwError: false}
                         );
                         toast(`All values of column ${lastMenuContext.column.column_name} set to default`);
                     }

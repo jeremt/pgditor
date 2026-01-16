@@ -1,6 +1,5 @@
 <script lang="ts">
     import CheckIcon from "$lib/icons/CheckIcon.svelte";
-    import CrossIcon from "$lib/icons/CrossIcon.svelte";
     import JsonFileIcon from "$lib/icons/JsonFileIcon.svelte";
     import MonacoEditor from "$lib/monaco/MonacoEditor.svelte";
     import Dialog from "$lib/widgets/Dialog.svelte";

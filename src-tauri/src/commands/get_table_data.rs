@@ -43,7 +43,7 @@ pub async fn get_table_data(
             )
         } else {
             format!(
-                "SELECT row_to_json(t)::text as json_text FROM (SELECT *, ctid::text as ctid FROM {}.{} {} {} OFFSET {} LIMIT {}) t",
+                "SELECT row_to_json(t)::text as json_text FROM (SELECT * FROM {}.{} {} {} OFFSET {} LIMIT {}) t",
                 schema_q, table_q, where_clause, order_by, offset, limit
             )
         };
