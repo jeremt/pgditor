@@ -57,7 +57,7 @@
                         <table class="h-fit">
                             <thead class="sticky top-0 bg-bg">
                                 <tr>
-                                    {#each columns as column}
+                                    {#each columns.filter((col) => col !== "__index") as column}
                                         <th>{column}</th>
                                     {/each}
                                 </tr>
@@ -65,7 +65,7 @@
                             <tbody>
                                 {#each scripts.lastResult as row (row.__index)}
                                     <tr>
-                                        {#each columns as column}
+                                        {#each columns.filter((col) => col !== "__index") as column}
                                             <td
                                                 title={row[column]}
                                                 onclick={async () => {
