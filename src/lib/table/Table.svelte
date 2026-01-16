@@ -15,9 +15,6 @@
     const pg = getPgContext();
 
     const {oncontextmenu} = createContextMenu();
-
-    let rowToUpdate = $state<PgRow>();
-    let isUpdateOpen = $state(false);
 </script>
 
 {#if pg.currentTable === undefined}
@@ -112,8 +109,7 @@
                             if (pg.currentTable?.type !== "BASE TABLE") {
                                 return;
                             }
-                            rowToUpdate = row;
-                            isUpdateOpen = true;
+                            pg.openUpdateRow(row);
                         }}
                     >
                         {#each pg.currentTable.columns as column}
@@ -175,15 +171,15 @@
     {/if}
 {/if}
 
-{#if pg.currentTable && rowToUpdate}
+{#if pg.currentTable && pg.rowToUpdate}
     <Dialog
         --padding="0"
-        isOpen={isUpdateOpen}
-        onrequestclose={() => (isUpdateOpen = false)}
+        isOpen={pg.isUpdateOpen}
+        onrequestclose={() => (pg.isUpdateOpen = false)}
         position="right"
         animation="right"
     >
-        <TableUpsert row={rowToUpdate} onclose={() => (isUpdateOpen = false)} />
+        <TableUpsert row={pg.rowToUpdate} onclose={() => (pg.isUpdateOpen = false)} />
     </Dialog>
 {/if}
 

@@ -40,6 +40,9 @@ export const createContextMenu = () => {
         if (column.is_primary_key === "NO" && column.column_default) {
             items.push({id: "table_set_all_default", text: "Set all to default"});
         }
+        // if (column.is_primary_key === "YES") {
+        items.push({id: "table_update_row", text: "Update row"});
+        // }
 
         items.push({item: "Separator"}); // Predefined separator
 
@@ -155,6 +158,12 @@ export const createContextMenu = () => {
                         toast("Failed to export SQL", {kind: "error"});
                     }
                     break;
+                case "table_update_row": {
+                    if (lastMenuContext.row) {
+                        pg.openUpdateRow(lastMenuContext.row);
+                    }
+                    break;
+                }
                 default:
                     console.warn("Unhandled context menu event", event.payload, lastMenuContext);
             }

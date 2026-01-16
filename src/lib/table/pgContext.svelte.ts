@@ -56,6 +56,14 @@ class PgContext {
         500
     );
 
+    rowToUpdate = $state<PgRow>();
+    isUpdateOpen = $state(false);
+
+    openUpdateRow = (row: PgRow) => {
+        this.rowToUpdate = row;
+        this.isUpdateOpen = true;
+    };
+
     selectedRows = $state<number[]>([]);
     get selectedRowsJson() {
         if (!this.currentTable) {
