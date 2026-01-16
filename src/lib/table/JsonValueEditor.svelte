@@ -24,7 +24,7 @@
     ><JsonFileIcon --size="1.2rem" /> Open json editor</button
 >
 <Dialog isOpen={isEditorOpen} onrequestclose={() => (isEditorOpen = false)} position="right" animation="right">
-    <header class="flex gap-4 w-xl pb-2 items-center">
+    <header class="flex gap-4 w-xl items-center p-4">
         <button
             type="button"
             class="btn secondary"
