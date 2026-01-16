@@ -90,6 +90,11 @@ class ScriptsContext extends StoreContext {
             this.errorMessage = error.message;
         } else {
             this.lastResult = result;
+            if (this.lastResult !== undefined) {
+                for (let i = 0; i < this.lastResult.length; i++) {
+                    this.lastResult[i].__index = i.toString(); // used to prevent re-render table rows
+                }
+            }
         }
     };
 }

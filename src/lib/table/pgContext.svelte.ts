@@ -37,6 +37,7 @@ class PgContext {
     isUseDialogOpen = $state(false);
     isFilterPopover = $state(false);
     lastQueryTime = $state<number>();
+    isLoading = $state(false);
 
     filters = $state({
         where: "",
@@ -108,6 +109,7 @@ ${this.selectedRowsJson
             return;
         }
         const connectionString = this.connections.current.connectionString;
+        this.isLoading = true;
         const [tableError, unsortedTables] = await catchError(invoke<PgTable[]>("list_tables", {connectionString}));
         if (tableError) {
             console.error(tableError.message);
@@ -126,6 +128,7 @@ ${this.selectedRowsJson
             const index = this.tables.findIndex((table) => `${table.schema}.${table.name}` === selectedTable);
             this.use(this.tables[index === -1 ? 0 : index]);
         }
+        this.isLoading = false;
     };
 
     /**
@@ -136,6 +139,7 @@ ${this.selectedRowsJson
             return;
         }
         const connectionString = this.connections.current.connectionString;
+        this.isLoading = true;
         const [columnsError, columns] = await catchError(
             invoke<PgColumn[]>("list_table_columns", {
                 connectionString,
@@ -163,6 +167,7 @@ ${this.selectedRowsJson
             orderBy: undefined,
         };
         await this.refreshData();
+        this.isLoading = false;
     };
 
     /**
@@ -177,6 +182,7 @@ ${this.selectedRowsJson
         }
         const connectionString = this.connections.current.connectionString;
         const startTime = performance.now();
+        this.isLoading = true;
         const [dataError, data] = await catchError(
             invoke<{rows: PgRow[]; count: number}>("get_table_data", {
                 connectionString,
@@ -202,6 +208,7 @@ ${this.selectedRowsJson
             this.currentTable.rows[i].__index = i;
         }
         this.currentTable.count = data.count;
+        this.isLoading = false;
     };
 
     /**
@@ -222,6 +229,7 @@ ${this.selectedRowsJson
         }
         const connectionString = this.connections.current.connectionString;
         const startTime = performance.now();
+        this.isLoading = true;
         const [error, data] = await catchError(
             invoke<Record<string, string | null>[]>("raw_query", {
                 connectionString,
@@ -242,6 +250,7 @@ ${this.selectedRowsJson
             // FIXME: this is a bit wasteful to refresh data, it could be done through optimistic update directly
             await this.refreshData();
         }
+        this.isLoading = false;
         return data;
     };
 

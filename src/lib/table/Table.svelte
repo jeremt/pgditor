@@ -10,6 +10,7 @@
     import TableUpsert from "./TableUpsert.svelte";
     import {createContextMenu} from "./tableContextMenu.svelte";
     import {formatValue} from "./values";
+    import ProgressCircle from "$lib/widgets/ProgressCircle.svelte";
 
     const pg = getPgContext();
 
@@ -23,6 +24,10 @@
     <div class="w-full h-full flex flex-col gap-4 items-center justify-center text-fg-1">
         <UnpluggedIcon --size="3rem" --thickness="1.2" />
         <div>The database is empty or not started.</div>
+    </div>
+{:else if pg.isLoading}
+    <div class="w-full h-full flex flex-col gap-4 items-center justify-center text-fg-1">
+        <ProgressCircle infinite={true} showValue={false} />
     </div>
 {:else}
     <div class="flex flex-1 w-full h-full overflow-auto">

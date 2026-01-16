@@ -4,9 +4,12 @@
     import {getScriptsContext} from "./scriptsContext.svelte";
     import {SplitPane} from "@rich_harris/svelte-split-pane";
     import {getToastContext} from "$lib/widgets/Toaster.svelte";
+    import {getPgContext} from "$lib/table/pgContext.svelte";
+    import ProgressCircle from "$lib/widgets/ProgressCircle.svelte";
 
     const scripts = getScriptsContext();
     const {toast} = getToastContext();
+    const pg = getPgContext();
 </script>
 
 <div class="grow overflow-hidden">
@@ -38,6 +41,10 @@
                     <div class="text-error m-auto">
                         SQL Error: {scripts.errorMessage}
                     </div>
+                {:else if pg.isLoading}
+                    <div class="w-full h-full flex flex-col gap-4 items-center justify-center text-fg-1">
+                        <ProgressCircle infinite={true} showValue={false} />
+                    </div>
                 {:else if scripts.lastResult === undefined}
                     <div class="text-fg-1 m-auto">
                         No results yet, press <strong>Run query</strong> to execute your query and get results
@@ -56,15 +63,15 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                {#each scripts.lastResult as row, i}
+                                {#each scripts.lastResult as row (row.__index)}
                                     <tr>
                                         {#each columns as column}
                                             <td
                                                 title={row[column]}
                                                 onclick={async () => {
                                                     await writeText(row[column] === null ? "null" : row[column]);
-                                                    toast(`Copied ${column}[${i}] to clipboard`);
-                                                }}>{row[column] === null ? "null" : row[column]}</td
+                                                    toast(`Copied ${column}[${row.__index}] to clipboard`);
+                                                }}>{row[column] === null ? "null" : row[column].slice(0, 50)}</td
                                             >
                                         {/each}
                                     </tr>

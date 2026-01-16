@@ -8,12 +8,14 @@
     import ItemSelect from "$lib/widgets/ItemSelect.svelte";
     import FileIcon from "$lib/icons/FileIcon.svelte";
     import {open} from "@tauri-apps/plugin-dialog";
+    import {getPgContext} from "$lib/table/pgContext.svelte";
     // import TrashIcon from "$lib/icons/TrashIcon.svelte";
     // import PlusIcon from "$lib/icons/PlusIcon.svelte";
     // import SaveIcon from "$lib/icons/SaveIcon.svelte";
     // import SearchIcon from "$lib/icons/SearchIcon.svelte";
 
     const scripts = getScriptsContext();
+    const pg = getPgContext();
 
     let isFileSelectOpen = $state(false);
     const itemToString = (item: ScriptFile) => item.path;
@@ -78,6 +80,24 @@
     </button>
 {/if} -->
 
+<div class="mr-auto"></div>
+
+{#if pg.lastQueryTime !== undefined}
+    <div class="ml-auto text-xs text-fg-1">{pg.lastQueryTime.toFixed(0)} ms</div>
+{/if}
+
+<button
+    class="btn ghost"
+    disabled={scripts.errorMessage === "" && scripts.lastResult === undefined}
+    onclick={() => {
+        scripts.errorMessage = "";
+        scripts.lastResult = undefined;
+    }}><ClearIcon --size="1.2rem" /> Clear output</button
+>
+<button class="btn" onclick={scripts.run} title="⌘↵"
+    ><PlayIcon --size="1.2rem" /> Run {scripts.currentSelection ? "selection" : "file"}</button
+>
+
 <Dialog isOpen={isFileSelectOpen} onrequestclose={() => (isFileSelectOpen = false)} --padding="1rem">
     <ItemSelect items={scripts.files} {itemToString} {onselect} noItems="No scripts imported yet for this database.">
         {#snippet renderAction()}
@@ -112,18 +132,6 @@
         {/snippet}
     </ItemSelect>
 </Dialog>
-
-<button
-    class="btn ghost ml-auto"
-    disabled={scripts.errorMessage === "" && scripts.lastResult === undefined}
-    onclick={() => {
-        scripts.errorMessage = "";
-        scripts.lastResult = undefined;
-    }}><ClearIcon --size="1.2rem" /> Clear output</button
->
-<button class="btn" onclick={scripts.run} title="⌘↵"
-    ><PlayIcon --size="1.2rem" /> Run {scripts.currentSelection ? "selection" : "file"}</button
->
 
 <style>
     .search-result {

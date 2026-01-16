@@ -77,6 +77,9 @@
     >
         <ChevronIcon direction="right" />
     </button>
+    {#if pg.lastQueryTime !== undefined}
+        <div class="text-xs text-fg-1">{pg.lastQueryTime.toFixed(0)} ms</div>
+    {/if}
     {#if pg.selectedRows.length > 0 && pg.currentTable.type === "BASE TABLE"}
         <ActionButton
             class="btn ghost"
