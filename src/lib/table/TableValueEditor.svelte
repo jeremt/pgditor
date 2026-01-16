@@ -3,7 +3,7 @@
     import Select from "$lib/widgets/Select.svelte";
     import JsonValueEditor from "./JsonValueEditor.svelte";
     import type {PgColumn, PgRow} from "./pgContext.svelte";
-    import {formatValue} from "./values";
+    import {valueToSql} from "./values";
 
     type Props = {
         column: PgColumn;
@@ -68,7 +68,7 @@
         class="font-mono font-normal!"
         id={column.column_name}
         {disabled}
-        bind:value={() => formatValue(column, row[column.column_name]), (value) => (row[column.column_name] = value)}
+        bind:value={() => valueToSql(column, row[column.column_name]), (value) => (row[column.column_name] = value)}
     >
         <option>true</option>
         <option>false</option>

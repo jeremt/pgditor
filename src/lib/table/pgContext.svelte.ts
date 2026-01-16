@@ -3,7 +3,7 @@ import {catchError} from "$lib/helpers/catchError";
 import {debounced} from "$lib/helpers/debounced.svelte";
 import {invoke} from "@tauri-apps/api/core";
 import {getContext, setContext} from "svelte";
-import {formatValue, type PgType} from "./values";
+import {valueToSql, type PgType} from "./values";
 import {getToastContext} from "$lib/widgets/Toaster.svelte";
 
 export type PgTable = {
@@ -91,7 +91,7 @@ class PgContext {
 (${this.currentTable.columns.map((col) => col.column_name).join(",")})
 VALUES
 ${this.selectedRowsJson
-    .map((row) => `(${this.currentTable!.columns.map((col) => formatValue(col, row[col.column_name])).join(",")})`)
+    .map((row) => `(${this.currentTable!.columns.map((col) => valueToSql(col, row[col.column_name])).join(",")})`)
     .join(",\n")}
 ;`;
     }
@@ -282,7 +282,7 @@ ${this.selectedRowsJson
         // TODO: check for cascading foreign keys and show a warning dialog before deleting if any
         const query = `DELETE FROM ${this.fullName}
 WHERE ${pk.column_name} = ANY(ARRAY[${this.selectedRows
-            .map((index) => formatValue(pk, this.currentTable!.rows[index][pk.column_name]))
+            .map((index) => valueToSql(pk, this.currentTable!.rows[index][pk.column_name]))
             .join(", ")}]);`;
         await this.rawQuery(query);
         this.selectedRows = [];
@@ -298,9 +298,9 @@ WHERE ${pk.column_name} = ANY(ARRAY[${this.selectedRows
             `UPDATE ${this.fullName} SET
 ${this.currentTable.columns
     .filter((col) => col.is_primary_key === "NO")
-    .map((col) => `${col.column_name} = ${formatValue(col, row[col.column_name])}`)
+    .map((col) => `${col.column_name} = ${valueToSql(col, row[col.column_name])}`)
     .join(",\n  ")}
-WHERE ${pk.column_name} = ${formatValue(pk, row[pk.column_name])};
+WHERE ${pk.column_name} = ${valueToSql(pk, row[pk.column_name])};
                         `,
             {throwError}
         );
@@ -326,9 +326,9 @@ WHERE ${pk.column_name} = ${formatValue(pk, row[pk.column_name])};
 SET
   ${this.currentTable.columns
       .filter(editableColumns)
-      .map((col) => `${col.column_name} = ${formatValue(col, row[col.column_name])}`)
+      .map((col) => `${col.column_name} = ${valueToSql(col, row[col.column_name])}`)
       .join(",\n  ")}
-WHERE ${primary_key!.column_name} = ${formatValue(primary_key!, primary_key_value)};`
+WHERE ${primary_key!.column_name} = ${valueToSql(primary_key!, primary_key_value)};`
             : // insert
               `INSERT INTO ${this.fullName}
 (${this.currentTable.columns
@@ -338,7 +338,7 @@ WHERE ${primary_key!.column_name} = ${formatValue(primary_key!, primary_key_valu
 VALUES
 (${this.currentTable.columns
                   .filter(editableColumns)
-                  .map((col) => formatValue(col, row[col.column_name]))
+                  .map((col) => valueToSql(col, row[col.column_name]))
                   .join(", ")});`;
 
         return this.rawQuery(query, {throwError});

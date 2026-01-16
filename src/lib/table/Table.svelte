@@ -9,7 +9,7 @@
     import {getPgContext, type PgColumn, type PgRow} from "./pgContext.svelte";
     import TableUpsert from "./TableUpsert.svelte";
     import {createContextMenu} from "./tableContextMenu.svelte";
-    import {formatValue} from "./values";
+    import {valueToSql} from "./values";
     import ProgressCircle from "$lib/widgets/ProgressCircle.svelte";
 
     const pg = getPgContext();
@@ -144,7 +144,7 @@
                                                         {
                                                             column: column.foreign_column_name!,
                                                             operator: "=",
-                                                            value: `${formatValue(column, value)}`,
+                                                            value: `${valueToSql(column, value)}`,
                                                         },
                                                     ];
                                                     pg.applyWhere();

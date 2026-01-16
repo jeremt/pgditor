@@ -99,7 +99,16 @@ export const defaultValues = {
 
 export type PgType = keyof typeof defaultValues;
 
-export const formatValue = (column: PgColumn, value: any): string => {
+export const sqlToValue = (column: PgColumn, sql: string) => {
+    // if text values are defined with explicite cast, remove it and return the value
+    if (column.data_type === "text" && sql.startsWith("'") && sql.endsWith("'::text")) {
+        const result = sql.slice(1, sql.length - "'::text".length);
+        return result;
+    }
+    return sql;
+};
+
+export const valueToSql = (column: PgColumn, value: any): string => {
     // Handle NULL values
     if (value === null || value === undefined) {
         return "NULL";

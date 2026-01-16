@@ -9,7 +9,7 @@
     import PlusIcon from "$lib/icons/PlusIcon.svelte";
     import Dialog from "$lib/widgets/Dialog.svelte";
     import RefreshIcon from "$lib/icons/RefreshIcon.svelte";
-    import {defaultValues} from "$lib/table/values";
+    import {defaultValues, sqlToValue, valueToSql} from "$lib/table/values";
     import ActionButton from "$lib/widgets/ActionButton.svelte";
     import DownloadIcon from "$lib/icons/DownloadIcon.svelte";
     import Popover from "$lib/widgets/Popover.svelte";
@@ -19,21 +19,19 @@
     const pg = getPgContext();
     const {toast} = getToastContext();
 
-    $inspect("before");
     const rowToInsert = $derived<PgRow>(
         pg.currentTable?.columns.reduce((result, column) => {
             return {
                 ...result,
                 [column.column_name]:
                     column.column_default && column.is_primary_key === "NO"
-                        ? column.column_default
+                        ? sqlToValue(column, column.column_default)
                         : column.is_nullable === "YES" || column.is_primary_key === "YES"
                           ? null
                           : defaultValues[column.data_type],
             };
         }, {}) ?? {}
     );
-    $inspect("rowToInsert", rowToInsert);
 
     let isInsertOpen = $state(false);
 
