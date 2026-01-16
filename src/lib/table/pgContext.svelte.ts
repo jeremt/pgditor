@@ -36,6 +36,7 @@ class PgContext {
     currentTable = $state<PgTable & {columns: PgColumn[]; rows: PgRow[]; count: number}>();
     isUseDialogOpen = $state(false);
     isFilterPopover = $state(false);
+    lastQueryTime = $state<number>();
 
     filters = $state({
         where: "",
@@ -175,6 +176,7 @@ ${this.selectedRowsJson
             return;
         }
         const connectionString = this.connections.current.connectionString;
+        const startTime = performance.now();
         const [dataError, data] = await catchError(
             invoke<{rows: PgRow[]; count: number}>("get_table_data", {
                 connectionString,
@@ -188,6 +190,7 @@ ${this.selectedRowsJson
                     : "",
             })
         );
+        this.lastQueryTime = performance.now() - startTime;
         if (dataError) {
             console.error(dataError.message);
             this.toastContext.toast(`SQL error: ${dataError.message}`, {kind: "error"});
@@ -195,6 +198,9 @@ ${this.selectedRowsJson
         }
         this.selectedRows = [];
         this.currentTable.rows = data.rows;
+        for (let i = 0; i < this.currentTable.rows.length; i++) {
+            this.currentTable.rows[i].__index = i;
+        }
         this.currentTable.count = data.count;
     };
 
@@ -215,12 +221,15 @@ ${this.selectedRowsJson
             return;
         }
         const connectionString = this.connections.current.connectionString;
+        const startTime = performance.now();
         const [error, data] = await catchError(
             invoke<Record<string, string | null>[]>("raw_query", {
                 connectionString,
                 sql,
             })
         );
+        this.lastQueryTime = performance.now() - startTime;
+
         if (error) {
             console.error(error.message, sql);
             if (throwError) {
@@ -292,25 +301,26 @@ WHERE ${pk.column_name} = ${formatValue(pk, row[pk.column_name])};
             this.toastContext.toast(`Can't update row without primary key`);
             return;
         }
+        const editableColumns = (column: PgColumn) => column.is_primary_key === "NO" && column.data_type !== "tsvector";
         const primary_key_value = primary_key ? row[primary_key.column_name] : null;
         const query = primary_key_value
             ? // updae
               `UPDATE ${this.fullName}
 SET
   ${this.currentTable.columns
-      .filter((col) => col.is_primary_key === "NO")
+      .filter(editableColumns)
       .map((col) => `${col.column_name} = ${formatValue(col, row[col.column_name])}`)
       .join(",\n  ")}
 WHERE ${primary_key!.column_name} = ${formatValue(primary_key!, primary_key_value)};`
             : // insert
               `INSERT INTO ${this.fullName}
 (${this.currentTable.columns
-                  .filter((col) => col.is_primary_key === "NO")
+                  .filter(editableColumns)
                   .map(({column_name}) => column_name)
                   .join(", ")})
 VALUES
 (${this.currentTable.columns
-                  .filter((col) => col.is_primary_key === "NO")
+                  .filter(editableColumns)
                   .map((col) => formatValue(col, row[col.column_name]))
                   .join(", ")});`;
 

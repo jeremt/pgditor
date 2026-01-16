@@ -54,7 +54,7 @@
         autocorrect="off"
         autocomplete="off"
         autocapitalize="off"
-        {disabled}
+        disabled={true}
         placeholder="generated"
     />
 {:else if column.enum_values}
@@ -73,7 +73,18 @@
         <option>true</option>
         <option>false</option>
     </Select>
-{:else if ["text", "xml"].includes(column.data_type)}
+{:else if column.data_type === "tsvector"}
+    <input
+        id={column.column_name}
+        type="text"
+        class="font-mono!"
+        autocorrect="off"
+        autocomplete="off"
+        autocapitalize="off"
+        disabled={true}
+        placeholder="generated"
+    />
+{:else if column.data_type === "text" || column.data_type === "xml"}
     <MultilinesInput
         id={column.column_name}
         class="font-mono!"

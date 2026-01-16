@@ -50,7 +50,10 @@
     </header>
     <div class="grow border border-bg-1">
         <MonacoEditor
-            bind:value={localValue}
+            bind:value={
+                () => JSON.stringify(JSON.parse(localValue), null, 4),
+                (value) => (localValue = JSON.stringify(JSON.parse(value)))
+            }
             selectedFile="{pg.currentTable!.name}-{column}.json"
             files={[{path: `${pg.currentTable!.name}-${column}.json`, value: ""}]}
             fontFamily="Space Mono"

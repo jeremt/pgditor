@@ -9,6 +9,7 @@
     import {getPgContext, type PgColumn, type PgRow} from "./pgContext.svelte";
     import TableUpsert from "./TableUpsert.svelte";
     import {createContextMenu} from "./tableContextMenu.svelte";
+    import {formatValue} from "./values";
 
     const pg = getPgContext();
 
@@ -40,7 +41,7 @@
                     }}
                 />
             </div>
-            {#each pg.currentTable.rows as _, i}
+            {#each pg.currentTable.rows as row, i (row.__index)}
                 <div class="grid items-center px-2 h-10">
                     <CheckboxInput
                         checked={pg.selectedRows.indexOf(i) !== -1}
@@ -56,9 +57,9 @@
             {/each}
         </div>
         <table class="h-fit">
-            <thead class="sticky top-0 bg-bg">
+            <thead class="sticky top-0 bg-bg z-10">
                 <tr>
-                    {#each pg.currentTable.columns as column}
+                    {#each pg.currentTable.columns as column (column.column_name)}
                         <th
                             class="cursor-pointer"
                             onclick={() => {
@@ -99,7 +100,7 @@
                 </tr>
             </thead>
             <tbody>
-                {#each pg.currentTable.rows as row}
+                {#each pg.currentTable.rows as row (row.__index)}
                     <tr
                         aria-disabled={pg.currentTable.type !== "BASE TABLE"}
                         onclick={() => {
@@ -123,10 +124,12 @@
                                 {#if value === null}
                                     null
                                 {:else if typeof value === "object"}
-                                    {JSON.stringify(value)}
+                                    {JSON.stringify(value).slice(0, 50)}
                                 {:else}
                                     <div class="flex gap-2 items-center">
-                                        <span class="grow">{value}</span>
+                                        <span class="grow"
+                                            >{typeof value === "string" ? value.slice(0, 50) : value}</span
+                                        >
                                         {#if column.foreign_table_schema && column.foreign_table_name && column.foreign_column_name}
                                             <button
                                                 class="my-auto cursor-pointer"
@@ -140,7 +143,7 @@
                                                         {
                                                             column: column.foreign_column_name!,
                                                             operator: "=",
-                                                            value: `${value}`,
+                                                            value: `${formatValue(column, value)}`,
                                                         },
                                                     ];
                                                     pg.applyWhere();
@@ -168,7 +171,13 @@
 {/if}
 
 {#if pg.currentTable && rowToUpdate}
-    <Dialog isOpen={isUpdateOpen} onrequestclose={() => (isUpdateOpen = false)} position="right" animation="right">
+    <Dialog
+        --padding="0"
+        isOpen={isUpdateOpen}
+        onrequestclose={() => (isUpdateOpen = false)}
+        position="right"
+        animation="right"
+    >
         <TableUpsert row={rowToUpdate} onclose={() => (isUpdateOpen = false)} />
     </Dialog>
 {/if}

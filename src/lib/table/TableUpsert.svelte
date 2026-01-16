@@ -53,7 +53,7 @@
     };
 </script>
 
-<header class="flex flex-col">
+<header class="flex flex-col pt-4 px-4">
     <div class="flex gap-2 items-center w-md pb-4">
         <button class="btn icon ghost" type="button" aria-label="Cancel" onclick={onclose}><CrossIcon /></button>
         <h2>
@@ -69,7 +69,7 @@
     </div>
     {#if errorMessage !== ""}<div class="text-error pb-2 text-sm">{errorMessage}</div>{/if}
 </header>
-<div class="flex flex-col gap-2 flex-1 overflow-auto">
+<div class="flex flex-col gap-2 flex-1 overflow-auto pb-4 px-4">
     {#if pk === undefined}
         <div class="text-fg-1 text-xs flex flex-wrap gap-1">
             Without primary key, you cannot update a specific row, use <TerminalIcon --size="1rem" /> instead.

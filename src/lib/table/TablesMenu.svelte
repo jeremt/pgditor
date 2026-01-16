@@ -141,7 +141,13 @@
 {/if}
 
 {#if pg.currentTable}
-    <Dialog isOpen={isInsertOpen} onrequestclose={() => (isInsertOpen = false)} position="right" animation="right">
+    <Dialog
+        --padding="0"
+        isOpen={isInsertOpen}
+        onrequestclose={() => (isInsertOpen = false)}
+        position="right"
+        animation="right"
+    >
         <TableUpsert row={rowToInsert} onclose={() => (isInsertOpen = false)} />
     </Dialog>
 {/if}
