@@ -1,14 +1,12 @@
-<p align="center">
-    <img src="./src-tauri/icons/128x128.png" />
-</p>
-
 # 🐘 PG'ditor
+
+<p align="center">
+    <img src="./docs/illustration.png" />
+</p>
 
 A simple, minimalistic, and fast editor to work with your Postgres databases.
 
 It's totally free and open-source. Built with performance and efficiency in mind, powered by Tauri (rust) and SvelteKit (ts).
-
-![](./docs/elephant.gif)
 
 > ⚠️ Even though already usable, the project is still in a every early stage. Expect some bugs and structural changes to the app.
 
@@ -61,9 +59,9 @@ Simple UI to sort and filter data:
 
 ### Priority roadmap (hopefully added soon 😬)
 
--   Import (CSV, SQL and Json), ideally using LLM to help with table matching/normalization and data reconciliation
--   Add custom monaco editor for easy edit for fields like jsonb
--   Add some customisation features like light mode, font, compact toolbar, etc.
+- Import (CSV, SQL and Json), ideally using LLM to help with table matching/normalization and data reconciliation
+- Add custom monaco editor for easy edit for fields like jsonb
+- Add some customisation features like light mode, font, compact toolbar, etc.
 
 Here is a public link access to the figma : https://www.figma.com/design/aWQAAUrvPCPeo62ykwJ6Dz/pgeditor?node-id=251-193&t=LbJTm8y4i4WAPX7I-1
 
@@ -87,18 +85,18 @@ There might be some features added later to help migrating existing databases la
 
 Contributions are welcome!
 
--   🐛 Found a bug? Open an issue with steps to reproduce.
--   💡 Have an idea? Share it in the issues.
--   👯 Want to help build features or improve the code? PRs are welcome!
+- 🐛 Found a bug? Open an issue with steps to reproduce.
+- 💡 Have an idea? Share it in the issues.
+- 👯 Want to help build features or improve the code? PRs are welcome!
 
 ### Navigating the codebase
 
 The architecture is intentionally simple:
 
--   The main UI lives in `src/routes/+page.svelte` (a SPA Svelte app).
--   UI components are in `src/lib/widgets`.
--   Postgres connection logic lives in `src/lib/connection`.
--   Table-editing functionality lives in `src/lib/table`.
--   Icons are added in `src/lib/icons` as svg svelte componenets
--   Random utilities are in `src/lib/helpers`
--   The backend is in `src-tauri/src`, containing commands to store connections locally and interact with the selected Postgres database.
+- The main UI lives in `src/routes/+page.svelte` (a SPA Svelte app).
+- UI components are in `src/lib/widgets`.
+- Postgres connection logic lives in `src/lib/connection`.
+- Table-editing functionality lives in `src/lib/table`.
+- Icons are added in `src/lib/icons` as svg svelte componenets
+- Random utilities are in `src/lib/helpers`
+- The backend is in `src-tauri/src`, containing commands to store connections locally and interact with the selected Postgres database.
