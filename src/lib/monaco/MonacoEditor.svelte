@@ -100,6 +100,8 @@
          */
         showLineNumbers?: boolean;
 
+        wordWrap?: boolean;
+
         /**
          * Called whenever a change from within the editor is detected.
          * @param value the new value of the text.
@@ -133,6 +135,7 @@
         fontSize,
         theme = "dark",
         showLineNumbers = true,
+        wordWrap = false,
         /** Custom font family for the editor (CSS font-family string). */
         fontFamily = undefined,
         onchange,
@@ -192,6 +195,7 @@
                     model,
                     fontSize,
                     minimap: {enabled: false},
+                    wordWrap: wordWrap ? "on" : undefined,
                     lineNumbers: showLineNumbers ? "on" : "off",
                     fontFamily: fontFamily,
                 });

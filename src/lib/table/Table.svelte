@@ -11,10 +11,12 @@
     import {createContextMenu} from "./tableContextMenu.svelte";
     import {valueToSql} from "./values";
     import ProgressCircle from "$lib/widgets/ProgressCircle.svelte";
+    import TableValueUpdate from "./TableValueUpdate.svelte";
 
     const pg = getPgContext();
 
     const {oncontextmenu} = createContextMenu();
+    let cell = $state<{element: HTMLElement; row: PgRow; column: PgColumn}>();
 </script>
 
 {#if pg.currentTable === undefined}
@@ -103,15 +105,7 @@
             </thead>
             <tbody>
                 {#each pg.currentTable.rows as row (row.__index)}
-                    <tr
-                        aria-disabled={pg.currentTable.type !== "BASE TABLE"}
-                        onclick={() => {
-                            if (pg.currentTable?.type !== "BASE TABLE") {
-                                return;
-                            }
-                            pg.openUpdateRow(row);
-                        }}
-                    >
+                    <tr>
                         {#each pg.currentTable.columns as column}
                             {@const value = row[column.column_name]}
                             <td
@@ -120,7 +114,12 @@
                                     : value === null
                                       ? "null"
                                       : value.toString()}
-                                oncontextmenu={(e) => oncontextmenu(e, column, row)}
+                                onclick={(e) => {
+                                    if (e.currentTarget instanceof HTMLElement) {
+                                        cell = {element: e.currentTarget, column, row: JSON.parse(JSON.stringify(row))};
+                                    }
+                                }}
+                                oncontextmenu={(e) => oncontextmenu(e, column, $state.snapshot(row))}
                             >
                                 {#if value === null}
                                     null
@@ -182,11 +181,12 @@
         <TableUpsert row={pg.rowToUpdate} onclose={() => (pg.isUpdateOpen = false)} />
     </Dialog>
 {/if}
+<TableValueUpdate bind:target={cell} />
 
 <style>
-    table > tbody > tr:not([aria-disabled="true"]) {
+    table > tbody > tr > td {
         cursor: pointer;
-        transition: 0.3s all;
+        transition: 0.1s all;
         &:hover {
             background-color: var(--color-bg-1);
         }

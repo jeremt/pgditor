@@ -297,10 +297,15 @@ WHERE ${pk.column_name} = ANY(ARRAY[${this.selectedRows
         if (!pk || !this.currentTable) {
             return;
         }
+        const editableColumns = (column: PgColumn) =>
+            column.is_primary_key === "NO" &&
+            column.data_type !== "tsvector" &&
+            Object.keys(row).includes(column.column_name);
+
         this.rawQuery(
             `UPDATE ${this.fullName} SET
 ${this.currentTable.columns
-    .filter((col) => col.is_primary_key === "NO")
+    .filter(editableColumns)
     .map((col) => `${col.column_name} = ${valueToSql(col, row[col.column_name])}`)
     .join(",\n  ")}
 WHERE ${pk.column_name} = ${valueToSql(pk, row[pk.column_name])};

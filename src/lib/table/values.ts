@@ -99,11 +99,14 @@ export const defaultValues = {
 
 export type PgType = keyof typeof defaultValues;
 
-export const sqlToValue = (column: PgColumn, sql: string) => {
-    // if text values are defined with explicite cast, remove it and return the value
-    if (column.data_type === "text" && sql.startsWith("'") && sql.endsWith("'::text")) {
-        const result = sql.slice(1, sql.length - "'::text".length);
-        return result;
+export const sqlToValue = (column: PgColumn, sql: string): unknown => {
+    // strip explicit type casts
+    if (sql.startsWith("'") && sql.endsWith(`'::${column.data_type}`)) {
+        const result = sql.slice(1, sql.length - `'::${column.data_type}`.length);
+        return sqlToValue(column, result);
+    }
+    if (column.data_type === "json" || column.data_type === "jsonb") {
+        return JSON.parse(sql);
     }
     return sql;
 };

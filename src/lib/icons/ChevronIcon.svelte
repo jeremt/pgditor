@@ -1,9 +1,9 @@
 <script lang="ts">
     type Props = {
-        direction?: 'top' | 'right' | 'bottom' | 'left';
+        direction?: "top" | "right" | "bottom" | "left";
     };
-    let {direction = 'bottom'}: Props = $props();
-    const directionToTransform = {top: '-90deg', right: '', bottom: '90deg', left: '180deg'};
+    let {direction = "bottom"}: Props = $props();
+    const directionToTransform = {top: "-90deg", right: "", bottom: "90deg", left: "180deg"};
 </script>
 
 <svg

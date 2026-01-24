@@ -98,6 +98,6 @@
                 />
             {/if}
         </label>
-        <TableValueEditor bind:row={localRow} {column} />
+        <TableValueEditor bind:row={localRow} {column} inlined={true} />
     {/each}
 </div>

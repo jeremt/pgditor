@@ -303,11 +303,11 @@
         &[open] {
             display: flex;
             flex-direction: column;
-            animation: var(--animation-in) 0.3s cubic-bezier(0.25, 0, 0.3, 1) normal;
+            animation: var(--animation-in) 0.2s cubic-bezier(0.25, 0, 0.3, 1) normal;
         }
 
         &[open].closing {
-            animation: var(--animation-out) 0.3s cubic-bezier(0.25, 0, 0.3, 1) normal;
+            animation: var(--animation-out) 0.2s cubic-bezier(0.25, 0, 0.3, 1) normal;
         }
 
         &::backdrop {
@@ -315,11 +315,11 @@
             backdrop-filter: var(--dialog-backdrop-filter);
         }
         &[open]::backdrop {
-            animation: dialog-fade-in 0.3s cubic-bezier(0.25, 0, 0.3, 1) normal;
+            animation: dialog-fade-in 0.2s cubic-bezier(0.25, 0, 0.3, 1) normal;
         }
 
         &[open].closing::backdrop {
-            animation: dialog-fade-out 0.3s cubic-bezier(0.25, 0, 0.3, 1) normal;
+            animation: dialog-fade-out 0.2s cubic-bezier(0.25, 0, 0.3, 1) normal;
         }
         &.fullscreen {
             max-width: 100%;

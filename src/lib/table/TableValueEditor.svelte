@@ -1,32 +1,18 @@
 <script lang="ts">
     import MultilinesInput from "$lib/widgets/MultilinesInput.svelte";
     import Select from "$lib/widgets/Select.svelte";
-    import JsonValueEditor from "./JsonValueEditor.svelte";
+    import JsonValueEditor from "./valueEditors/JsonValueEditor.svelte";
     import type {PgColumn, PgRow} from "./pgContext.svelte";
     import {valueToSql} from "./values";
+    import TextValueEditor from "./valueEditors/TextValueEditor.svelte";
 
     type Props = {
+        inlined: boolean;
         column: PgColumn;
         row: PgRow;
     };
-    let {column, row = $bindable()}: Props = $props();
+    let {column, row = $bindable(), inlined}: Props = $props();
 
-    // TODO: improve to better handle all types directly
-    let rowValue = {
-        get value() {
-            if (typeof row[column.column_name] === "object") {
-                return JSON.stringify(row[column.column_name]);
-            }
-            return row[column.column_name] as string;
-        },
-        set value(newValue) {
-            if (typeof newValue === "object" && newValue !== null) {
-                row[column.column_name] = JSON.parse(newValue);
-            } else {
-                row[column.column_name] = newValue;
-            }
-        },
-    };
     const disabled = $derived.by(() => {
         return column.is_primary_key === "YES";
     });
@@ -45,7 +31,16 @@
 </script>
 
 {#if column.is_nullable === "YES" && row[column.column_name] === null}
-    <div></div>
+    <input
+        id={column.column_name}
+        type="text"
+        class="font-mono!"
+        autocorrect="off"
+        autocomplete="off"
+        autocapitalize="off"
+        disabled={true}
+        placeholder="null"
+    />
 {:else if column.is_primary_key === "YES" && row[column.column_name] === null}
     <input
         id={column.column_name}
@@ -58,7 +53,12 @@
         placeholder="generated"
     />
 {:else if column.enum_values}
-    <Select class="font-mono font-normal!" id={column.column_name} {disabled} bind:value={row[column.column_name]}>
+    <Select
+        class="font-mono font-normal! w-full"
+        id={column.column_name}
+        {disabled}
+        bind:value={row[column.column_name]}
+    >
         {#each column.enum_values as enumValue}
             <option>{enumValue}</option>
         {/each}
@@ -85,18 +85,22 @@
         placeholder="generated"
     />
 {:else if column.data_type === "text" || column.data_type === "xml"}
-    <MultilinesInput
-        id={column.column_name}
-        class="font-mono!"
-        {disabled}
-        {placeholder}
-        autocomplete="off"
-        autocapitalize="off"
-        minRows={1}
-        bind:value={rowValue.value}
-    />
+    <TextValueEditor bind:value={row[column.column_name] as string} {column} {inlined} />
 {:else if ["json", "jsonb"].includes(column.data_type)}
-    <JsonValueEditor bind:value={rowValue.value} {column} />
+    <JsonValueEditor
+        bind:value={
+            () => {
+                console.log("value = ", row[column.column_name]);
+                return JSON.stringify(row[column.column_name], null, 4);
+            },
+            (newValue) => {
+                console.log("setValue", newValue);
+                row[column.column_name] = JSON.parse(newValue);
+            }
+        }
+        {column}
+        {inlined}
+    />
 {:else}
     <input
         id={column.column_name}
@@ -107,6 +111,6 @@
         autocapitalize="off"
         {disabled}
         {placeholder}
-        bind:value={rowValue.value}
+        bind:value={row[column.column_name] as string}
     />
 {/if}

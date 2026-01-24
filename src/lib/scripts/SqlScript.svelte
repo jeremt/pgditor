@@ -88,7 +88,7 @@
 <style>
     td {
         cursor: pointer;
-        transition: 0.3s all;
+        transition: 0.1s all;
         &:hover {
             background-color: var(--color-bg-1);
         }

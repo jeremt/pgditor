@@ -14,8 +14,8 @@
     let searchResult = $derived(
         fuzzySearchWithHighlights(
             searchText,
-            pg.tables.map((item) => `${item.schema}.${item.name}`)
-        ).map(({item, ranges}) => ({text: item, html: renderHighlightedMatch(item, ranges)}))
+            pg.tables.map((item) => `${item.schema}.${item.name}`),
+        ).map(({item, ranges}) => ({text: item, html: renderHighlightedMatch(item, ranges)})),
     );
 
     let selectedIndex = $state(0);

@@ -17,7 +17,7 @@ button.btn {
     font-size: var(--text-sm);
     height: var(--input-height);
     padding-inline: 0.8em;
-    transition: 0.3s all;
+    transition: 0.1s all;
     &:disabled {
         opacity: 0.3;
         cursor: default;
@@ -74,7 +74,7 @@ textarea {
     background-color: var(--color-bg-1);
     border: none;
     border-radius: var(--radius-input);
-    transition: 0.3s all;
+    transition: 0.1s all;
     outline: none;
 
     padding-inline: 0.5em;
