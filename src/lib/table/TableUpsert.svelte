@@ -53,51 +53,57 @@
     };
 </script>
 
-<header class="flex flex-col pt-4 px-4">
-    <div class="flex gap-2 items-center w-md pb-4">
-        <button class="btn icon ghost" type="button" aria-label="Cancel" onclick={onclose}><CrossIcon /></button>
-        <h2>
-            {hasPkValue ? "Update set" : "Insert into"}
-            {#if pg.currentTable}<span class="font-mono text-sm bg-bg-1 py-0.5 px-2 rounded-md ml-1"
-                    >{pg.currentTable.schema}.{pg.currentTable.name}</span
-                >{/if}
-        </h2>
-        <ActionButton class="btn ml-auto" onaction={insertOrUpdate}>
-            <CheckIcon --size="1.2rem" />
-            {hasPkValue ? "Update" : "Insert"}
-        </ActionButton>
-    </div>
-    {#if errorMessage !== ""}<div class="text-error pb-2 text-sm">{errorMessage}</div>{/if}
-</header>
-<div class="flex flex-col gap-2 flex-1 overflow-auto pb-4 px-4">
-    {#if pk === undefined}
-        <div class="text-fg-1 text-xs flex flex-wrap gap-1">
-            Without primary key, you cannot update a specific row, use <TerminalIcon --size="1rem" /> instead.
+<div class="flex flex-col w-lg h-full">
+    <header class="flex flex-col pt-4 px-4">
+        <div class="flex gap-2 items-center pb-4">
+            <button class="btn icon ghost" type="button" aria-label="Cancel" onclick={onclose}><CrossIcon /></button>
+            <h2>
+                {hasPkValue ? "Update set" : "Insert into"}
+                {#if pg.currentTable}<span class="font-mono text-sm bg-bg-1 py-0.5 px-2 rounded-md ml-1"
+                        >{pg.currentTable.schema}.{pg.currentTable.name}</span
+                    >{/if}
+            </h2>
+            <ActionButton class="btn ml-auto" onaction={insertOrUpdate}>
+                <CheckIcon --size="1.2rem" />
+                {hasPkValue ? "Update" : "Insert"}
+            </ActionButton>
         </div>
+    </header>
+    {#if errorMessage}
+        <div class="text-sm text-error p-2 mx-4 mb-4 border border-bg-2 rounded-xl">{errorMessage}</div>
     {/if}
-    {#each pg.currentTable?.columns ?? [] as column}
-        <label class="text-sm flex gap-2 items-center pt-2" for={column.column_name}>
-            {#if column.is_primary_key === "YES"}<KeyIcon --size="1.2rem" />{/if}
-            {#if column.foreign_column_name !== null}
-                <span title="{column.foreign_table_schema}.{column.foreign_table_name}.{column.foreign_column_name}"
-                    ><LinkIcon --size="1.2rem" /></span
-                >
-            {/if}
-            <strong>{column.column_name}</strong>{column.data_type}
-            {#if column.is_nullable === "YES"}
-                <span class="text-xs ml-auto">NULL</span>
-                <CheckboxInput
-                    checked={localRow[column.column_name] === null}
-                    onchange={() => {
-                        if (localRow[column.column_name] !== null) {
-                            localRow[column.column_name] = null;
-                        } else {
-                            localRow[column.column_name] = defaultValues[column.data_type];
-                        }
-                    }}
-                />
-            {/if}
-        </label>
-        <TableValueEditor bind:row={localRow} {column} inlined={true} />
-    {/each}
+    <div class="flex flex-col gap-2 grow overflow-auto pb-4 px-4">
+        {#if pk === undefined}
+            <div class="text-fg-1 text-xs flex flex-wrap gap-1">
+                Without primary key, you cannot update a specific row, use <TerminalIcon --size="1rem" /> instead.
+            </div>
+        {/if}
+        {#each pg.currentTable?.columns ?? [] as column}
+            <label class="text-sm flex gap-2 items-center pt-2" for={column.column_name}>
+                {#if column.is_primary_key === "YES"}<KeyIcon --size="1.2rem" />{/if}
+                {#if column.foreign_column_name !== null}
+                    <span title="{column.foreign_table_schema}.{column.foreign_table_name}.{column.foreign_column_name}"
+                        ><LinkIcon --size="1.2rem" /></span
+                    >
+                {/if}
+                <strong>{column.column_name}</strong>{column.data_type}
+                {#if column.is_nullable === "YES"}
+                    <label class="text-xs ml-auto flex gap-2 items-center"
+                        >NULL
+                        <CheckboxInput
+                            checked={localRow[column.column_name] === null}
+                            onchange={() => {
+                                if (localRow[column.column_name] !== null) {
+                                    localRow[column.column_name] = null;
+                                } else {
+                                    localRow[column.column_name] = defaultValues[column.data_type];
+                                }
+                            }}
+                        />
+                    </label>
+                {/if}
+            </label>
+            <TableValueEditor bind:row={localRow} {column} inlined={true} />
+        {/each}
+    </div>
 </div>

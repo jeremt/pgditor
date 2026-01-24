@@ -53,7 +53,7 @@ class PgContext {
         async (data) => {
             this.updateData(data.where, data.offset, data.limit);
         },
-        500
+        500,
     );
 
     rowToUpdate = $state<PgRow>();
@@ -153,7 +153,7 @@ ${this.selectedRowsJson
                 connectionString,
                 schema: table.schema,
                 table: table.name,
-            })
+            }),
         );
         if (columnsError) {
             console.error(columnsError.message);
@@ -203,9 +203,9 @@ ${this.selectedRowsJson
                 orderBy: this.filters.orderBy
                     ? `ORDER BY ${this.filters.orderBy.column} ${this.filters.orderBy.direction}`
                     : primary_key !== undefined
-                    ? `ORDER BY ${primary_key.column_name} ASC`
-                    : "",
-            })
+                      ? `ORDER BY ${primary_key.column_name} ASC`
+                      : "",
+            }),
         );
         this.lastQueryTime = performance.now() - startTime;
         if (dataError) {
@@ -245,9 +245,10 @@ ${this.selectedRowsJson
             invoke<Record<string, string | null>[]>("raw_query", {
                 connectionString,
                 sql,
-            })
+            }),
         );
         this.lastQueryTime = performance.now() - startTime;
+        this.isLoading = false;
 
         if (error) {
             console.error(error.message, sql);
@@ -258,10 +259,11 @@ ${this.selectedRowsJson
             return;
         }
         if (refresh) {
+            this.isLoading = true;
             // FIXME: this is a bit wasteful to refresh data, it could be done through optimistic update directly
             await this.refreshData();
+            this.isLoading = false;
         }
-        this.isLoading = false;
         return data;
     };
 
@@ -302,7 +304,7 @@ WHERE ${pk.column_name} = ANY(ARRAY[${this.selectedRows
             column.data_type !== "tsvector" &&
             Object.keys(row).includes(column.column_name);
 
-        this.rawQuery(
+        await this.rawQuery(
             `UPDATE ${this.fullName} SET
 ${this.currentTable.columns
     .filter(editableColumns)
@@ -310,7 +312,7 @@ ${this.currentTable.columns
     .join(",\n  ")}
 WHERE ${pk.column_name} = ${valueToSql(pk, row[pk.column_name])};
                         `,
-            {throwError}
+            {throwError},
         );
     };
 
