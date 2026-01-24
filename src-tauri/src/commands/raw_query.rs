@@ -1,7 +1,7 @@
 use crate::error::PgError;
 use crate::utils::create_secure_client;
-use serde_json::{Value as JsonValue, Map};
 use postgres::SimpleQueryMessage;
+use serde_json::{Map, Value as JsonValue};
 
 #[tauri::command]
 pub async fn raw_query(connection_string: String, sql: String) -> Result<Vec<JsonValue>, PgError> {
@@ -19,15 +19,15 @@ pub async fn raw_query(connection_string: String, sql: String) -> Result<Vec<Jso
         for message in messages {
             if let SimpleQueryMessage::Row(row) = message {
                 let mut map = Map::new(); // With preserve_order, this is an IndexMap
-                
+
                 // Iterate through columns in the order defined by the SQL query
                 for i in 0..row.len() {
                     let column_name = row.columns()[i].name().to_string();
                     let value = row.get(i); // Option<&str>
-                    
+
                     map.insert(
-                        column_name, 
-                        value.map(JsonValue::from).unwrap_or(JsonValue::Null)
+                        column_name,
+                        value.map(JsonValue::from).unwrap_or(JsonValue::Null),
                     );
                 }
                 json_rows.push(JsonValue::Object(map));

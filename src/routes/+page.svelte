@@ -7,8 +7,9 @@
     import TablesMenu from "$lib/table/TablesMenu.svelte";
     import SqlScriptMenu from "$lib/scripts/SqlScriptMenu.svelte";
     import CommandPalette from "$lib/commands/CommandPalette.svelte";
+    import {getCommandsContext} from "$lib/commands/commandsContext.svelte";
 
-    let mode = $state<"tables" | "script">("tables");
+    const commands = getCommandsContext();
 </script>
 
 <header class="flex gap-2 p-2 items-center w-full overflow-auto shrink-0">
@@ -16,29 +17,29 @@
     <button
         class="btn ghost icon"
         title={"Visualize tables"}
-        disabled={mode === "tables"}
-        onclick={() => (mode = "tables")}
+        disabled={commands.mode === "tables"}
+        onclick={() => (commands.mode = "tables")}
     >
         <TablesIcon --size="1.2rem" />
     </button>
     <button
         class="btn ghost icon"
         title={"Run raw sql queries"}
-        disabled={mode === "script"}
-        onclick={() => (mode = "script")}
+        disabled={commands.mode === "script"}
+        onclick={() => (commands.mode = "script")}
     >
         <TerminalIcon --size="1.2rem" />
     </button>
-    {#if mode === "tables"}
+    {#if commands.mode === "tables"}
         <TablesMenu />
     {:else}
         <SqlScriptMenu />
     {/if}
 </header>
 
-{#if mode === "tables"}
+{#if commands.mode === "tables"}
     <Table />
-{:else}
+{:else if commands.mode === "script"}
     <SqlScript />
 {/if}
 

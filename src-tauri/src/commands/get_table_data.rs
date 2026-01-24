@@ -11,7 +11,7 @@ pub async fn get_table_data(
     offset: Option<i64>,
     limit: Option<i64>,
     where_clause: Option<String>,
-    order_by: Option<String>
+    order_by: Option<String>,
 ) -> Result<PgTableData, PgError> {
     let conn = connection_string.clone();
 

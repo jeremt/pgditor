@@ -2,6 +2,7 @@ import {getPgContext} from "$lib/table/pgContext.svelte";
 import {globalShortcuts} from "$lib/tauri/globalShortcuts";
 import type {ShortcutEvent} from "@tauri-apps/plugin-global-shortcut";
 import {getContext, setContext} from "svelte";
+import {platform} from "@tauri-apps/plugin-os";
 
 export type Command = {
     keys: string;
@@ -23,14 +24,17 @@ class CommandsContext {
 
     isCommandPaletteOpen = $state(false);
 
+    mode = $state<"tables" | "script">("tables");
     isConnectionsOpen = $state(false);
     isTablesOpen = $state(false);
 
     constructor() {
+        const prettyMod = platform() === "macos" ? "⌘" : "Ctrl";
+
         this.#all = [
             {
                 keys: "CommandOrControl+P",
-                prettyKeys: "⌘ P", // TODO: windows
+                prettyKeys: `${prettyMod} P`,
                 title: "Open command palette",
                 description: "Allows you to search through all available commands and execute them",
                 action: (event: ShortcutEvent) => {
@@ -41,7 +45,7 @@ class CommandsContext {
             },
             {
                 keys: "CommandOrControl+0",
-                prettyKeys: "⌘ 0", // TODO: windows
+                prettyKeys: `${prettyMod} 0`,
                 title: "Switch database connection",
                 description: "Open the popover to change the currently selected database connection",
                 action: (event: ShortcutEvent) => {
@@ -51,8 +55,30 @@ class CommandsContext {
                 },
             },
             {
+                keys: "CommandOrControl+1",
+                prettyKeys: `${prettyMod} 1`,
+                title: "Open tables mode",
+                description: "Visualize and edit tables of the currently selected database",
+                action: (event: ShortcutEvent) => {
+                    if (event.state === "Pressed") {
+                        this.mode = "tables";
+                    }
+                },
+            },
+            {
+                keys: "CommandOrControl+2",
+                prettyKeys: `${prettyMod} 2`,
+                title: "Open script mode",
+                description: "Perform raw queries on the currently selected database connection",
+                action: (event: ShortcutEvent) => {
+                    if (event.state === "Pressed") {
+                        this.mode = "script";
+                    }
+                },
+            },
+            {
                 keys: "CommandOrControl+T",
-                prettyKeys: "⌘ T", // TODO: windows
+                prettyKeys: `${prettyMod} T`,
                 title: "Select tables and views",
                 description: "Open the dialog to search a table or view within any schema",
                 action: (event) => {
@@ -63,7 +89,7 @@ class CommandsContext {
             },
             {
                 keys: "CommandOrControl+F",
-                prettyKeys: "⌘ F", // TODO: windows
+                prettyKeys: `${prettyMod} F`,
                 title: "Apply filters",
                 description: "Open the popover to apply some quick filter to the currently selected table",
                 action: (event) => {
@@ -74,7 +100,7 @@ class CommandsContext {
             },
             {
                 keys: "CommandOrControl+R",
-                prettyKeys: "⌘ R", // TODO: windows
+                prettyKeys: `${prettyMod} R`,
                 title: "Refresh data",
                 description: "Refresh the data of the currently selected table",
 
@@ -86,7 +112,7 @@ class CommandsContext {
             },
             {
                 keys: "CommandOrControl+ArrowLeft",
-                prettyKeys: "⌘ ←", // TODO: windows
+                prettyKeys: `${prettyMod} ←`,
                 title: "Previous data page",
                 description: "Load the previous page of data with the current LIMIT value with an OFFSET of LIMIT",
 
@@ -98,7 +124,7 @@ class CommandsContext {
             },
             {
                 keys: "CommandOrControl+ArrowRight",
-                prettyKeys: "⌘ →", // TODO: windows
+                prettyKeys: `${prettyMod} →`,
                 title: "Next data page",
                 description: "Load the next page of data with the current LIMIT value with an OFFSET of LIMIT",
 

@@ -31,9 +31,9 @@
                 {:else}
                     {item.title}
                 {/if}
-                <span class="font-normal text-xs">{item.description}</span>
+                <span class="font-normal text-xs text-fg-1">{item.description}</span>
             </div>
-            <span class="ms-auto font-normal text-fg-1">{item.prettyKeys}</span>
+            <span class="ms-auto font-normal font-mono text-fg-1">{item.prettyKeys}</span>
         {/snippet}
     </ItemSelect>
 </Dialog>

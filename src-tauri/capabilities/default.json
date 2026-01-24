@@ -1,18 +1,23 @@
 {
-    "$schema": "../gen/schemas/desktop-schema.json",
-    "identifier": "default",
-    "description": "Capability for the main window",
-    "windows": ["main"],
-    "permissions": [
-        "core:default",
-        "core:menu:default",
-        "opener:default",
-        "sql:default",
-        "store:default",
-        "clipboard-manager:allow-write-text",
-        "global-shortcut:allow-is-registered",
-        "global-shortcut:allow-register",
-        "global-shortcut:allow-unregister"
-    ],
-    "extends": ["allow-dialogs-fs"]
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Capability for the main window",
+  "windows": [
+    "main"
+  ],
+  "permissions": [
+    "core:default",
+    "core:menu:default",
+    "opener:default",
+    "sql:default",
+    "store:default",
+    "clipboard-manager:allow-write-text",
+    "global-shortcut:allow-is-registered",
+    "global-shortcut:allow-register",
+    "global-shortcut:allow-unregister",
+    "os:default"
+  ],
+  "extends": [
+    "allow-dialogs-fs"
+  ]
 }

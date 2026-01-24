@@ -1,7 +1,12 @@
 {
-    "$schema": "../gen/schemas/desktop-schema.json",
-    "identifier": "fs-dialog",
-    "description": "Allow write to file and open dialog",
-    "windows": ["*"],
-    "permissions": ["core:default"]
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "fs-dialog",
+  "description": "Allow write to file and open dialog",
+  "windows": [
+    "*"
+  ],
+  "permissions": [
+    "core:default",
+    "os:default"
+  ]
 }

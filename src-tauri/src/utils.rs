@@ -1,6 +1,6 @@
+use crate::error::PgError;
 use native_tls::TlsConnector;
 use postgres_native_tls::MakeTlsConnector;
-use crate::error::PgError;
 
 pub fn quote_ident(s: &str) -> String {
     format!("\"{}\"", s.replace('"', "\"\""))

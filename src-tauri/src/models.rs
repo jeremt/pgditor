@@ -8,7 +8,7 @@ pub struct PgTable {
     #[serde(rename = "type")]
     pub table_type: String,
     pub size_mb: f64,
-    pub column_names: Vec<String>
+    pub column_names: Vec<String>,
 }
 
 #[derive(Debug, Serialize)]
