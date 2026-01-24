@@ -7,11 +7,12 @@ const fuzzyMatchWithHighlights = (pattern: string, str: string) => {
     let score = 0;
     let consecutive = 0;
     let firstMatch = -1;
-    const indexes = [];
+    const indexes: number[] = [];
 
     while (strIdx < lowerStr.length) {
         if (patternIdx < lowerPattern.length && lowerStr[strIdx] === lowerPattern[patternIdx]) {
             if (firstMatch === -1) firstMatch = strIdx;
+
             score += 10 + consecutive * 5;
             consecutive++;
             indexes.push(strIdx);
@@ -27,6 +28,10 @@ const fuzzyMatchWithHighlights = (pattern: string, str: string) => {
     }
 
     score -= firstMatch;
+
+    const lengthPenalty = (lowerStr.length - lowerPattern.length) * 2;
+    score -= lengthPenalty;
+
     return {matched: true, score, indexes};
 };
 
@@ -114,7 +119,7 @@ export const fuzzySearchWithHighlights = (needle: string, haystack: string[]) =>
 export const renderHighlightedMatch = (
     str: string,
     ranges: readonly (readonly [number, number])[],
-    wrapper = {start: "<b>", end: "</b>"}
+    wrapper = {start: "<b>", end: "</b>"},
 ) => {
     let result = "";
     let lastIndex = 0;

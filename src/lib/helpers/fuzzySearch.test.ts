@@ -82,7 +82,7 @@ suite("renderHighlightedMatch", () => {
                 [0, 2],
                 [3, 4],
             ],
-            {start: "<b>", end: "</b>"}
+            {start: "<b>", end: "</b>"},
         );
         expect(result).toBe("<b>Ap</b>p<b>C</b>ontroller");
     });
@@ -119,7 +119,7 @@ suite("renderHighlightedMatch", () => {
                 [0, 2],
                 [2, 4],
             ],
-            {start: "<i>", end: "</i>"}
+            {start: "<i>", end: "</i>"},
         );
         expect(result).toBe("<i>ab</i><i>cd</i>ef");
     });
@@ -127,5 +127,16 @@ suite("renderHighlightedMatch", () => {
     test("defaults to <b> wrapper if none given", () => {
         const result = renderHighlightedMatch("abc", [[1, 2]]);
         expect(result).toBe("a<b>b</b>c");
+    });
+    test("shorter exact match is prioritized over longer partial match", () => {
+        const results = fuzzySearchWithHighlights("tasks", ["tasks_triggers", "tasks"]);
+
+        expect(results.length).toBe(2);
+
+        // Exact shorter match should win
+        expect(results[0].item).toBe("tasks");
+        expect(results[1].item).toBe("tasks_triggers");
+
+        expect(results[0].score).toBeGreaterThan(results[1].score);
     });
 });
