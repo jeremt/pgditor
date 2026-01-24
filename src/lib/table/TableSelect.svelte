@@ -46,11 +46,13 @@
                 selectedIndex === 0
                     ? (searchText === "" ? pg.tables.length : searchResult.length) - 1
                     : selectedIndex - 1;
+            event.preventDefault();
         } else if (
             event.key === "ArrowDown" &&
             selectedIndex + 1 < (searchText === "" ? pg.tables.length : searchResult.length)
         ) {
             selectedIndex += 1;
+            event.preventDefault();
         } else {
             selectedIndex = 0;
         }
