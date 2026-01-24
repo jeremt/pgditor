@@ -1,6 +1,7 @@
 <script lang="ts">
     import CrossIcon from "$lib/icons/CrossIcon.svelte";
     import TrashIcon from "$lib/icons/TrashIcon.svelte";
+    import PasswordInput from "$lib/widgets/PasswordInput.svelte";
 
     import {getConnectionsContext, type Connection} from "./connectionsContext.svelte";
 
@@ -41,7 +42,7 @@
         autocorrect="off"
     />
     <label class="text-sm" for="{connection.name}-connectionString">Connection string</label>
-    <input
+    <PasswordInput
         id="{connection.name}-connectionString"
         type="text"
         bind:value={connection.connectionString}
