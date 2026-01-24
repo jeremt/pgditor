@@ -6,6 +6,7 @@
     import SqlScript from "$lib/scripts/SqlScript.svelte";
     import TablesMenu from "$lib/table/TablesMenu.svelte";
     import SqlScriptMenu from "$lib/scripts/SqlScriptMenu.svelte";
+    import CommandPalette from "$lib/commands/CommandPalette.svelte";
 
     let mode = $state<"tables" | "script">("tables");
 </script>
@@ -40,3 +41,5 @@
 {:else}
     <SqlScript />
 {/if}
+
+<CommandPalette />

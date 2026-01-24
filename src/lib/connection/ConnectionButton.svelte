@@ -1,4 +1,5 @@
 <script lang="ts">
+    import {getCommandsContext} from "$lib/commands/commandsContext.svelte";
     import CheckIcon from "$lib/icons/CheckIcon.svelte";
     import ChevronIcon from "$lib/icons/ChevronIcon.svelte";
     import PenIcon from "$lib/icons/PenIcon.svelte";
@@ -11,17 +12,17 @@
     import {getConnectionsContext, type Connection} from "./connectionsContext.svelte";
 
     const connections = getConnectionsContext();
+    const commands = getCommandsContext();
     let connectionToEdit = $state<Connection>({id: "", name: "", connectionString: ""});
     let isDialogOpen = $state(false);
-    let isPopoverOpen = $state(false);
 </script>
 
-<Popover bind:isOpen={isPopoverOpen} offsetY={10}>
+<Popover bind:isOpen={commands.isConnectionsOpen} offsetY={10}>
     {#snippet target()}
-        <button class="btn secondary" onclick={() => (isPopoverOpen = !isPopoverOpen)}>
+        <button class="btn secondary" onclick={() => (commands.isConnectionsOpen = !commands.isConnectionsOpen)}>
             <PlugIcon --size="1.2rem" />
             {connections.current ? connections.current.name : "Add connection"}
-            <ChevronIcon --size="1rem" direction={isPopoverOpen ? "top" : "bottom"} />
+            <ChevronIcon --size="1rem" direction={commands.isConnectionsOpen ? "top" : "bottom"} />
         </button>
     {/snippet}
     <div class="flex flex-col gap-2 w-sx">
@@ -31,7 +32,7 @@
                     class="btn ghost flex-1 justify-start!"
                     onclick={() => {
                         connections.use(connection.id);
-                        isPopoverOpen = false;
+                        commands.isConnectionsOpen = false;
                     }}
                 >
                     {#if connection.id === connections.currentId}<CheckIcon --size="1rem" />{:else}<div
@@ -45,7 +46,7 @@
                     onclick={() => {
                         connectionToEdit = {...connection};
                         isDialogOpen = true;
-                        isPopoverOpen = false;
+                        commands.isConnectionsOpen = false;
                     }}><PenIcon --size="1rem" /></button
                 >
             </div>
@@ -55,7 +56,7 @@
             onclick={() => {
                 connectionToEdit = {id: "", name: "", connectionString: ""};
                 isDialogOpen = true;
-                isPopoverOpen = false;
+                commands.isConnectionsOpen = false;
             }}><PlusIcon /> Add connection</button
         >
     </div>

@@ -7,8 +7,10 @@
     import Dialog from "$lib/widgets/Dialog.svelte";
     import EnterIcon from "$lib/icons/EnterIcon.svelte";
     import CheckIcon from "$lib/icons/CheckIcon.svelte";
+    import {getCommandsContext} from "$lib/commands/commandsContext.svelte";
 
     const pg = getPgContext();
+    const commands = getCommandsContext();
 
     let searchText = $state("");
     let searchResult = $derived(
@@ -39,7 +41,7 @@
             if (table) {
                 pg.use(table);
                 searchText = "";
-                pg.isUseDialogOpen = false;
+                commands.isTablesOpen = false;
             }
         } else if (event.key === "ArrowUp") {
             selectedIndex =
@@ -67,7 +69,7 @@
     {/if}
 {/snippet}
 
-<button class="btn ghost" title="⌘T" onclick={() => (pg.isUseDialogOpen = true)} disabled={!pg.currentTable}>
+<button class="btn ghost" title="⌘T" onclick={() => (commands.isTablesOpen = true)} disabled={!pg.currentTable}>
     {#if pg.currentTable}
         {@render icon(pg.currentTable.type)} {pg.currentTable.schema}.{pg.currentTable.name}
     {:else}
@@ -75,7 +77,7 @@
     {/if}
 </button>
 
-<Dialog isOpen={pg.isUseDialogOpen} onrequestclose={() => (pg.isUseDialogOpen = false)} --padding="1rem">
+<Dialog isOpen={commands.isTablesOpen} onrequestclose={() => (commands.isTablesOpen = false)} --padding="1rem">
     <div class="flex flex-col gap-2 w-2xl overflow-hidden">
         <input
             type="text"
@@ -93,7 +95,7 @@
                         class:selected-table={i === selectedIndex}
                         onclick={() => {
                             pg.use(table);
-                            pg.isUseDialogOpen = false;
+                            commands.isTablesOpen = false;
                         }}
                     >
                         {#if pg.currentTable && `${table.schema}.${table.name}` === `${pg.currentTable.schema}.${pg.currentTable.name}`}
@@ -122,7 +124,7 @@
                                 if (table) {
                                     pg.use(table);
                                     searchText = "";
-                                    pg.isUseDialogOpen = false;
+                                    commands.isTablesOpen = false;
                                 }
                             }}
                         >

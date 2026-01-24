@@ -29,7 +29,7 @@
         fuzzySearchWithHighlights(searchText, items.map(itemToString)).map(({item, ranges}) => ({
             text: item,
             html: renderHighlightedMatch(item, ranges),
-        }))
+        })),
     );
 
     let selectedIndex = $state(0);
@@ -57,11 +57,13 @@
         } else if (event.key === "ArrowUp") {
             selectedIndex =
                 selectedIndex === 0 ? (searchText === "" ? items.length : searchResult.length) - 1 : selectedIndex - 1;
+            event.preventDefault();
         } else if (
             event.key === "ArrowDown" &&
             selectedIndex + 1 < (searchText === "" ? items.length : searchResult.length)
         ) {
             selectedIndex += 1;
+            event.preventDefault();
         } else {
             selectedIndex = 0;
         }
@@ -85,7 +87,7 @@
             {#each items as item, i}
                 <button
                     bind:this={buttonRefs[i]}
-                    class="btn ghost justify-start!"
+                    class="item-btn"
                     class:selected-table={i === selectedIndex}
                     onclick={() => {
                         onselect(item);
@@ -102,7 +104,7 @@
                 {#if item}
                     <button
                         bind:this={buttonRefs[i]}
-                        class="btn ghost justify-start!"
+                        class="item-btn"
                         class:selected-table={i === selectedIndex}
                         onclick={() => {
                             if (item) {
@@ -127,5 +129,36 @@
     }
     .selected-table {
         background-color: var(--color-bg-1) !important;
+    }
+    button.item-btn {
+        display: flex;
+        gap: 0.5rem;
+        justify-content: center;
+        flex-shrink: 0;
+        text-wrap: nowrap;
+        align-items: center;
+        font-weight: bold;
+        color: var(--color-fg);
+        background-color: transparent;
+        border-radius: var(--radius-btn);
+        cursor: pointer;
+        outline: none;
+        border: 1px solid transparent;
+        font-size: var(--text-sm);
+        padding-inline: 0.8em;
+        transition: 0.1s all;
+        &:disabled {
+            opacity: 0.3;
+            cursor: default;
+            pointer-events: none;
+        }
+        &:hover,
+        &:focus-visible {
+            filter: brightness(1);
+            background-color: var(--color-bg-1);
+        }
+        &:active {
+            translate: 0 0.15em;
+        }
     }
 </style>

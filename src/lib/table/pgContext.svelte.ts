@@ -34,7 +34,6 @@ class PgContext {
     toastContext = getToastContext();
     tables = $state<PgTable[]>([]);
     currentTable = $state<PgTable & {columns: PgColumn[]; rows: PgRow[]; count: number}>();
-    isUseDialogOpen = $state(false);
     isFilterPopover = $state(false);
     lastQueryTime = $state<number>();
     isLoading = $state(false);

@@ -9,8 +9,8 @@
     import {setConnectionsContext} from "$lib/connection/connectionsContext.svelte";
     import {setPgContext} from "$lib/table/pgContext.svelte";
     import Toaster, {setToastContext} from "$lib/widgets/Toaster.svelte";
-    import {globalShortcuts} from "$lib/tauri/globalShortcuts";
     import {setScriptsContext} from "$lib/scripts/scriptsContext.svelte";
+    import {setCommandsContext} from "$lib/commands/commandsContext.svelte";
 
     let {children} = $props();
 
@@ -19,61 +19,15 @@
     const connections = setConnectionsContext();
     const pg = setPgContext();
     const scripts = setScriptsContext();
-
-    const shortcuts = globalShortcuts([
-        {
-            keys: "CommandOrControl+T",
-            action: (event) => {
-                if (event.state === "Pressed") {
-                    pg.isUseDialogOpen = true;
-                }
-            },
-        },
-        {
-            keys: "CommandOrControl+F",
-            action: (event) => {
-                if (event.state === "Pressed") {
-                    pg.isFilterPopover = true;
-                }
-            },
-        },
-        {
-            keys: "CommandOrControl+R",
-            action: (event) => {
-                if (event.state === "Pressed") {
-                    pg.loadTables();
-                }
-            },
-        },
-        {
-            keys: "CommandOrControl+ArrowLeft",
-            action: (event) => {
-                if (event.state === "Pressed" && pg.filters.offset > 0) {
-                    pg.filters.offset = Math.max(0, pg.filters.offset - pg.filters.limit);
-                }
-            },
-        },
-        {
-            keys: "CommandOrControl+ArrowRight",
-            action: (event) => {
-                if (
-                    event.state === "Pressed" &&
-                    pg.currentTable &&
-                    pg.filters.offset + pg.filters.limit < pg.currentTable.count
-                ) {
-                    pg.filters.offset = Math.min(pg.currentTable.count, pg.filters.offset + pg.filters.limit);
-                }
-            },
-        },
-    ]);
+    const commands = setCommandsContext();
 
     onMount(async () => {
         await connections.load();
-        await shortcuts.mount();
+        await commands.mountShortcuts();
     });
 
-    onDestroy(async () => {
-        shortcuts.unmount();
+    onDestroy(() => {
+        commands.unmountShortcuts();
     });
 
     $effect(() => {
