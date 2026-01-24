@@ -83,6 +83,7 @@
         class="btn ghost"
         onaction={deleteRows}
         title="Delete"
+        disabled={pg.currentTable.type !== "BASE TABLE"}
         confirm={{
             title: "Are you sure?",
             description: pg.selectedRows.length
@@ -92,7 +93,9 @@
             buttonText: "Confirm delete",
         }}
         ><TrashIcon --size="1.2rem" />
-        {#if pg.selectedRows.length}<span class="badge">{pg.selectedRows.length}</span>{/if}
+        {#if pg.selectedRows.length && pg.currentTable.type === "BASE TABLE"}<span class="badge"
+                >{pg.selectedRows.length}</span
+            >{/if}
     </ActionButton>
     <Popover bind:isOpen={isExportOpen} offsetY={10}>
         {#snippet target()}

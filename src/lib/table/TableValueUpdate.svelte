@@ -63,23 +63,27 @@
                         {target.column.column_name}
                         <span class="font-normal">{target.column.data_type}</span>
                     </h2>
-                    {#if target.column.is_nullable === "YES"}
-                        <label class="text-xs ml-auto flex gap-2 items-center"
-                            >NULL
-                            <CheckboxInput
-                                checked={target.row[target.column.column_name] === null}
-                                onchange={() => {
-                                    if (target!.row[target!.column.column_name] !== null) {
-                                        target!.row[target!.column.column_name] = null;
-                                    } else {
-                                        target!.row[target!.column.column_name] =
-                                            defaultValues[target!.column.data_type];
-                                    }
-                                }}
-                            />
-                        </label>
+                    {#if pg.currentTable?.type === "BASE TABLE"}
+                        {#if target.column.is_nullable === "YES"}
+                            <label class="text-xs ml-auto flex gap-2 items-center"
+                                >NULL
+                                <CheckboxInput
+                                    checked={target.row[target.column.column_name] === null}
+                                    onchange={() => {
+                                        if (target!.row[target!.column.column_name] !== null) {
+                                            target!.row[target!.column.column_name] = null;
+                                        } else {
+                                            target!.row[target!.column.column_name] =
+                                                defaultValues[target!.column.data_type];
+                                        }
+                                    }}
+                                />
+                            </label>
+                        {/if}
+                        <ActionButton class="btn " onaction={updateValue}
+                            ><CheckIcon --size="1.2rem" />Update</ActionButton
+                        >
                     {/if}
-                    <ActionButton class="btn " onaction={updateValue}><CheckIcon --size="1.2rem" />Update</ActionButton>
                 </div>
             </header>
             {#if errorMessage}
