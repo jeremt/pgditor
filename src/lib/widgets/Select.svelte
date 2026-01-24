@@ -68,6 +68,9 @@
     button {
         position: relative;
         cursor: pointer;
+        &:focus-within {
+            border: 1px solid var(--color-gold);
+        }
     }
     select {
         position: absolute;
