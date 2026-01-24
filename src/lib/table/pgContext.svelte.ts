@@ -294,6 +294,11 @@ WHERE ${pk.column_name} = ANY(ARRAY[${this.selectedRows
         this.filters.where = "";
     };
 
+    truncateTable = async () => {
+        await this.rawQuery(`TRUNCATE ${this.fullName} RESTART IDENTITY`, {throwError: false});
+        this.filters.where = "";
+    };
+
     updateRow = async (row: PgRow, {throwError = true} = {}) => {
         const pk = this.getPrimaryKey();
         if (!pk || !this.currentTable) {

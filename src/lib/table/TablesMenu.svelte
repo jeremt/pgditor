@@ -30,13 +30,17 @@
                           ? null
                           : defaultValues[column.data_type],
             };
-        }, {}) ?? {}
+        }, {}) ?? {},
     );
 
     let isInsertOpen = $state(false);
 
     const deleteRows = async () => {
-        pg.deleteSelection();
+        if (pg.selectedRows.length > 0 && pg.currentTable?.type === "BASE TABLE") {
+            pg.deleteSelection();
+        } else {
+            pg.truncateTable();
+        }
     };
 
     let isExportOpen = $state(false);
@@ -78,24 +82,23 @@
     {#if pg.lastQueryTime !== undefined}
         <div class="text-xs text-fg-1">{pg.lastQueryTime.toFixed(0)} ms</div>
     {/if}
-    {#if pg.selectedRows.length > 0 && pg.currentTable.type === "BASE TABLE"}
-        <ActionButton
-            class="btn ghost"
-            onaction={deleteRows}
-            confirm={{
-                title: "Are you sure?",
-                description: "Once you delete the selected rows, it can't be undone.",
-                buttonClass: "btn error",
-                buttonText: "Confirm delete",
-            }}
-            ><TrashIcon --size="1.2rem" /> Delete
-            <span class="badge">{pg.selectedRows.length}</span></ActionButton
-        >
-    {/if}
+    <ActionButton
+        class="btn ghost"
+        onaction={deleteRows}
+        title="Delete"
+        confirm={{
+            title: "Are you sure?",
+            description: "Once you delete the selected rows, it can't be undone.",
+            buttonClass: "btn error",
+            buttonText: "Confirm delete",
+        }}
+        ><TrashIcon --size="1.2rem" />
+        {#if pg.selectedRows.length}<span class="badge">{pg.selectedRows.length}</span>{/if}
+    </ActionButton>
     <Popover bind:isOpen={isExportOpen} offsetY={10}>
         {#snippet target()}
-            <button class="btn ghost" onclick={() => (isExportOpen = !isExportOpen)}
-                ><DownloadIcon --size="1.2rem" /> Export
+            <button class="btn ghost" title="Export" onclick={() => (isExportOpen = !isExportOpen)}
+                ><DownloadIcon --size="1.2rem" />
                 {#if pg.selectedRows.length}<span class="badge">{pg.selectedRows.length}</span>{/if}
             </button>
         {/snippet}
@@ -135,7 +138,9 @@
             >
         </div>
     </Popover>
-    <button class="btn ghost" onclick={refresh}><RefreshIcon --size="1.2rem" spinning={refreshing} /> Refresh</button>
+    <button class="btn icon ghost" onclick={refresh} title="Refresh"
+        ><RefreshIcon --size="1.2rem" spinning={refreshing} /></button
+    >
     <button class="btn" disabled={pg.currentTable.type !== "BASE TABLE"} onclick={() => (isInsertOpen = true)}
         ><PlusIcon /> Insert</button
     >
