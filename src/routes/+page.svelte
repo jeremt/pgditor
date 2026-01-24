@@ -14,10 +14,19 @@
     <ConnectionButton />
     <button
         class="btn ghost icon"
-        title={mode === "tables" ? "Manage sql scripts" : "Visualize tables"}
-        onclick={() => (mode = mode === "script" ? "tables" : "script")}
+        title={"Visualize tables"}
+        disabled={mode === "tables"}
+        onclick={() => (mode = "tables")}
     >
-        {#if mode === "tables"}<TerminalIcon --size="1.2rem" />{:else}<TablesIcon --size="1.2rem" />{/if}
+        <TablesIcon --size="1.2rem" />
+    </button>
+    <button
+        class="btn ghost icon"
+        title={"Run raw sql queries"}
+        disabled={mode === "script"}
+        onclick={() => (mode = "script")}
+    >
+        <TerminalIcon --size="1.2rem" />
     </button>
     {#if mode === "tables"}
         <TablesMenu />

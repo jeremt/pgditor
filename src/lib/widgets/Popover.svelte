@@ -70,6 +70,22 @@
         }
     };
 
+    // Inside your <script lang="ts">
+    const handleFocusIn = (event: FocusEvent) => {
+        // Optional: Only open if it's not already open
+        if (!isOpen) {
+            isOpen = true;
+        }
+    };
+
+    const handleFocusOut = (event: FocusEvent) => {
+        // Logic to close when focus leaves the entire component
+        // relatedTarget is the element receiving focus
+        if (el && !el.contains(event.relatedTarget as Node)) {
+            isOpen = false;
+        }
+    };
+
     $effect(() => {
         if (isOpen) {
             restrictContainerPosition();
@@ -80,7 +96,7 @@
 <svelte:document onclick={clickOut} onkeydown={closeOnEsc} />
 <svelte:window onresize={restrictContainerPosition} />
 
-<div class="popover" bind:this={el} role="button" tabindex="-1">
+<div class="popover" onfocusin={handleFocusIn} onfocusout={handleFocusOut} bind:this={el}>
     {@render target()}
     <div
         bind:this={cardElement}

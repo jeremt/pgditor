@@ -27,11 +27,12 @@
         transition: var(--transition, 0.3s) all;
         flex-shrink: 0;
         border-radius: var(--radius, 0.4rem);
+        border: 1px solid transparent;
         background-color: var(--bg, var(--color-bg-1));
-        &:hover,
-        &:focus-visible {
+        &:hover {
             background-color: var(--bg-hover, var(--color-bg-2));
         }
+
         svg {
             display: block;
             width: calc(var(--size, 1.5rem) / 2);
@@ -47,8 +48,8 @@
             transition: all 0.2s ease;
             transition-delay: 0.1s;
         }
-        &:has(input:focus-visible) {
-            filter: brightness(1.4);
+        &:has(input[type="checkbox"]:focus-visible) {
+            border: 1px solid var(--color-gold);
         }
         input[type="checkbox"] {
             position: absolute;
@@ -68,6 +69,10 @@
             svg {
                 stroke-dashoffset: 0;
             }
+        }
+
+        &:has(input[type="checkbox"]:checked:focus-visible) {
+            background-color: var(--color, var(--color-gold));
         }
 
         &:has(input[type="checkbox"]:indeterminate) {

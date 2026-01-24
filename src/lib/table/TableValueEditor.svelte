@@ -1,5 +1,4 @@
 <script lang="ts">
-    import MultilinesInput from "$lib/widgets/MultilinesInput.svelte";
     import Select from "$lib/widgets/Select.svelte";
     import JsonValueEditor from "./valueEditors/JsonValueEditor.svelte";
     import type {PgColumn, PgRow} from "./pgContext.svelte";

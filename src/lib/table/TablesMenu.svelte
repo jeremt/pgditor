@@ -79,16 +79,15 @@
     >
         <ChevronIcon direction="right" />
     </button>
-    {#if pg.lastQueryTime !== undefined}
-        <div class="text-xs text-fg-1">{pg.lastQueryTime.toFixed(0)} ms</div>
-    {/if}
     <ActionButton
         class="btn ghost"
         onaction={deleteRows}
         title="Delete"
         confirm={{
             title: "Are you sure?",
-            description: "Once you delete the selected rows, it can't be undone.",
+            description: pg.selectedRows.length
+                ? "Once you delete the selected rows, it can't be undone."
+                : "Once you truncate the table, it can't be undone.\nThe identity of the primary key will be automatically restarted.",
             buttonClass: "btn error",
             buttonText: "Confirm delete",
         }}
@@ -141,6 +140,9 @@
     <button class="btn icon ghost" onclick={refresh} title="Refresh"
         ><RefreshIcon --size="1.2rem" spinning={refreshing} /></button
     >
+    {#if pg.lastQueryTime !== undefined}
+        <div class="text-xs text-fg-1 me-2">{pg.lastQueryTime.toFixed(0)} ms</div>
+    {/if}
     <button class="btn" disabled={pg.currentTable.type !== "BASE TABLE"} onclick={() => (isInsertOpen = true)}
         ><PlusIcon /> Insert</button
     >

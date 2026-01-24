@@ -78,7 +78,7 @@
                 Without primary key, you cannot update a specific row, use <TerminalIcon --size="1rem" /> instead.
             </div>
         {/if}
-        {#each pg.currentTable?.columns ?? [] as column}
+        {#each pg.currentTable?.columns ?? [] as column (column.column_name)}
             <label class="text-sm flex gap-2 items-center pt-2" for={column.column_name}>
                 {#if column.is_primary_key === "YES"}<KeyIcon --size="1.2rem" />{/if}
                 {#if column.foreign_column_name !== null}

@@ -9,11 +9,10 @@ button.btn {
     font-weight: bold;
     color: var(--color-bg);
     background-color: var(--color-fg);
-    background-image: linear-gradient(transparent, var(--color-gold));
     border-radius: var(--radius-btn);
     cursor: pointer;
     outline: none;
-    border: none;
+    border: 1px solid transparent;
     font-size: var(--text-sm);
     height: var(--input-height);
     padding-inline: 0.8em;
@@ -25,7 +24,7 @@ button.btn {
     }
     &:hover,
     &:focus-visible {
-        background-image: linear-gradient(var(--color-gold), transparent);
+        background-color: var(--color-gold);
     }
     &:active {
         translate: 0 0.15em;
@@ -40,21 +39,25 @@ button.btn {
     }
     &.error {
         background-color: var(--color-error);
-        background-image: none;
+        &:hover,
+        &:focus-visible {
+            background-color: var(--color-error-1);
+        }
     }
     &.ghost {
         color: var(--color-fg);
         background-color: transparent;
-        background-image: none;
         &:hover {
             filter: brightness(1);
             background-color: var(--color-bg-1);
+        }
+        &:focus-visible {
+            border: 1px solid var(--color-gold);
         }
     }
     &.secondary {
         color: var(--color-fg);
         background-color: var(--color-bg-1);
-        background-image: none;
         &:hover,
         &:focus-visible {
             filter: brightness(1.2);
@@ -72,7 +75,7 @@ select,
 textarea {
     color: var(--color-fg);
     background-color: var(--color-bg-1);
-    border: none;
+    border: 1px solid transparent;
     border-radius: var(--radius-input);
     transition: 0.1s all;
     outline: none;
@@ -83,9 +86,11 @@ textarea {
     font-size: calc(var(--font-size-factor, 1) * 0.9rem);
     font-family: var(--font-primary);
 
-    &:hover,
-    &:focus-visible {
+    &:hover {
         filter: brightness(1.2);
+    }
+    &:focus-visible {
+        border: 1px solid var(--color-gold);
     }
     &::placeholder {
         color: var(--color-fg-2);

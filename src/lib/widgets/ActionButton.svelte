@@ -61,7 +61,7 @@
 {#if confirm}
     <Dialog isOpen={isConfirmOpen} onrequestclose={() => (isConfirmOpen = false)}>
         <h2 class="text-2xl pb-2">{confirm.title}</h2>
-        <p class="whitespace-pre-line">{confirm.description}</p>
+        <p class="whitespace-pre-line max-w-md">{confirm.description}</p>
         <footer class="flex justify-between pt-2">
             <button class="btn secondary" disabled={isLoading} onclick={() => (isConfirmOpen = false)}>Annuler</button>
 
