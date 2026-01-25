@@ -9,13 +9,15 @@
     import FileIcon from "$lib/icons/FileIcon.svelte";
     import {open} from "@tauri-apps/plugin-dialog";
     import {getPgContext} from "$lib/table/pgContext.svelte";
-    // import TrashIcon from "$lib/icons/TrashIcon.svelte";
-    // import PlusIcon from "$lib/icons/PlusIcon.svelte";
-    // import SaveIcon from "$lib/icons/SaveIcon.svelte";
-    // import SearchIcon from "$lib/icons/SearchIcon.svelte";
+    import TrashIcon from "$lib/icons/TrashIcon.svelte";
+    import SaveIcon from "$lib/icons/SaveIcon.svelte";
+    import SearchIcon from "$lib/icons/SearchIcon.svelte";
+    import {getCommandsContext} from "$lib/commands/commandsContext.svelte";
+    import ActionButton from "$lib/widgets/ActionButton.svelte";
 
     const scripts = getScriptsContext();
     const pg = getPgContext();
+    const commands = getCommandsContext();
 
     let isFileSelectOpen = $state(false);
     const itemToString = (item: ScriptFile) => item.path;
@@ -40,7 +42,7 @@
             ],
         });
         if (scriptPath !== null) {
-            scripts.add(scriptPath);
+            scripts.importFile(scriptPath);
         }
     };
     const lastSlash = (path: string) => {
@@ -63,7 +65,7 @@
     const folderpath = (path: string) => path.slice(0, lastSlash(path));
 </script>
 
-<!-- <button class="btn ghost" title="⌘P" onclick={() => (isFileSelectOpen = true)} disabled={false}>
+<button class="btn ghost" title="{commands.cmdOrCtrl} F" onclick={() => (isFileSelectOpen = true)} disabled={false}>
     {#if scripts.currentFile}
         <FileIcon --size="1.2rem" />
         {filename(scripts.currentFile.path)}
@@ -73,12 +75,26 @@
     {/if}
 </button>
 
-{#if scripts.currentFile === undefined}
-    <button class="btn ghost">
-        <SaveIcon --size="1.2rem" />
-        Save
-    </button>
-{/if} -->
+<button class="btn ghost" title="Save {commands.cmdOrCtrl} S">
+    <SaveIcon --size="1.2rem" />
+</button>
+
+{#if scripts.currentFile}
+    <ActionButton
+        class="btn ghost"
+        title="Remove"
+        confirm={{
+            title: "Are you sure?",
+            buttonClass: "btn error",
+            buttonText: "Remove from editor",
+            description:
+                "This file will be removed from your tracked files for this database, but won't be deleted from your file system.\nYou can import it again if you want to add it back.",
+        }}
+        onaction={() => scripts.removeCurrentFile()}
+    >
+        <TrashIcon --size="1.2rem" />
+    </ActionButton>
+{/if}
 
 <div class="mr-auto"></div>
 
@@ -94,7 +110,7 @@
         scripts.lastResult = undefined;
     }}><ClearIcon --size="1.2rem" /> Clear output</button
 >
-<button class="btn" onclick={scripts.run} title="⌘↵"
+<button class="btn" onclick={scripts.run} title="{commands.cmdOrCtrl} ↵"
     ><PlayIcon --size="1.2rem" /> Run {scripts.currentSelection ? "selection" : "file"}</button
 >
 
@@ -118,11 +134,13 @@
                 {filename(item.path)}
             {/if}
             {#if highlights}
-                <span class="search-result font-normal text-xs text-fg-1 text-start grow overflow-hidden text-ellipsis">
+                <span
+                    class="py-2 search-result font-normal text-xs text-fg-1 text-start grow overflow-hidden text-ellipsis"
+                >
                     {@html folderpath(highlights)}
                 </span>
             {:else}
-                <span class="font-normal text-xs text-fg-1 text-start grow overflow-hidden text-ellipsis">
+                <span class="py-2 font-normal text-xs text-fg-1 text-start grow overflow-hidden text-ellipsis">
                     {folderpath(item.path)}
                 </span>
             {/if}

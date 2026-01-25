@@ -28,13 +28,15 @@ class CommandsContext {
     isConnectionsOpen = $state(false);
     isTablesOpen = $state(false);
 
-    constructor() {
-        const prettyMod = platform() === "macos" ? "⌘" : "Ctrl";
+    get cmdOrCtrl() {
+        return platform() === "macos" ? "⌘" : "Ctrl";
+    }
 
+    constructor() {
         this.#all = [
             {
                 keys: "CommandOrControl+P",
-                prettyKeys: `${prettyMod} P`,
+                prettyKeys: `${this.cmdOrCtrl} P`,
                 title: "Open command palette",
                 description: "Allows you to search through all available commands and execute them",
                 action: (event: ShortcutEvent) => {
@@ -45,7 +47,7 @@ class CommandsContext {
             },
             {
                 keys: "CommandOrControl+0",
-                prettyKeys: `${prettyMod} 0`,
+                prettyKeys: `${this.cmdOrCtrl} 0`,
                 title: "Switch database connection",
                 description: "Open the popover to change the currently selected database connection",
                 action: (event: ShortcutEvent) => {
@@ -56,7 +58,7 @@ class CommandsContext {
             },
             {
                 keys: "CommandOrControl+1",
-                prettyKeys: `${prettyMod} 1`,
+                prettyKeys: `${this.cmdOrCtrl} 1`,
                 title: "Open tables mode",
                 description: "Visualize and edit tables of the currently selected database",
                 action: (event: ShortcutEvent) => {
@@ -67,7 +69,7 @@ class CommandsContext {
             },
             {
                 keys: "CommandOrControl+2",
-                prettyKeys: `${prettyMod} 2`,
+                prettyKeys: `${this.cmdOrCtrl} 2`,
                 title: "Open script mode",
                 description: "Perform raw queries on the currently selected database connection",
                 action: (event: ShortcutEvent) => {
@@ -78,7 +80,7 @@ class CommandsContext {
             },
             {
                 keys: "CommandOrControl+T",
-                prettyKeys: `${prettyMod} T`,
+                prettyKeys: `${this.cmdOrCtrl} T`,
                 title: "Select tables and views",
                 description: "Open the dialog to search a table or view within any schema",
                 action: (event) => {
@@ -89,7 +91,7 @@ class CommandsContext {
             },
             {
                 keys: "CommandOrControl+F",
-                prettyKeys: `${prettyMod} F`,
+                prettyKeys: `${this.cmdOrCtrl} F`,
                 title: "Apply filters",
                 description: "Open the popover to apply some quick filter to the currently selected table",
                 action: (event) => {
@@ -100,7 +102,7 @@ class CommandsContext {
             },
             {
                 keys: "CommandOrControl+R",
-                prettyKeys: `${prettyMod} R`,
+                prettyKeys: `${this.cmdOrCtrl} R`,
                 title: "Refresh data",
                 description: "Refresh the data of the currently selected table",
 
@@ -112,7 +114,7 @@ class CommandsContext {
             },
             {
                 keys: "CommandOrControl+ArrowLeft",
-                prettyKeys: `${prettyMod} ←`,
+                prettyKeys: `${this.cmdOrCtrl} ←`,
                 title: "Previous data page",
                 description: "Load the previous page of data with the current LIMIT value with an OFFSET of LIMIT",
 
@@ -124,7 +126,7 @@ class CommandsContext {
             },
             {
                 keys: "CommandOrControl+ArrowRight",
-                prettyKeys: `${prettyMod} →`,
+                prettyKeys: `${this.cmdOrCtrl} →`,
                 title: "Next data page",
                 description: "Load the next page of data with the current LIMIT value with an OFFSET of LIMIT",
 

@@ -23,6 +23,7 @@
                 fontFamily="Space Mono"
                 fontSize={14}
                 onrun={scripts.run}
+                onsave={scripts.saveCurrentFile}
                 onchange={(newValue, path) => {
                     switch (path) {
                         case "script.sql":

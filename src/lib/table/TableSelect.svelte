@@ -69,7 +69,12 @@
     {/if}
 {/snippet}
 
-<button class="btn ghost" title="⌘T" onclick={() => (commands.isTablesOpen = true)} disabled={!pg.currentTable}>
+<button
+    class="btn ghost"
+    title="{commands.cmdOrCtrl} T"
+    onclick={() => (commands.isTablesOpen = true)}
+    disabled={!pg.currentTable}
+>
     {#if pg.currentTable}
         {@render icon(pg.currentTable.type)} {pg.currentTable.schema}.{pg.currentTable.name}
     {:else}

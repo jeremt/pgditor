@@ -4,7 +4,8 @@ import {getPgContext} from "$lib/table/pgContext.svelte";
 import {catchError} from "$lib/helpers/catchError";
 import {StoreContext} from "$lib/helpers/StoreContext";
 import {getConnectionsContext} from "$lib/connection/connectionsContext.svelte";
-import {readFile} from "@tauri-apps/plugin-fs";
+import {readFile, writeTextFile} from "@tauri-apps/plugin-fs";
+import {save} from "@tauri-apps/plugin-dialog";
 
 const storePath = "scripts.json";
 
@@ -64,7 +65,7 @@ class ScriptsContext extends StoreContext {
         this.currentValue = "";
     };
 
-    add = async (scriptPath: string) => {
+    importFile = async (scriptPath: string) => {
         if (!this.#connections.current?.name) {
             return;
         }
@@ -81,10 +82,46 @@ class ScriptsContext extends StoreContext {
         await this.saveToStore();
     };
 
+    removeCurrentFile = async () => {
+        if (!this.#connections.current?.name || !this.#currentFile?.path) {
+            return;
+        }
+        const currentPath = this.#currentFile.path;
+        const i = this.#files.findIndex((file) => file.path === currentPath);
+        console.log(i, currentPath, this.#files);
+        if (i === -1) {
+            console.warn(`File ${currentPath} isn't imported.`);
+        } else {
+            this.#files.splice(i, 1);
+            await this.setToStore(`${this.#connections.current.name}-scripts`, this.#files);
+            await this.saveToStore();
+            this.#currentFile = undefined;
+            this.currentValue = "";
+        }
+    };
+
+    saveCurrentFile = async () => {
+        let path = this.#currentFile?.path ?? null;
+        if (path === null) {
+            path = await save({
+                title: "Save sql script",
+                filters: [{name: "SQL", extensions: ["sql"]}],
+            });
+            if (path === null) {
+                this.#toaster.toast(`Failed to save file to ${path}`, {kind: "error"});
+                return;
+            }
+            await this.importFile(path);
+            this.#currentFile = this.#files.find((f) => f.path === path);
+        }
+        await writeTextFile(path, this.currentValue);
+        this.#toaster.toast(`File saved to ${path}`, {kind: "success"});
+    };
+
     run = async () => {
         this.errorMessage = "";
         const [error, result] = await catchError(
-            this.#pg.rawQuery(this.currentSelection ? this.currentSelection : this.currentValue)
+            this.#pg.rawQuery(this.currentSelection ? this.currentSelection : this.currentValue),
         );
         if (error) {
             this.errorMessage = error.message;
