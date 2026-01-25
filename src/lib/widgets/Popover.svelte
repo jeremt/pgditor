@@ -70,20 +70,14 @@
         }
     };
 
-    // Inside your <script lang="ts">
     const handleFocusIn = (event: FocusEvent) => {
-        // Optional: Only open if it's not already open
         if (!isOpen) {
             isOpen = true;
         }
     };
 
     const handleFocusOut = (event: FocusEvent) => {
-        // Logic to close when focus leaves the entire component
-        // relatedTarget is the element receiving focus
-        if (el && !el.contains(event.relatedTarget as Node)) {
-            isOpen = false;
-        }
+        // FIXME: for now, we don't automatically close the popover on focus out because it compete with clickOut but we should find a better fix for that
     };
 
     $effect(() => {
