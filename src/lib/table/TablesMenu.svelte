@@ -80,12 +80,14 @@
         <ChevronIcon direction="right" />
     </button>
     <ActionButton
-        class="btn ghost"
+        class="btn ghost icon relative"
         onaction={deleteRows}
         title="Delete"
         disabled={pg.currentTable.type !== "BASE TABLE"}
         confirm={{
-            title: "Are you sure?",
+            title: pg.selectedRows.length
+                ? `Remove ${pg.selectedRows.length} rows`
+                : `Truncate table and restart identity`,
             description: pg.selectedRows.length
                 ? "Once you delete the selected rows, it can't be undone."
                 : "Once you truncate the table, it can't be undone.\nThe identity of the primary key will be automatically restarted.",
@@ -93,15 +95,18 @@
             buttonText: "Confirm delete",
         }}
         ><TrashIcon --size="1.2rem" />
-        {#if pg.selectedRows.length && pg.currentTable.type === "BASE TABLE"}<span class="badge"
-                >{pg.selectedRows.length}</span
+        {#if pg.selectedRows.length && pg.currentTable.type === "BASE TABLE"}<span
+                class="badge absolute top-0"
+                style:right="-0.6rem">{pg.selectedRows.length > 100 ? "99+" : pg.selectedRows.length}</span
             >{/if}
     </ActionButton>
     <Popover bind:isOpen={isExportOpen} offsetY={10}>
         {#snippet target()}
-            <button class="btn ghost" title="Export" onclick={() => (isExportOpen = !isExportOpen)}
+            <button class="btn ghost icon relative" title="Export" onclick={() => (isExportOpen = !isExportOpen)}
                 ><DownloadIcon --size="1.2rem" />
-                {#if pg.selectedRows.length}<span class="badge">{pg.selectedRows.length}</span>{/if}
+                {#if pg.selectedRows.length}<span class="badge absolute top-0" style:right="-0.6rem"
+                        >{pg.selectedRows.length > 100 ? "99+" : pg.selectedRows.length}</span
+                    >{/if}
             </button>
         {/snippet}
         <div>
@@ -114,7 +119,7 @@
                         toast("Failed to export JSON", {kind: "error"});
                     }
                     isExportOpen = false;
-                }}>Export to JSON</button
+                }}>Export {pg.selectedRows.length > 0 ? `${pg.selectedRows.length} rows` : "all rows"} to JSON</button
             >
             <button
                 class="btn ghost"
@@ -125,7 +130,7 @@
                         toast("Failed to export CSV", {kind: "error"});
                     }
                     isExportOpen = false;
-                }}>Export to CSV</button
+                }}>Export {pg.selectedRows.length > 0 ? `${pg.selectedRows.length} rows` : "all rows"} to CSV</button
             >
             <button
                 class="btn ghost"
@@ -136,7 +141,7 @@
                         toast("Failed to export SQL", {kind: "error"});
                     }
                     isExportOpen = false;
-                }}>Export to SQL</button
+                }}>Export {pg.selectedRows.length > 0 ? `${pg.selectedRows.length} rows` : "all rows"} to SQL</button
             >
         </div>
     </Popover>

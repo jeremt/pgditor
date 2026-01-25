@@ -4,6 +4,7 @@
     import CheckIcon from "$lib/icons/CheckIcon.svelte";
     import CopyIcon from "$lib/icons/CopyIcon.svelte";
     import CrossIcon from "$lib/icons/CrossIcon.svelte";
+    import ErrorIcon from "$lib/icons/ErrorIcon.svelte";
     import TerminalIcon from "$lib/icons/TerminalIcon.svelte";
     import {getScriptsContext} from "$lib/scripts/scriptsContext.svelte";
     import ActionButton from "$lib/widgets/ActionButton.svelte";
@@ -37,13 +38,13 @@
         if (target === undefined || pk === undefined) {
             return;
         }
-        const [error] = await catchError(
+        const error = await catchError(
             pg.updateRow({
                 [pk.column_name]: target.row[pk.column_name],
                 [target.column.column_name]: target.row[target.column.column_name],
             }),
         );
-        if (error) {
+        if (error instanceof ErrorIcon) {
             errorMessage = error.message;
         } else {
             target = undefined;

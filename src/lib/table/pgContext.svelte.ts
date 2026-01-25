@@ -117,10 +117,10 @@ ${this.selectedRowsJson
         }
         const connectionString = this.connections.current.connectionString;
         this.isLoading = true;
-        const [tableError, unsortedTables] = await catchError(invoke<PgTable[]>("list_tables", {connectionString}));
-        if (tableError) {
-            console.error(tableError.message);
-            this.toastContext.toast(`Server error: ${tableError.message} (${this.connections.current.name})`, {
+        const unsortedTables = await catchError(invoke<PgTable[]>("list_tables", {connectionString}));
+        if (unsortedTables instanceof Error) {
+            console.error(unsortedTables.message);
+            this.toastContext.toast(`Server error: ${unsortedTables.message} (${this.connections.current.name})`, {
                 kind: "error",
             });
             this.tables = [];
@@ -147,16 +147,16 @@ ${this.selectedRowsJson
         }
         const connectionString = this.connections.current.connectionString;
         this.isLoading = true;
-        const [columnsError, columns] = await catchError(
+        const columns = await catchError(
             invoke<PgColumn[]>("list_table_columns", {
                 connectionString,
                 schema: table.schema,
                 table: table.name,
             }),
         );
-        if (columnsError) {
-            console.error(columnsError.message);
-            this.toastContext.toast(`Server error: ${columnsError.message}`, {kind: "error"});
+        if (columns instanceof Error) {
+            console.error(columns.message);
+            this.toastContext.toast(`Server error: ${columns.message}`, {kind: "error"});
             return;
         }
         const t = this.tables.find((item) => item.schema === table.schema && item.name === table.name);
@@ -191,7 +191,7 @@ ${this.selectedRowsJson
         const startTime = performance.now();
         this.isLoading = true;
         const primary_key = this.currentTable.columns.find((col) => col.is_primary_key === "YES");
-        const [dataError, data] = await catchError(
+        const data = await catchError(
             invoke<{rows: PgRow[]; count: number}>("get_table_data", {
                 connectionString,
                 schema: this.currentTable.schema,
@@ -207,9 +207,9 @@ ${this.selectedRowsJson
             }),
         );
         this.lastQueryTime = performance.now() - startTime;
-        if (dataError) {
-            console.error(dataError.message);
-            this.toastContext.toast(`SQL error: ${dataError.message}`, {kind: "error"});
+        if (data instanceof Error) {
+            console.error(data.message);
+            this.toastContext.toast(`SQL error: ${data.message}`, {kind: "error"});
             return;
         }
         this.selectedRows = [];
@@ -240,7 +240,7 @@ ${this.selectedRowsJson
         const connectionString = this.connections.current.connectionString;
         const startTime = performance.now();
         this.isLoading = true;
-        const [error, data] = await catchError(
+        const data = await catchError(
             invoke<Record<string, string | null>[]>("raw_query", {
                 connectionString,
                 sql,
@@ -249,12 +249,12 @@ ${this.selectedRowsJson
         this.lastQueryTime = performance.now() - startTime;
         this.isLoading = false;
 
-        if (error) {
-            console.error(error.message, sql);
+        if (data instanceof Error) {
+            console.error(data.message, sql);
             if (throwError) {
-                throw error;
+                throw data;
             }
-            this.toastContext.toast(`SQL error: ${error.message}`, {kind: "error", details: sql});
+            this.toastContext.toast(`SQL error: ${data.message}`, {kind: "error", details: sql});
             return;
         }
         if (refresh) {

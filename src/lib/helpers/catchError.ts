@@ -1,33 +1,55 @@
 /**
- * Handle try catches errors as values.
- *
- * You can pass an array of possible errors if you want to catch only specific errors.
+ * Safely executes the given function or promise and returns either the value or the thrown error instance.
  *
  * @example
- * class NotFoundError extends Error {
- *      name = "NotFoundError";
- *      status = 404;
+ * const data = catch_error(() => get_data()); // sync call should always be wrapped by a function
+ * if (data instanceof Error) {
+ *     return handle_error(data); // data is Error
  * }
- * const [error, data] = await catchError(getData(), [NotFoundError]);
+ * console.log(data); // data is whatever type returns by get_data()
  *
- * @param promise The promise to resolve
- * @param errors The errors that should be handled, if undefined it catches all errors.
- * @returns
+ * @example
+ * const data = await catch_error(fetch_data());
+ * if (data instanceof Error) {
+ *     return handle_error(data); // data is Error
+ * }
+ * console.log(data); // data is the unwrapped promise result
+ *
+ * @example
+ * const data = await catch_error(stream_data());
+ * if (data instanceof StreamingError) {
+ *     return data.tokens; // access custom properties of StreamingError
+ * } else if (data instanceof Error) { // handle other errors
+ *     return handle_error(data); // data is Error
+ * }
+ * console.log(data); // data is the unwrapped promise result
  */
-export const catchError = async <T, E extends new (message?: string) => Error>(
-    promise: Promise<T>,
-    errors?: E[]
-): Promise<[undefined, T] | [InstanceType<E>]> => {
+export function catchError<T>(promise: Promise<T>): Promise<T | Error>;
+export function catchError<T>(fn: () => T): T | Error;
+export function catchError(input: unknown): unknown {
     try {
-        return [undefined, await promise];
-    } catch (error) {
-        if (errors === undefined) {
-            // any error
-            return [error as InstanceType<E>];
+        if (typeof input === "function") {
+            const result = (input as () => unknown)();
+
+            if (result instanceof Promise) {
+                return result.catch(errorWithFallback);
+            }
+
+            return result;
         }
-        if (errors.some((possibleError) => error instanceof possibleError)) {
-            return [error as InstanceType<E>];
+
+        if (input instanceof Promise) {
+            return input.catch(errorWithFallback);
         }
-        throw error; // unexpected error
+
+        return input;
+    } catch (err) {
+        return errorWithFallback(err);
     }
-};
+}
+
+function errorWithFallback(err: unknown): Error {
+    return err instanceof Error
+        ? err
+        : new Error(`Thrown value of type ${typeof err} that doesn't extends Error: ${err}`);
+}

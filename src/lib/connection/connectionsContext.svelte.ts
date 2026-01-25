@@ -133,8 +133,8 @@ class ConnectionsContext extends StoreContext {
         if (connectionString === "") {
             return "Connection string is required";
         }
-        const [error, ok] = await catchError(invoke<boolean>("test_connection", {connectionString}));
-        if (error || !ok) {
+        const ok = await catchError(invoke<boolean>("test_connection", {connectionString}));
+        if (ok instanceof Error || !ok) {
             return "Connection string is invalid";
         }
     };

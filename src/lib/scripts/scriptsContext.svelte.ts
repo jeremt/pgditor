@@ -113,6 +113,7 @@ class ScriptsContext extends StoreContext {
             }
             await this.importFile(path);
             this.#currentFile = this.#files.find((f) => f.path === path);
+            console.log("is new file");
         }
         await writeTextFile(path, this.currentValue);
         this.#toaster.toast(`File saved to ${path}`, {kind: "success"});
@@ -120,11 +121,11 @@ class ScriptsContext extends StoreContext {
 
     run = async () => {
         this.errorMessage = "";
-        const [error, result] = await catchError(
+        const result = await catchError(
             this.#pg.rawQuery(this.currentSelection ? this.currentSelection : this.currentValue),
         );
-        if (error) {
-            this.errorMessage = error.message;
+        if (result instanceof Error) {
+            this.errorMessage = result.message;
         } else {
             this.lastResult = result;
             if (this.lastResult !== undefined) {
