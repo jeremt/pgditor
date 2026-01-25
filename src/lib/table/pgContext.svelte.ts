@@ -298,26 +298,31 @@ WHERE ${pk.column_name} = ANY(ARRAY[${this.selectedRows
         this.filters.where = "";
     };
 
-    updateRow = async (row: PgRow, {throwError = true} = {}) => {
+    generateUpdateRow = async (row: PgRow) => {
         const pk = this.getPrimaryKey();
         if (!pk || !this.currentTable) {
+            console.warn(`Cannot update without primary key.`);
             return;
         }
         const editableColumns = (column: PgColumn) =>
             column.is_primary_key === "NO" &&
             column.data_type !== "tsvector" &&
             Object.keys(row).includes(column.column_name);
-
-        await this.rawQuery(
-            `UPDATE ${this.fullName} SET
+        return `UPDATE ${this.fullName} SET
 ${this.currentTable.columns
     .filter(editableColumns)
     .map((col) => `${col.column_name} = ${valueToSql(col, row[col.column_name])}`)
     .join(",\n  ")}
 WHERE ${pk.column_name} = ${valueToSql(pk, row[pk.column_name])};
-                        `,
-            {throwError},
-        );
+                        `;
+    };
+
+    updateRow = async (row: PgRow, {throwError = true} = {}) => {
+        const query = await this.generateUpdateRow(row);
+        if (!query) {
+            return;
+        }
+        await this.rawQuery(query, {throwError});
     };
 
     /**

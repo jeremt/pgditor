@@ -27,7 +27,7 @@
         <input
             id={column.column_name}
             type="text"
-            class="font-mono!"
+            class="font-mono! w-full"
             autocorrect="off"
             autocomplete="off"
             autocapitalize="off"
@@ -39,7 +39,7 @@
     <EnumValueEditor {column} bind:value={row[column.column_name] as string} {inlined} />
 {:else if column.data_type === "boolean" || column.data_type === "bool"}
     <Select
-        class="font-mono font-normal!"
+        class="font-mono font-normal! w-full"
         id={column.column_name}
         bind:value={() => valueToSql(column, row[column.column_name]), (value) => (row[column.column_name] = value)}
     >
