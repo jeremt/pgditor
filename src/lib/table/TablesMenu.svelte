@@ -149,7 +149,7 @@
         ><RefreshIcon --size="1.2rem" spinning={refreshing} /></button
     >
     {#if pg.lastQueryTime !== undefined}
-        <div class="text-xs text-fg-1 me-2">{pg.lastQueryTime.toFixed(0)} ms</div>
+        <div class="text-xs text-fg-1 me-2 shrink-0">{pg.lastQueryTime.toFixed(0)} ms</div>
     {/if}
     <button class="btn" disabled={pg.currentTable.type !== "BASE TABLE"} onclick={() => (isInsertOpen = true)}
         ><PlusIcon /> Insert</button
