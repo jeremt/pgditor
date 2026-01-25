@@ -363,8 +363,8 @@ VALUES
         return this.rawQuery(query, {throwError});
     };
 
-    applyWhere = () => {
-        this.filters.where = this.whereFilters.reduce((result, filter) => {
+    whereFromFilters = () =>
+        this.whereFilters.reduce((result, filter) => {
             return (
                 result +
                 "\n" +
@@ -372,6 +372,9 @@ VALUES
                 ` ${filter.column} ${filter.operator} ${filter.value}`
             );
         }, "");
+
+    applyWhere = (whereSql: string) => {
+        this.filters.where = whereSql;
         this.appliedFilters = this.whereFilters.length;
     };
 }
