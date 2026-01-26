@@ -38,6 +38,14 @@ class PgContext {
     lastQueryTime = $state<number>();
     isLoading = $state(false);
 
+    selectedColumns = $state<Set<string>>(new Set([]));
+    getSelectedColumns = () => {
+        return (
+            this.currentTable?.columns.filter(
+                (col) => this.selectedColumns.size === 0 || this.selectedColumns.has(col.column_name),
+            ) ?? []
+        );
+    };
     filters = $state({
         where: "",
         offset: 0,
@@ -166,6 +174,7 @@ ${this.selectedRowsJson
             return;
         }
         this.currentTable = {...t, columns, rows: [], count: 0};
+        this.selectedColumns = new Set(columns.map((col) => col.column_name));
         this.connections.saveSelectedTable(this.currentTable);
         this.filters = {
             where: "",
@@ -196,6 +205,11 @@ ${this.selectedRowsJson
                 connectionString,
                 schema: this.currentTable.schema,
                 table: this.currentTable.name,
+                columns:
+                    this.selectedColumns.size === 0 ||
+                    this.selectedColumns.size === this.currentTable.column_names.length
+                        ? "*"
+                        : this.selectedColumns.values().toArray().join(", "),
                 offset,
                 limit,
                 whereClause: where,

@@ -8,6 +8,7 @@ pub async fn get_table_data(
     connection_string: String,
     schema: String,
     table: String,
+    columns: Option<String>,
     offset: Option<i64>,
     limit: Option<i64>,
     where_clause: Option<String>,
@@ -15,6 +16,7 @@ pub async fn get_table_data(
 ) -> Result<PgTableData, PgError> {
     let conn = connection_string.clone();
 
+    let columns = columns.unwrap_or("*".to_string());
     let offset = offset.unwrap_or(0);
     let limit = limit.unwrap_or(100);
     let where_clause = where_clause.unwrap_or_default();
@@ -27,8 +29,8 @@ pub async fn get_table_data(
         let table_q = quote_ident(&table);
 
         let select_sql = format!(
-                "SELECT row_to_json(t)::text as json_text FROM (SELECT * FROM {}.{} {} {} OFFSET {} LIMIT {}) t",
-                schema_q, table_q, where_clause, order_by, offset, limit
+                "SELECT row_to_json(t)::text as json_text FROM (SELECT {} FROM {}.{} {} {} OFFSET {} LIMIT {}) t",
+                columns, schema_q, table_q, where_clause, order_by, offset, limit
             );
 
         println!("psql > {}", select_sql);

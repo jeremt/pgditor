@@ -45,7 +45,7 @@
 <Popover bind:isOpen={pg.isFilterPopover} offsetY={10}>
     {#snippet target()}
         <button class="btn ghost" onclick={() => (pg.isFilterPopover = !pg.isFilterPopover)}
-            ><FunnelIcon --size="1.2rem" /> <span>Filters</span>
+            ><FunnelIcon --size="1.2rem" />
             {#if pg.appliedFilters > 0}<span class="badge">{pg.appliedFilters}</span>{/if}
             <ChevronIcon --size="1rem" direction={pg.isFilterPopover ? "top" : "bottom"} />
         </button>

@@ -15,6 +15,7 @@
     import Popover from "$lib/widgets/Popover.svelte";
     import {getToastContext} from "$lib/widgets/Toaster.svelte";
     import {saveToFile} from "$lib/helpers/saveToFile";
+    import TableColumns from "./TableColumns.svelte";
 
     const pg = getPgContext();
     const {toast} = getToastContext();
@@ -61,6 +62,7 @@
 
 {#if pg.currentTable}
     <TableFilters />
+    <TableColumns />
     <label for="limit" class="text-sm pl-2">limit</label>
     <NumberInput --width="5rem" id="limit" type="text" step={10} min={0} max={1000} bind:value={pg.filters.limit} />
     <button
@@ -145,9 +147,9 @@
             >
         </div>
     </Popover>
-    <button class="btn icon ghost" onclick={refresh} title="Refresh"
-        ><RefreshIcon --size="1.2rem" spinning={refreshing} /></button
-    >
+    <button class="btn icon ghost" onclick={refresh} title="Refresh">
+        <RefreshIcon --size="1.2rem" spinning={refreshing} />
+    </button>
     {#if pg.lastQueryTime !== undefined}
         <div class="text-xs text-fg-1 me-2 shrink-0">{pg.lastQueryTime.toFixed(0)} ms</div>
     {/if}

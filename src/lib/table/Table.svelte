@@ -63,7 +63,7 @@
         <table class="h-fit">
             <thead class="sticky top-0 bg-bg z-10">
                 <tr>
-                    {#each pg.currentTable.columns as column (column.column_name)}
+                    {#each pg.getSelectedColumns() as column (column.column_name)}
                         <th
                             class="cursor-pointer"
                             onclick={() => {
@@ -106,7 +106,7 @@
             <tbody>
                 {#each pg.currentTable.rows as row (row.__index)}
                     <tr>
-                        {#each pg.currentTable.columns as column}
+                        {#each pg.getSelectedColumns() as column (column.column_name)}
                             {@const value = row[column.column_name]}
                             <td
                                 title={typeof value === "object"
@@ -146,7 +146,7 @@
                                                             value: `${valueToSql(column, value)}`,
                                                         },
                                                     ];
-                                                    pg.applyWhere();
+                                                    pg.applyWhere(pg.whereFromFilters());
                                                 }}
                                                 title="{column.foreign_table_schema}.{column.foreign_table_name}.{column.foreign_column_name}"
                                                 ><ArrowIcon direction="right" --size="1rem" /></button
