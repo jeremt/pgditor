@@ -75,13 +75,13 @@
     {/if}
 </button>
 
-<button class="btn ghost" title="Save {commands.cmdOrCtrl} S" onclick={scripts.saveCurrentFile}>
+<button class="btn ghost icon" title="Save {commands.cmdOrCtrl} S" onclick={scripts.saveCurrentFile}>
     <SaveIcon --size="1.2rem" />
 </button>
 
 {#if scripts.currentFile}
     <ActionButton
-        class="btn ghost"
+        class="btn ghost icon"
         title="Remove"
         confirm={{
             title: "Are you sure?",
@@ -111,7 +111,7 @@
     }}><ClearIcon --size="1.2rem" /> Clear output</button
 >
 <button class="btn" onclick={scripts.run} title="{commands.cmdOrCtrl} ↵"
-    ><PlayIcon --size="1.2rem" /> Run {scripts.currentSelection ? "selection" : "file"}</button
+    ><PlayIcon --size="1.2rem" /> Run{scripts.currentSelection ? " selection" : ""}</button
 >
 
 <Dialog isOpen={isFileSelectOpen} onrequestclose={() => (isFileSelectOpen = false)} --padding="1rem">

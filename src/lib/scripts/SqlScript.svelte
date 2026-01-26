@@ -48,7 +48,7 @@
                     </div>
                 {:else if scripts.lastResult === undefined}
                     <div class="text-fg-1 m-auto">
-                        No results yet, press <strong>Run query</strong> to execute your query and get results
+                        No results yet, press <strong>Run</strong> to execute your query and show results
                     </div>
                 {:else if scripts.lastResult.length === 0}
                     <div class="text-fg-1 m-auto">No result, succesfully executed.</div>
