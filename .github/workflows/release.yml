@@ -16,7 +16,7 @@ jobs:
                 include:
                     - platform: "macos-latest" # for Arm based macs (M1 and above).
                       args: "--target aarch64-apple-darwin"
-                    - platform: "macos-11" # Intel macOS runner (x86_64)
+                    - platform: "macos-15" # Intel macOS runner (x86_64)
                       args: "--target x86_64-apple-darwin"
                     - platform: "ubuntu-latest"
                       args: ""
