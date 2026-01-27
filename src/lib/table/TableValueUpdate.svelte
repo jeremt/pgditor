@@ -5,6 +5,8 @@
     import CopyIcon from "$lib/icons/CopyIcon.svelte";
     import CrossIcon from "$lib/icons/CrossIcon.svelte";
     import ErrorIcon from "$lib/icons/ErrorIcon.svelte";
+    import KeyIcon from "$lib/icons/KeyIcon.svelte";
+    import LinkIcon from "$lib/icons/LinkIcon.svelte";
     import TerminalIcon from "$lib/icons/TerminalIcon.svelte";
     import {getScriptsContext} from "$lib/scripts/scriptsContext.svelte";
     import ActionButton from "$lib/widgets/ActionButton.svelte";
@@ -127,7 +129,12 @@
                         aria-label="Cancel"
                         onclick={() => (target = undefined)}><CrossIcon /></button
                     >
-                    <h2 class="mr-auto">
+                    <h2 class="flex gap-2 me-auto items-center">
+                        {#if target.column.foreign_column_name !== null}
+                            <LinkIcon --size="1.2rem" />
+                        {:else if target.column.is_primary_key === "YES"}
+                            <KeyIcon --size="1.2rem" />
+                        {/if}
                         {target.column.column_name}
                         <span class="font-normal">{target.column.data_type}</span>
                     </h2>

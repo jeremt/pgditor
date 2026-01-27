@@ -5,6 +5,7 @@
     import {valueToSql} from "./values";
     import TextValueEditor from "./valueEditors/TextValueEditor.svelte";
     import EnumValueEditor from "./valueEditors/EnumValueEditor.svelte";
+    import FKEditor from "./valueEditors/FKEditor.svelte";
 
     type Props = {
         inlined: boolean;
@@ -35,6 +36,8 @@
             placeholder={(row[column.column_name] as string) ?? "generated"}
         />
     {/if}
+{:else if column.foreign_column_name !== null}
+    <FKEditor bind:value={row[column.column_name] as string} {column} {inlined} />
 {:else if column.enum_values}
     <EnumValueEditor {column} bind:value={row[column.column_name] as string} {inlined} />
 {:else if column.data_type === "boolean" || column.data_type === "bool"}

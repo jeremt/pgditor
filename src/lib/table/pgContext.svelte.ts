@@ -187,6 +187,44 @@ ${this.selectedRowsJson
     };
 
     /**
+     * Return rows for the given table.
+     */
+    getTableData = async (table: Pick<PgTable, "schema" | "name">, offset: number, limit: number) => {
+        if (!this.connections.current) {
+            return;
+        }
+        const connectionString = this.connections.current.connectionString;
+        const columns = await catchError(
+            invoke<PgColumn[]>("list_table_columns", {
+                connectionString,
+                schema: table.schema,
+                table: table.name,
+            }),
+        );
+        if (columns instanceof Error) {
+            return columns;
+        }
+        const data = await catchError(
+            invoke<{rows: PgRow[]; count: number}>("get_table_data", {
+                connectionString,
+                schema: table.schema,
+                table: table.name,
+                columns: "*",
+                offset,
+                limit,
+                orderBy: "",
+            }),
+        );
+        if (data instanceof Error) {
+            return data;
+        }
+        for (let i = 0; i < data.rows.length; i++) {
+            data.rows[i].__index = i;
+        }
+        return {...data, columns};
+    };
+
+    /**
      * Run a select to get a list of rows from the currently selected table which applying the given filters.
      * @param where The where cause to apply (e.g. "WHERE id = 1 AND status = 'success'")
      * @param offset The offset to apply to the select query.

@@ -16,6 +16,7 @@
     import {getToastContext} from "$lib/widgets/Toaster.svelte";
     import {saveToFile} from "$lib/helpers/saveToFile";
     import TableColumns from "./TableColumns.svelte";
+    import TablePagination from "./TablePagination.svelte";
 
     const pg = getPgContext();
     const {toast} = getToastContext();
@@ -63,24 +64,7 @@
 {#if pg.currentTable}
     <TableFilters />
     <TableColumns />
-    <label for="limit" class="text-sm pl-2">limit</label>
-    <NumberInput --width="5rem" id="limit" type="text" step={10} min={0} max={1000} bind:value={pg.filters.limit} />
-    <button
-        class="btn icon ghost"
-        disabled={pg.filters.offset === 0}
-        onclick={() => (pg.filters.offset = Math.max(0, pg.filters.offset - pg.filters.limit))}
-    >
-        <ChevronIcon direction="left" />
-    </button>
-    <span class="text-sm text-fg-1 text-nowrap">{pg.filters.offset} - {pg.currentTable.count}</span>
-    <button
-        class="btn icon ghost mr-auto"
-        disabled={pg.filters.offset + pg.filters.limit >= pg.currentTable.count}
-        onclick={() =>
-            (pg.filters.offset = Math.min(pg.currentTable?.count ?? 0, pg.filters.offset + pg.filters.limit))}
-    >
-        <ChevronIcon direction="right" />
-    </button>
+    <TablePagination bind:offset={pg.filters.offset} bind:limit={pg.filters.limit} count={pg.currentTable.count} />
     <ActionButton
         class="btn ghost icon relative"
         onaction={deleteRows}
