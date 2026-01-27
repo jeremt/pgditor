@@ -14,6 +14,7 @@ pub async fn raw_query(connection_string: String, sql: String) -> Result<Vec<Jso
         // simple_query is ideal for dynamic column sets as it returns strings
         let messages = client.simple_query(&sql_text).map_err(PgError::from)?;
 
+        println!("psql > {}", sql_text);
         let mut json_rows: Vec<JsonValue> = Vec::new();
 
         for message in messages {

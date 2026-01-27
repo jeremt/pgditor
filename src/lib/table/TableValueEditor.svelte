@@ -19,6 +19,8 @@
     <div class="p-2 text-sm text-fg-1 border border-bg-2 rounded-xl">
         This value is set to null, untick the NULL checkbox to apply a value.
     </div>
+{:else if column.foreign_column_name !== null}
+    <FKEditor bind:value={row[column.column_name] as string} {column} {inlined} />
 {:else if column.is_primary_key === "YES"}
     {#if row[column.column_name] === null}
         <div class="p-2 text-sm text-fg-1 border border-bg-2 rounded-xl">
@@ -36,8 +38,6 @@
             placeholder={(row[column.column_name] as string) ?? "generated"}
         />
     {/if}
-{:else if column.foreign_column_name !== null}
-    <FKEditor bind:value={row[column.column_name] as string} {column} {inlined} />
 {:else if column.enum_values}
     <EnumValueEditor {column} bind:value={row[column.column_name] as string} {inlined} />
 {:else if column.data_type === "boolean" || column.data_type === "bool"}

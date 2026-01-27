@@ -93,11 +93,13 @@
         }
     };
 
+    const noPk = $derived(pg.currentTable && !pg.currentTable.columns.some((col) => col.is_primary_key === "YES"));
+
     const smallDialog = $derived.by(() => {
         if (!target) {
             return false;
         }
-        if (target.column.is_primary_key === "YES") {
+        if (target.column.is_primary_key === "YES" || noPk) {
             return true;
         }
         switch (target.column.data_type) {
@@ -119,7 +121,22 @@
     position={smallDialog ? "center" : "right"}
     animation={smallDialog ? "bottom" : "right"}
 >
-    {#if target}
+    {#if noPk && target}
+        <div class="flex flex-col gap-4 p-4 items-start w-sm">
+            <p>This table doesn't have a primary key so it cannot be updated automatically.</p>
+            <p>Use the script editor to update it instead.</p>
+            <div class="flex justify-between w-full">
+                <button class="btn secondary" onclick={() => (target = undefined)}>Cancel</button>
+                <button
+                    class="btn"
+                    onclick={() => {
+                        target = undefined;
+                        commands.mode = "script";
+                    }}><TerminalIcon --size="1rem" /> Open editor</button
+                >
+            </div>
+        </div>
+    {:else if target}
         <div class="flex flex-col {smallDialog ? 'w-sm' : 'w-xl h-full'}">
             <header class="flex flex-col pt-4 px-4">
                 <div class="flex gap-2 items-center pb-4">

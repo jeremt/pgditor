@@ -412,7 +412,25 @@ VALUES
                   .map((col) => valueToSql(col, row[col.column_name]))
                   .join(", ")});`;
 
-        return this.rawQuery(query, {throwError});
+        return await this.rawQuery(query, {throwError});
+    };
+
+    insertRow = async (row: PgRow, {throwError = true} = {}) => {
+        if (!this.currentTable) {
+            return;
+        }
+        const editableColumns = (column: PgColumn) => column.is_primary_key === "NO" && column.data_type !== "tsvector";
+        const query = `INSERT INTO ${this.fullName}
+(${this.currentTable.columns
+            .filter(editableColumns)
+            .map(({column_name}) => column_name)
+            .join(", ")})
+VALUES
+(${this.currentTable.columns
+            .filter(editableColumns)
+            .map((col) => valueToSql(col, row[col.column_name]))
+            .join(", ")});`;
+        return await this.rawQuery(query, {throwError});
     };
 
     whereFromFilters = () =>

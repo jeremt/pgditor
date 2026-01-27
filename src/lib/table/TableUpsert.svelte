@@ -31,7 +31,7 @@
 
     const pk = $derived.by(() => {
         if (!pg.currentTable) {
-            return false;
+            return;
         }
         return pg.currentTable.columns.find((column) => column.is_primary_key === "YES");
     });
@@ -45,7 +45,7 @@
     });
 
     const insertOrUpdate = async () => {
-        const error = await catchError(pg.upsertRow(localRow));
+        const error = await catchError(hasPkValue === false ? pg.insertRow(localRow) : pg.upsertRow(localRow));
         if (error instanceof ErrorIcon) {
             errorMessage = error.message;
         } else {
@@ -74,7 +74,7 @@
         <div class="text-sm text-error p-2 mx-4 mb-4 border border-bg-2 rounded-xl">{errorMessage}</div>
     {/if}
     <div class="flex flex-col gap-2 grow overflow-auto pb-4 px-4">
-        {#if pk === undefined}
+        {#if pk === undefined && hasPkValue}
             <div class="text-fg-1 text-xs flex flex-wrap gap-1">
                 Without primary key, you cannot update a specific row, use <TerminalIcon --size="1rem" /> instead.
             </div>
