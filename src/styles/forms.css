@@ -48,7 +48,6 @@ button.btn {
         color: var(--color-fg);
         background-color: transparent;
         &:hover {
-            filter: brightness(1);
             background-color: var(--color-bg-1);
         }
         &:focus-visible {
@@ -60,7 +59,7 @@ button.btn {
         background-color: var(--color-bg-1);
         &:hover,
         &:focus-visible {
-            filter: brightness(1.2);
+            background-color: var(--color-bg-2);
         }
     }
 }
@@ -87,7 +86,7 @@ textarea {
     font-family: var(--font-primary);
 
     &:hover {
-        filter: brightness(1.2);
+        background-color: var(--color-bg-2);
     }
     &:focus-visible {
         border: 1px solid var(--color-gold);

@@ -6,10 +6,13 @@
     import {getToastContext} from "$lib/widgets/Toaster.svelte";
     import {getPgContext} from "$lib/table/pgContext.svelte";
     import ProgressCircle from "$lib/widgets/ProgressCircle.svelte";
+    import {getSettingsContext} from "$lib/settings/settingsContext.svelte";
 
     const scripts = getScriptsContext();
     const {toast} = getToastContext();
     const pg = getPgContext();
+
+    let settings = getSettingsContext();
 </script>
 
 <div class="grow overflow-hidden">
@@ -22,6 +25,7 @@
                 files={[{path: "script.sql", value: ""}]}
                 fontFamily="Space Mono"
                 fontSize={14}
+                theme={settings.colorScheme === "light" ? "light" : "dark"}
                 onrun={scripts.run}
                 onsave={scripts.saveCurrentFile}
                 onchange={(newValue, path) => {

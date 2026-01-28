@@ -1,5 +1,6 @@
 <script lang="ts">
     import MonacoEditor from "$lib/monaco/MonacoEditor.svelte";
+    import {getSettingsContext} from "$lib/settings/settingsContext.svelte";
     import MultilinesInput from "$lib/widgets/MultilinesInput.svelte";
     import {getPgContext, type PgColumn} from "../pgContext.svelte";
 
@@ -11,6 +12,7 @@
     let {value = $bindable(), column, inlined}: Props = $props();
 
     const pg = getPgContext();
+    const settings = getSettingsContext();
 </script>
 
 {#if inlined}
@@ -26,6 +28,7 @@
 {:else}
     <MonacoEditor
         bind:value
+        theme={settings.colorScheme === "light" ? "light" : "dark"}
         selectedFile="{pg.currentTable!.name}-{column}.json"
         files={[{path: `${pg.currentTable!.name}-${column}.json`, value: ""}]}
         fontFamily="Space Mono"

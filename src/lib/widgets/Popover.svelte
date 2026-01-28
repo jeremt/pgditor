@@ -111,9 +111,9 @@
     }
     .popoverCard {
         position: fixed;
-        background-color: #18181866;
+        background-color: var(--color-bg-card);
         backdrop-filter: blur(1rem);
-        border-radius: 0.5rem;
+        border-radius: var(--radius-card);
         border: 1px solid var(--color-bg-1);
         left: 0;
         opacity: 0;
