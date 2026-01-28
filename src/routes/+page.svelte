@@ -8,8 +8,14 @@
     import SqlScriptMenu from "$lib/scripts/SqlScriptMenu.svelte";
     import CommandPalette from "$lib/commands/CommandPalette.svelte";
     import {getCommandsContext} from "$lib/commands/commandsContext.svelte";
+    import {onMount} from "svelte";
+    import {invoke} from "@tauri-apps/api/core";
 
     const commands = getCommandsContext();
+
+    onMount(() => {
+        invoke("show_main_window");
+    });
 </script>
 
 <header class="flex gap-2 p-2 items-center w-full overflow-auto shrink-0">
