@@ -10,8 +10,10 @@
     import {getCommandsContext} from "$lib/commands/commandsContext.svelte";
     import {onMount} from "svelte";
     import {invoke} from "@tauri-apps/api/core";
+    import {getSettingsContext} from "$lib/settings/settingsContext.svelte";
 
     const commands = getCommandsContext();
+    const settings = getSettingsContext();
 
     onMount(() => {
         invoke("show_main_window");
@@ -41,6 +43,11 @@
     {:else}
         <SqlScriptMenu />
     {/if}
+    <!-- <button
+        class="btn ghost icon"
+        onclick={() => (settings.colorScheme = settings.colorScheme === "dark" ? "light" : "dark")}
+        >{settings.colorScheme === "dark" ? "S" : "M"}</button
+    > -->
 </header>
 
 {#if commands.mode === "tables"}

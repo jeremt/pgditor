@@ -11,6 +11,7 @@
     import Toaster, {setToastContext} from "$lib/widgets/Toaster.svelte";
     import {setScriptsContext} from "$lib/scripts/scriptsContext.svelte";
     import {setCommandsContext} from "$lib/commands/commandsContext.svelte";
+    import {setSettingsContext} from "$lib/settings/settingsContext.svelte";
 
     let {children} = $props();
 
@@ -20,6 +21,7 @@
     const pg = setPgContext();
     const scripts = setScriptsContext();
     const commands = setCommandsContext();
+    const settings = setSettingsContext();
 
     onMount(async () => {
         await connections.load();

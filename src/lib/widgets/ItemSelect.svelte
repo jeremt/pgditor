@@ -154,7 +154,6 @@
         }
         &:hover,
         &:focus-visible {
-            filter: brightness(1);
             background-color: var(--color-bg-1);
         }
         &:active {
