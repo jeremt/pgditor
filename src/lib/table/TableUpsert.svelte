@@ -59,9 +59,11 @@
             <button class="btn icon ghost" type="button" aria-label="Cancel" onclick={onclose}><CrossIcon /></button>
             <h2>
                 {hasPkValue ? "Update set" : "Insert into"}
-                {#if pg.currentTable}<span class="font-mono text-sm bg-bg-1 py-0.5 px-2 rounded-md ml-1"
-                        >{pg.currentTable.schema}.{pg.currentTable.name}</span
-                    >{/if}
+                {#if pg.currentTable}
+                    <span class="font-mono text-sm bg-bg-1 py-0.5 px-2 rounded-md ml-1">
+                        {pg.currentTable.schema}.{pg.currentTable.name}
+                    </span>
+                {/if}
             </h2>
             <ActionButton class="btn ml-auto" onaction={insertOrUpdate}>
                 <CheckIcon --size="1.2rem" />

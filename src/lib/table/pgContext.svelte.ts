@@ -232,7 +232,6 @@ ${this.selectedRowsJson
             return;
         }
         const connectionString = this.connections.current.connectionString;
-        const startTime = performance.now();
         this.isLoading = true;
         const primary_key = this.currentTable.columns.find((col) => col.is_primary_key === "YES");
         const data = await catchError(
@@ -255,7 +254,6 @@ ${this.selectedRowsJson
                       : "",
             }),
         );
-        this.lastQueryTime = performance.now() - startTime;
         if (data instanceof Error) {
             console.error(data.message);
             this.toastContext.toast(`SQL error: ${data.message}`, {kind: "error"});
@@ -287,15 +285,13 @@ ${this.selectedRowsJson
             return;
         }
         const connectionString = this.connections.current.connectionString;
-        const startTime = performance.now();
         this.isLoading = true;
         const data = await catchError(
-            invoke<Record<string, string | null>[]>("raw_query", {
+            invoke<{rows: Record<string, string | null>[]; duration_ms: number}>("raw_query", {
                 connectionString,
                 sql,
             }),
         );
-        this.lastQueryTime = performance.now() - startTime;
         this.isLoading = false;
 
         if (data instanceof Error) {
@@ -312,7 +308,8 @@ ${this.selectedRowsJson
             await this.refreshData();
             this.isLoading = false;
         }
-        return data;
+        this.lastQueryTime = data.duration_ms;
+        return data.rows;
     };
 
     getPrimaryKey = () => {

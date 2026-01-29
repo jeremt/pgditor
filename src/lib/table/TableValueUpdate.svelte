@@ -166,6 +166,11 @@ where ${row.reduce((result, [name, value], index) => {
                         {/if}
                         {target.column.column_name}
                         <span class="font-normal">{target.column.data_type}</span>
+                        {#if target.column.foreign_table_schema !== null && target.column.foreign_table_name !== null}
+                            <span class="font-mono text-sm bg-bg-1 py-0.5 px-2 rounded-md ml-1">
+                                {target.column.foreign_table_schema}.{target.column.foreign_table_name}
+                            </span>
+                        {/if}
                     </h2>
                     {#if pg.currentTable?.type === "BASE TABLE"}
                         {#if target.column.is_nullable === "YES"}

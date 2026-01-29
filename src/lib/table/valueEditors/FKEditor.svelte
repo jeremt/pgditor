@@ -55,9 +55,6 @@
             autocapitalize="off"
         />
         <div class="flex gap-2 items-center">
-            <span class="flex gap-2 text-sm items-center p-4"
-                ><TableIcon --size="1.2rem" />{column.foreign_table_schema}.{column.foreign_table_name}</span
-            >
             {#if data}
                 <TablePagination
                     bind:offset
