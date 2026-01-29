@@ -248,9 +248,9 @@ ${this.selectedRowsJson
                 limit,
                 whereClause: where,
                 orderBy: this.orderBy
-                    ? `ORDER BY ${this.orderBy.column} ${this.orderBy.direction}`
+                    ? `order by ${this.orderBy.column} ${this.orderBy.direction}`
                     : primary_key !== undefined
-                      ? `ORDER BY ${primary_key.column_name} ASC`
+                      ? `order by ${primary_key.column_name} asc`
                       : "",
             }),
         );
