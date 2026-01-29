@@ -10,7 +10,6 @@
     import {catchError} from "$lib/helpers/catchError";
     import ActionButton from "$lib/widgets/ActionButton.svelte";
     import TerminalIcon from "$lib/icons/TerminalIcon.svelte";
-    import ErrorIcon from "$lib/icons/ErrorIcon.svelte";
 
     type Props = {
         row: PgRow;
@@ -46,7 +45,7 @@
 
     const insertOrUpdate = async () => {
         const error = await catchError(hasPkValue === false ? pg.insertRow(localRow) : pg.upsertRow(localRow));
-        if (error instanceof ErrorIcon) {
+        if (error instanceof Error) {
             errorMessage = error.message;
         } else {
             onclose();

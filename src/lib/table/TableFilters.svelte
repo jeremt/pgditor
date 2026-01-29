@@ -134,7 +134,7 @@
         <button
             class="btn small ms-auto"
             disabled={!pg.whereFilters.every((filter) => filter.column && filter.value)}
-            onclick={applyFilters}><CheckIcon /> Apply filter</button
+            onclick={applyFilters}><CheckIcon --size="1.2rem" /> Apply filter</button
         >
     </div>
 </Popover>

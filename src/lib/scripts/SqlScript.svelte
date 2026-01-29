@@ -25,7 +25,7 @@
                 files={[{path: "script.sql", value: ""}]}
                 fontFamily="Space Mono"
                 fontSize={14}
-                theme={settings.colorScheme === "light" ? "light" : "dark"}
+                theme={"dark"}
                 onrun={scripts.run}
                 onsave={scripts.saveCurrentFile}
                 onchange={(newValue, path) => {

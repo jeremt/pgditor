@@ -111,7 +111,7 @@
     }}><ClearIcon --size="1.2rem" /> Clear output</button
 >
 <button class="btn" onclick={scripts.run} title="{commands.cmdOrCtrl} ↵"
-    ><PlayIcon --size="1.2rem" /> Run{scripts.currentSelection ? " selection" : ""}</button
+    ><PlayIcon --size="1rem" /> Run{scripts.currentSelection ? " selection" : ""}</button
 >
 
 <Dialog isOpen={isFileSelectOpen} onrequestclose={() => (isFileSelectOpen = false)} --padding="1rem">
