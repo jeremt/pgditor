@@ -1,19 +1,22 @@
 import {browser} from "$app/environment";
+import {catchError} from "$lib/helpers/catchError";
 import {StoreContext} from "$lib/helpers/StoreContext";
+import {getToastContext} from "$lib/widgets/Toaster.svelte";
 import {getContext, setContext} from "svelte";
 
 class SettingsContext extends StoreContext {
     #colorScheme = $state<"light" | "dark">("dark");
     #matchLightColorScheme = matchMedia("(prefers-color-scheme: light)");
 
+    #toastContext = getToastContext();
+
     constructor(storePath: string) {
         super(storePath);
         (async () => {
             if (browser) {
-                this.#colorScheme =
-                    ((await this.getFromStore<"light" | "dark">("colorScheme")) ?? this.#matchLightColorScheme.matches)
-                        ? "light"
-                        : "dark";
+                const systemColorScheme = this.#matchLightColorScheme.matches ? "light" : "dark";
+                this.#colorScheme = (await this.getFromStore<"light" | "dark">("colorScheme")) ?? systemColorScheme;
+                document.documentElement.setAttribute("color-scheme", this.#colorScheme);
             }
         })();
         this.#matchLightColorScheme.addEventListener("change", ({matches}) => {
@@ -29,8 +32,14 @@ class SettingsContext extends StoreContext {
         this.#colorScheme = newValue;
         document.documentElement.setAttribute("color-scheme", this.#colorScheme);
         (async () => {
-            await this.setToStore("colorScheme", this.#colorScheme); // TODO: error handling
-            await this.saveToStore();
+            const setError = await catchError(this.setToStore("colorScheme", this.#colorScheme));
+            if (setError instanceof Error) {
+                this.#toastContext.toast("Failed to save color scheme", {kind: "error"});
+            }
+            const saveError = await catchError(this.saveToStore());
+            if (saveError instanceof Error) {
+                this.#toastContext.toast("Failed to save color scheme", {kind: "error"});
+            }
         })();
     }
 }
