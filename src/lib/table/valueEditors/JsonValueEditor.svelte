@@ -28,7 +28,7 @@
 {:else}
     <MonacoEditor
         bind:value
-        theme={"dark"}
+        theme={settings.colorScheme}
         selectedFile="{pg.currentTable!.name}-{column}.json"
         files={[{path: `${pg.currentTable!.name}-${column}.json`, value: ""}]}
         fontFamily="Space Mono"
