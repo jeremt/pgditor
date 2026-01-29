@@ -15,11 +15,8 @@
     let mode = $state<"visual" | "sql">("visual");
 
     const applyFilters = () => {
-        if (mode === "sql") {
-            pg.applyWhere(sql);
-        } else {
-            pg.applyWhere(pg.whereFromFilters());
-        }
+        pg.appliedFilters = pg.whereFilters.length;
+        pg.refreshData();
         pg.isFilterPopover = false;
     };
 
@@ -36,9 +33,8 @@
         return "value";
     };
 
-    let sql = $state("");
     $effect(() => {
-        sql = pg.whereFromFilters().trim();
+        pg.whereSql = pg.whereFromFilters().trim();
     });
 </script>
 
@@ -116,7 +112,7 @@
                 <p class="text-sx text-fg-1 text-center py-2">No filters applied, all rows will be listed.</p>
             {/each}
         {:else}
-            <MultilinesInput class="font-mono!" bind:value={sql} placeholder="WHERE id = ..." />
+            <MultilinesInput class="font-mono!" bind:value={pg.whereSql} placeholder="WHERE id = ..." />
         {/if}
     </div>
     <div class="flex">

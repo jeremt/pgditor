@@ -6,20 +6,31 @@
         offset: number;
         limit: number;
         count: number;
+        onchange: (event: Event) => void;
     };
-    let {offset = $bindable(), limit = $bindable(), count}: Props = $props();
+    let {offset = $bindable(), limit = $bindable(), count, onchange}: Props = $props();
 </script>
 
 <label for="limit" class="text-sm pl-2">limit</label>
-<NumberInput --width="5rem" id="limit" type="text" step={10} min={0} max={1000} bind:value={limit} />
-<button class="btn icon ghost" disabled={offset === 0} onclick={() => (offset = Math.max(0, offset - limit))}>
+<NumberInput --width="5rem" id="limit" type="text" step={10} min={0} max={1000} bind:value={limit} {onchange} />
+<button
+    class="btn icon ghost"
+    disabled={offset === 0}
+    onclick={(event) => {
+        offset = Math.max(0, offset - limit);
+        onchange(event);
+    }}
+>
     <ChevronIcon direction="left" />
 </button>
 <span class="text-sm text-fg-1 text-nowrap">{offset} - {count}</span>
 <button
     class="btn icon ghost mr-auto"
     disabled={offset + limit >= count}
-    onclick={() => (offset = Math.min(count ?? 0, offset + limit))}
+    onclick={(event) => {
+        offset = Math.min(count ?? 0, offset + limit);
+        onchange(event);
+    }}
 >
     <ChevronIcon direction="right" />
 </button>

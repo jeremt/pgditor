@@ -64,7 +64,12 @@
 {#if pg.currentTable}
     <TableFilters />
     <TableColumns />
-    <TablePagination bind:offset={pg.filters.offset} bind:limit={pg.filters.limit} count={pg.currentTable.count} />
+    <TablePagination
+        bind:offset={pg.offset}
+        bind:limit={pg.limit}
+        count={pg.currentTable.count}
+        onchange={pg.refreshData}
+    />
     <ActionButton
         class="btn ghost icon relative"
         onaction={deleteRows}
@@ -134,9 +139,6 @@
     <button class="btn icon ghost" onclick={refresh} title="Refresh">
         <RefreshIcon --size="1.2rem" spinning={refreshing} />
     </button>
-    {#if pg.lastQueryTime !== undefined}
-        <div class="text-xs text-fg-1 me-2 shrink-0">{pg.lastQueryTime.toFixed(0)} ms</div>
-    {/if}
     <button class="btn" disabled={pg.currentTable.type !== "BASE TABLE"} onclick={() => (isInsertOpen = true)}
         ><PlusIcon --size="1.2rem" /> Insert</button
     >

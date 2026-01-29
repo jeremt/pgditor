@@ -126,6 +126,9 @@
 <style>
     input[type="text"] {
         background-color: transparent;
+        &:focus-visible {
+            border: 1px solid transparent;
+        }
     }
     .selected-table {
         background-color: var(--color-bg-1) !important;

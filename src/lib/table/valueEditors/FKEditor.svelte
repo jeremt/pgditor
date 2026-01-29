@@ -5,7 +5,6 @@
     import CheckIcon from "$lib/icons/CheckIcon.svelte";
     import SearchIcon from "$lib/icons/SearchIcon.svelte";
     import KeyIcon from "$lib/icons/KeyIcon.svelte";
-    import {getToastContext} from "$lib/widgets/Toaster.svelte";
     import TableIcon from "$lib/icons/TableIcon.svelte";
     import TablePagination from "../TablePagination.svelte";
 
@@ -25,21 +24,23 @@
     let offset = $state(0);
     let limit = $state(100);
 
-    $effect(() => {
-        (async () => {
-            if (column.foreign_table_schema !== null && column.foreign_table_name !== null) {
-                const dataOrError = await pg.getTableData(
-                    {schema: column.foreign_table_schema, name: column.foreign_table_name},
-                    offset,
-                    limit,
-                );
-                if (dataOrError instanceof Error) {
-                    errorMessage = dataOrError.message;
-                    return;
-                }
-                data = dataOrError;
+    const loadData = async () => {
+        if (column.foreign_table_schema !== null && column.foreign_table_name !== null) {
+            const dataOrError = await pg.getTableData(
+                {schema: column.foreign_table_schema, name: column.foreign_table_name},
+                offset,
+                limit,
+            );
+            if (dataOrError instanceof Error) {
+                errorMessage = dataOrError.message;
+                return;
             }
-        })();
+            data = dataOrError;
+        }
+    };
+
+    $effect(() => {
+        loadData();
     });
 </script>
 
@@ -58,7 +59,14 @@
                 ><TableIcon --size="1.2rem" />{column.foreign_table_schema}.{column.foreign_table_name}</span
             >
             {#if data}
-                <TablePagination bind:offset bind:limit count={data.count} />
+                <TablePagination
+                    bind:offset
+                    bind:limit
+                    count={data.count}
+                    onchange={() => {
+                        loadData();
+                    }}
+                />
             {/if}
         </div>
     </div>

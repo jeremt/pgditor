@@ -67,15 +67,16 @@
                         <th
                             class="cursor-pointer"
                             onclick={() => {
-                                if (pg.filters.orderBy === undefined) {
-                                    pg.filters.orderBy = {column: column.column_name, direction: "asc"};
-                                } else if (pg.filters.orderBy.column !== column.column_name) {
-                                    pg.filters.orderBy = {column: column.column_name, direction: "asc"};
-                                } else if (pg.filters.orderBy.direction === "asc") {
-                                    pg.filters.orderBy.direction = "desc";
+                                if (pg.orderBy === undefined) {
+                                    pg.orderBy = {column: column.column_name, direction: "asc"};
+                                } else if (pg.orderBy.column !== column.column_name) {
+                                    pg.orderBy = {column: column.column_name, direction: "asc"};
+                                } else if (pg.orderBy.direction === "asc") {
+                                    pg.orderBy.direction = "desc";
                                 } else {
-                                    pg.filters.orderBy = undefined;
+                                    pg.orderBy = undefined;
                                 }
+                                pg.refreshData();
                             }}
                         >
                             <div class="flex gap-2 items-center px-1">
@@ -95,8 +96,8 @@
                                     {column.column_name}
                                     <span class="font-normal text-xs! pl-2">{column.data_type}</span>
                                 </div>
-                                {#if column.column_name === pg.filters.orderBy?.column}
-                                    <ArrowIcon direction={pg.filters.orderBy.direction === "asc" ? "top" : "bottom"} />
+                                {#if column.column_name === pg.orderBy?.column}
+                                    <ArrowIcon direction={pg.orderBy.direction === "asc" ? "top" : "bottom"} />
                                 {/if}
                             </div>
                         </th>
@@ -133,9 +134,9 @@
                                         {#if column.foreign_table_schema && column.foreign_table_name && column.foreign_column_name}
                                             <button
                                                 class="my-auto cursor-pointer"
-                                                onclick={(event) => {
+                                                onclick={async (event) => {
                                                     event.stopPropagation();
-                                                    pg.use({
+                                                    await pg.use({
                                                         schema: column.foreign_table_schema!,
                                                         name: column.foreign_table_name!,
                                                     });
@@ -146,7 +147,7 @@
                                                             value: `${valueToSql(column, value)}`,
                                                         },
                                                     ];
-                                                    pg.applyWhere(pg.whereFromFilters());
+                                                    await pg.refreshData();
                                                 }}
                                                 title="{column.foreign_table_schema}.{column.foreign_table_name}.{column.foreign_column_name}"
                                                 ><ArrowIcon direction="right" --size="1rem" /></button

@@ -159,6 +159,9 @@
 <style>
     input[type="text"] {
         background-color: transparent;
+        &:focus-visible {
+            border: 1px solid transparent;
+        }
     }
     .search-result {
         color: var(--color-fg-2);

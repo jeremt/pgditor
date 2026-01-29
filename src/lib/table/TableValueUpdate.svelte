@@ -130,8 +130,20 @@
                 <button
                     class="btn"
                     onclick={() => {
-                        target = undefined;
                         commands.mode = "script";
+                        const row = Object.entries(target!.row).filter(([key]) => key !== "__index");
+                        if (row.length > 0 && pg.currentTable) {
+                            scripts.currentValue = `update ${pg.fullName} set
+    ${row[0][0]} = ${valueToSql(pg.currentTable.columns.find((col) => col.column_name === row[0][0])!, row[0][1])}
+where ${row.reduce((result, [name, value], index) => {
+                                return (
+                                    result +
+                                    `${name} = ${valueToSql(pg.currentTable!.columns.find((col) => col.column_name === name)!, value)}` +
+                                    (index < row.length - 1 ? `\nor ` : "")
+                                );
+                            }, "")};`;
+                        }
+                        target = undefined;
                     }}><TerminalIcon --size="1rem" /> Open editor</button
                 >
             </div>

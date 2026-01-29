@@ -29,7 +29,7 @@ pub async fn get_table_data(
         let table_q = quote_ident(&table);
 
         let select_sql = format!(
-                "SELECT row_to_json(t)::text as json_text FROM (SELECT {} FROM {}.{} {} {} OFFSET {} LIMIT {}) t",
+                "select row_to_json(t)::text as json_text from (select {} from {}.{} {} {} offset {} limit {}) t",
                 columns, schema_q, table_q, where_clause, order_by, offset, limit
             );
 
@@ -47,7 +47,7 @@ pub async fn get_table_data(
         }
 
         let count_sql = format!(
-            "SELECT count(*) as count FROM {}.{}",
+            "select count(*) as count from {}.{}",
             schema_q, table_q
         );
 

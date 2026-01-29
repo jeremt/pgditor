@@ -30,11 +30,12 @@ export type PgRow = Record<string, object | string | bigint | number | boolean |
 
 export type WhereFilters = {column: string; operator: string; value: string}[];
 
+const DEFAULT_LIMIT = 100;
+
 class PgContext {
     toastContext = getToastContext();
     tables = $state<PgTable[]>([]);
     currentTable = $state<PgTable & {columns: PgColumn[]; rows: PgRow[]; count: number}>();
-    isFilterPopover = $state(false);
     lastQueryTime = $state<number>();
     isLoading = $state(false);
 
@@ -46,22 +47,23 @@ class PgContext {
             ) ?? []
         );
     };
-    filters = $state({
-        where: "",
-        offset: 0,
-        limit: 100,
-        orderBy: undefined as {column: string; direction: "asc" | "desc"} | undefined,
-    });
+
+    // filters
+    isFilterPopover = $state(false);
     whereFilters = $state<WhereFilters>([]);
     appliedFilters = $state(0);
-
-    debouncedFilters = debounced(
-        () => this.filters,
-        async (data) => {
-            this.updateData(data.where, data.offset, data.limit);
-        },
-        500,
-    );
+    whereSql = $state("");
+    offset = $state(0);
+    limit = $state(DEFAULT_LIMIT);
+    orderBy = $state<{column: string; direction: "asc" | "desc"}>();
+    resetFilters = () => {
+        this.whereFilters = [];
+        this.appliedFilters = 0;
+        this.whereSql = "";
+        this.offset = 0;
+        this.limit = DEFAULT_LIMIT;
+        this.orderBy = undefined;
+    };
 
     rowToUpdate = $state<PgRow>();
     isUpdateOpen = $state(false);
@@ -176,12 +178,7 @@ ${this.selectedRowsJson
         this.currentTable = {...t, columns, rows: [], count: 0};
         this.selectedColumns = new Set(columns.map((col) => col.column_name));
         this.connections.saveSelectedTable(this.currentTable);
-        this.filters = {
-            where: "",
-            offset: 0,
-            limit: 100,
-            orderBy: undefined,
-        };
+        this.resetFilters();
         await this.refreshData();
         this.isLoading = false;
     };
@@ -251,8 +248,8 @@ ${this.selectedRowsJson
                 offset,
                 limit,
                 whereClause: where,
-                orderBy: this.filters.orderBy
-                    ? `ORDER BY ${this.filters.orderBy.column} ${this.filters.orderBy.direction}`
+                orderBy: this.orderBy
+                    ? `ORDER BY ${this.orderBy.column} ${this.orderBy.direction}`
                     : primary_key !== undefined
                       ? `ORDER BY ${primary_key.column_name} ASC`
                       : "",
@@ -277,7 +274,7 @@ ${this.selectedRowsJson
      * Simple helper to re-run `updateData()` with the currently selected filters.
      */
     refreshData = async () => {
-        await this.updateData(this.filters.where, this.filters.offset, this.filters.limit);
+        await this.updateData(this.whereSql, this.offset, this.limit);
     };
 
     /**
@@ -335,19 +332,18 @@ ${this.selectedRowsJson
         if (!pk || !this.currentTable) {
             return;
         }
-        // TODO: check for cascading foreign keys and show a warning dialog before deleting if any
-        const query = `DELETE FROM ${this.fullName}
-WHERE ${pk.column_name} = ANY(ARRAY[${this.selectedRows
+        const query = `delete from ${this.fullName}
+where ${pk.column_name} = any(array[${this.selectedRows
             .map((index) => valueToSql(pk, this.currentTable!.rows[index][pk.column_name]))
             .join(", ")}]);`;
         await this.rawQuery(query);
         this.selectedRows = [];
-        this.filters.where = "";
+        this.resetFilters();
     };
 
     truncateTable = async () => {
-        await this.rawQuery(`TRUNCATE ${this.fullName} RESTART IDENTITY CASCADE`, {throwError: false});
-        this.filters.where = "";
+        await this.rawQuery(`truncate ${this.fullName} restart identity cascade`, {throwError: false});
+        this.resetFilters();
     };
 
     generateUpdateRow = async (row: PgRow) => {
@@ -393,20 +389,20 @@ WHERE ${pk.column_name} = ${valueToSql(pk, row[pk.column_name])};
         const primary_key_value = primary_key ? row[primary_key.column_name] : null;
         const query = primary_key_value
             ? // updae
-              `UPDATE ${this.fullName}
-SET
+              `update ${this.fullName}
+set
   ${this.currentTable.columns
       .filter(editableColumns)
       .map((col) => `${col.column_name} = ${valueToSql(col, row[col.column_name])}`)
       .join(",\n  ")}
-WHERE ${primary_key!.column_name} = ${valueToSql(primary_key!, primary_key_value)};`
+where ${primary_key!.column_name} = ${valueToSql(primary_key!, primary_key_value)};`
             : // insert
-              `INSERT INTO ${this.fullName}
+              `insert into ${this.fullName}
 (${this.currentTable.columns
                   .filter(editableColumns)
                   .map(({column_name}) => column_name)
                   .join(", ")})
-VALUES
+values
 (${this.currentTable.columns
                   .filter(editableColumns)
                   .map((col) => valueToSql(col, row[col.column_name]))
@@ -420,12 +416,12 @@ VALUES
             return;
         }
         const editableColumns = (column: PgColumn) => column.is_primary_key === "NO" && column.data_type !== "tsvector";
-        const query = `INSERT INTO ${this.fullName}
+        const query = `insert into ${this.fullName}
 (${this.currentTable.columns
             .filter(editableColumns)
             .map(({column_name}) => column_name)
             .join(", ")})
-VALUES
+values
 (${this.currentTable.columns
             .filter(editableColumns)
             .map((col) => valueToSql(col, row[col.column_name]))
@@ -438,15 +434,10 @@ VALUES
             return (
                 result +
                 "\n" +
-                (result === "" ? "WHERE" : "AND") +
+                (result === "" ? "where" : "and") +
                 ` ${filter.column} ${filter.operator} ${filter.value}`
             );
         }, "");
-
-    applyWhere = (whereSql: string) => {
-        this.filters.where = whereSql;
-        this.appliedFilters = this.whereFilters.length;
-    };
 }
 const key = Symbol("pgContext");
 

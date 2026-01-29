@@ -10,8 +10,9 @@
         max?: number;
         unit?: string;
         nullable?: boolean;
+        onchange: (event: Event) => void;
     }
-    let {value = $bindable(), type, unit, nullable, ...props}: Props = $props();
+    let {value = $bindable(), type, unit, nullable, onchange, ...props}: Props = $props();
 
     const step = $derived(props.step ?? 1);
     const clampValue = (inputValue: number) => {
@@ -28,10 +29,12 @@
     const plus = (event: MouseEvent) => {
         event.preventDefault();
         value = clampValue(safeIncrement(value ?? 0, step));
+        onchange?.(event);
     };
     const minus = (event: MouseEvent) => {
         event.preventDefault();
         value = clampValue(safeIncrement(value ?? 0, -step));
+        onchange?.(event);
     };
 
     const keys = (event: KeyboardEvent) => {
@@ -45,6 +48,7 @@
                 break;
             }
         }
+        onchange?.(event);
     };
 </script>
 
@@ -74,14 +78,15 @@
         style:padding-right={unit ? "2.5rem" : "1.5rem"}
         {value}
         onkeydown={keys}
-        onchange={(e) => {
-            const valueString = e.currentTarget.value;
+        onchange={(event) => {
+            const valueString = event.currentTarget.value;
             if (valueString === "" && nullable) {
                 value = null;
             } else {
                 value = clampValue(isNaN(parseFloat(valueString) ?? 0) ? 0 : (parseFloat(valueString) ?? 0));
-                e.currentTarget.value = value.toString();
+                event.currentTarget.value = value.toString();
             }
+            onchange?.(event);
         }}
         {...props}
     />
