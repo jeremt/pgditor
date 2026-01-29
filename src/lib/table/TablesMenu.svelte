@@ -62,7 +62,18 @@
 <TableSelect />
 
 {#if pg.currentTable}
-    <TableFilters />
+    <TableFilters
+        bind:isOpen={pg.isFilterPopover}
+        bind:filters={pg.whereFilters}
+        bind:whereSql={pg.whereSql}
+        appliedFilters={pg.appliedFilters}
+        columns={pg.currentTable.columns}
+        onapply={() => {
+            pg.appliedFilters = pg.whereFilters.length;
+            pg.refreshData();
+            pg.isFilterPopover = false;
+        }}
+    />
     <TableColumns />
     <TablePagination
         bind:offset={pg.offset}

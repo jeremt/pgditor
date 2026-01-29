@@ -7,18 +7,26 @@
     import MultilinesInput from "$lib/widgets/MultilinesInput.svelte";
     import Popover from "$lib/widgets/Popover.svelte";
     import Select from "$lib/widgets/Select.svelte";
+    import {filtersToWhere, type PgColumn, type WhereFilter} from "./pgContext.svelte";
 
-    import {getPgContext} from "./pgContext.svelte";
-
-    const pg = getPgContext();
+    type Props = {
+        isOpen: boolean;
+        filters: WhereFilter[];
+        whereSql: string;
+        appliedFilters: number;
+        columns: PgColumn[];
+        onapply: () => void;
+    };
+    let {
+        isOpen = $bindable(),
+        filters = $bindable(),
+        whereSql = $bindable(),
+        appliedFilters,
+        columns,
+        onapply,
+    }: Props = $props();
 
     let mode = $state<"visual" | "sql">("visual");
-
-    const applyFilters = () => {
-        pg.appliedFilters = pg.whereFilters.length;
-        pg.refreshData();
-        pg.isFilterPopover = false;
-    };
 
     const getPlaceholderByOperator = (operator: string) => {
         if (["like", "ilike"].includes(operator)) {
@@ -34,16 +42,16 @@
     };
 
     $effect(() => {
-        pg.whereSql = pg.whereFromFilters().trim();
+        whereSql = filtersToWhere(filters).trim();
     });
 </script>
 
-<Popover bind:isOpen={pg.isFilterPopover} offsetY={10}>
+<Popover bind:isOpen offsetY={10} anchor="start" --padding="1rem">
     {#snippet target()}
-        <button class="btn ghost" onclick={() => (pg.isFilterPopover = !pg.isFilterPopover)}
+        <button class="btn ghost" onclick={() => (isOpen = !isOpen)}
             ><FunnelIcon --size="1.2rem" />
-            {#if pg.appliedFilters > 0}<span class="badge">{pg.appliedFilters}</span>{/if}
-            <ChevronIcon --size="1rem" direction={pg.isFilterPopover ? "top" : "bottom"} />
+            {#if appliedFilters > 0}<span class="badge">{appliedFilters}</span>{/if}
+            <ChevronIcon --size="1rem" direction={isOpen ? "top" : "bottom"} />
         </button>
     {/snippet}
     <div class="flex flex-col gap-2 pb-4 w-lg">
@@ -55,10 +63,10 @@
             >
         </div>
         {#if mode === "visual"}
-            {#each pg.whereFilters as filter, i}
+            {#each filters as filter, i}
                 <div class="flex gap-2">
-                    <Select class="w-40" bind:value={pg.whereFilters[i].column} placeholder="column name">
-                        {#each pg.currentTable?.columns ?? [] as column}
+                    <Select class="w-40" bind:value={filters[i].column} placeholder="column name">
+                        {#each columns ?? [] as column}
                             <option>{column.column_name}</option>
                         {/each}
                     </Select>
@@ -93,8 +101,7 @@
                         autocapitalize="off"
                         autocomplete="off"
                         bind:value={
-                            () => pg.whereFilters[i].value,
-                            (newValue) => (pg.whereFilters[i].value = newValue.replace(/[‘’]/g, "'"))
+                            () => filters[i].value, (newValue) => (filters[i].value = newValue.replace(/[‘’]/g, "'"))
                         }
                         placeholder={getPlaceholderByOperator(filter.operator)}
                     />
@@ -104,7 +111,7 @@
                         class="btn icon ghost"
                         onclick={(e) => {
                             e.preventDefault();
-                            pg.whereFilters.splice(i, 1);
+                            filters.splice(i, 1);
                         }}><CrossIcon --size="1.2rem" /></button
                     >
                 </div>
@@ -112,7 +119,7 @@
                 <p class="text-sx text-fg-1 text-center py-2">No filters applied, all rows will be listed.</p>
             {/each}
         {:else}
-            <MultilinesInput class="font-mono!" bind:value={pg.whereSql} placeholder="WHERE id = ..." />
+            <MultilinesInput class="font-mono!" bind:value={whereSql} placeholder="WHERE id = ..." />
         {/if}
     </div>
     <div class="flex">
@@ -120,8 +127,8 @@
             <button
                 class="btn ghost self-start"
                 onclick={() =>
-                    pg.whereFilters.push({
-                        column: pg.currentTable?.columns[0].column_name ?? "",
+                    filters.push({
+                        column: columns[0].column_name ?? "",
                         operator: "=",
                         value: "",
                     })}><PlusIcon /> Ajouter un filtre</button
@@ -129,8 +136,8 @@
         {/if}
         <button
             class="btn small ms-auto"
-            disabled={!pg.whereFilters.every((filter) => filter.column && filter.value)}
-            onclick={applyFilters}><CheckIcon --size="1.2rem" /> Apply filter</button
+            disabled={!filters.every((filter) => filter.column && filter.value)}
+            onclick={onapply}><CheckIcon --size="1.2rem" /> Apply filter</button
         >
     </div>
 </Popover>

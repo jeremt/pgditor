@@ -6,7 +6,7 @@
     import CheckboxInput from "$lib/widgets/CheckboxInput.svelte";
     import Dialog from "$lib/widgets/Dialog.svelte";
 
-    import {getPgContext, type PgColumn, type PgRow} from "./pgContext.svelte";
+    import {filtersToWhere, getPgContext, type PgColumn, type PgRow} from "./pgContext.svelte";
     import TableUpsert from "./TableUpsert.svelte";
     import {createContextMenu} from "./tableContextMenu.svelte";
     import {valueToSql} from "./values";
@@ -172,7 +172,7 @@
                                                             value: `${valueToSql(column, value)}`,
                                                         },
                                                     ];
-                                                    pg.whereSql = pg.whereFromFilters().trim();
+                                                    pg.whereSql = filtersToWhere(pg.whereFilters).trim();
                                                     pg.appliedFilters = pg.whereFilters.length;
                                                     await pg.refreshData();
                                                 }}

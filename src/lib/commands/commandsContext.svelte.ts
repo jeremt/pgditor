@@ -119,8 +119,9 @@ class CommandsContext {
                 description: "Load the previous page of data with the current LIMIT value with an OFFSET of LIMIT",
 
                 action: (event) => {
-                    if (event.state === "Pressed" && this.#pg.filters.offset > 0) {
-                        this.#pg.filters.offset = Math.max(0, this.#pg.filters.offset - this.#pg.filters.limit);
+                    if (event.state === "Pressed" && this.#pg.offset > 0) {
+                        this.#pg.offset = Math.max(0, this.#pg.offset - this.#pg.limit);
+                        this.#pg.refreshData();
                     }
                 },
             },
@@ -134,12 +135,10 @@ class CommandsContext {
                     if (
                         event.state === "Pressed" &&
                         this.#pg.currentTable &&
-                        this.#pg.filters.offset + this.#pg.filters.limit < this.#pg.currentTable.count
+                        this.#pg.offset + this.#pg.limit < this.#pg.currentTable.count
                     ) {
-                        this.#pg.filters.offset = Math.min(
-                            this.#pg.currentTable.count,
-                            this.#pg.filters.offset + this.#pg.filters.limit,
-                        );
+                        this.#pg.offset = Math.min(this.#pg.currentTable.count, this.#pg.offset + this.#pg.limit);
+                        this.#pg.refreshData();
                     }
                 },
             },

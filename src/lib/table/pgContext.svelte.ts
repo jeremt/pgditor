@@ -28,7 +28,13 @@ export type PgColumn = {
 
 export type PgRow = Record<string, object | string | bigint | number | boolean | null>;
 
-export type WhereFilters = {column: string; operator: string; value: string}[];
+export type WhereFilter = {column: string; operator: string; value: string};
+export const filtersToWhere = (filters: WhereFilter[]) =>
+    filters.reduce((result, filter) => {
+        return (
+            result + "\n" + (result === "" ? "where" : "and") + ` ${filter.column} ${filter.operator} ${filter.value}`
+        );
+    }, "");
 
 const DEFAULT_LIMIT = 100;
 
@@ -50,7 +56,7 @@ class PgContext {
 
     // filters
     isFilterPopover = $state(false);
-    whereFilters = $state<WhereFilters>([]);
+    whereFilters = $state<WhereFilter[]>([]);
     appliedFilters = $state(0);
     whereSql = $state("");
     offset = $state(0);
@@ -186,7 +192,7 @@ ${this.selectedRowsJson
     /**
      * Return rows for the given table.
      */
-    getTableData = async (table: Pick<PgTable, "schema" | "name">, offset: number, limit: number) => {
+    getTableData = async (table: Pick<PgTable, "schema" | "name">, where: string, offset: number, limit: number) => {
         if (!this.connections.current) {
             return;
         }
@@ -207,6 +213,7 @@ ${this.selectedRowsJson
                 schema: table.schema,
                 table: table.name,
                 columns: "*",
+                whereClause: where,
                 offset,
                 limit,
                 orderBy: "",
@@ -425,16 +432,6 @@ values
             .join(", ")});`;
         return await this.rawQuery(query, {throwError});
     };
-
-    whereFromFilters = () =>
-        this.whereFilters.reduce((result, filter) => {
-            return (
-                result +
-                "\n" +
-                (result === "" ? "where" : "and") +
-                ` ${filter.column} ${filter.operator} ${filter.value}`
-            );
-        }, "");
 }
 const key = Symbol("pgContext");
 

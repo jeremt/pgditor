@@ -1,12 +1,12 @@
 <script lang="ts">
-    import {getPgContext, type PgColumn, type PgRow} from "../pgContext.svelte";
+    import {getPgContext, type WhereFilter, type PgColumn, type PgRow} from "../pgContext.svelte";
     import LinkIcon from "$lib/icons/LinkIcon.svelte";
     import Dialog from "$lib/widgets/Dialog.svelte";
     import CheckIcon from "$lib/icons/CheckIcon.svelte";
     import SearchIcon from "$lib/icons/SearchIcon.svelte";
     import KeyIcon from "$lib/icons/KeyIcon.svelte";
-    import TableIcon from "$lib/icons/TableIcon.svelte";
     import TablePagination from "../TablePagination.svelte";
+    import TableFilters from "../TableFilters.svelte";
 
     type Props = {
         value: string;
@@ -24,10 +24,15 @@
     let offset = $state(0);
     let limit = $state(100);
 
+    let isFiltersOpen = $state(false);
+    let whereFilters = $state<WhereFilter[]>([]);
+    let whereSql = $state("");
+    let appliedFilters = $state(0);
     const loadData = async () => {
         if (column.foreign_table_schema !== null && column.foreign_table_name !== null) {
             const dataOrError = await pg.getTableData(
                 {schema: column.foreign_table_schema, name: column.foreign_table_name},
+                appliedFilters ? whereSql : "",
                 offset,
                 limit,
             );
@@ -54,8 +59,20 @@
             autocomplete="off"
             autocapitalize="off"
         />
-        <div class="flex gap-2 items-center">
+        <div class="flex gap-2 items-center pt-2">
             {#if data}
+                <TableFilters
+                    bind:isOpen={isFiltersOpen}
+                    bind:filters={whereFilters}
+                    bind:whereSql
+                    {appliedFilters}
+                    columns={data.columns}
+                    onapply={async () => {
+                        appliedFilters = whereFilters.length;
+                        isFiltersOpen = false;
+                        await loadData();
+                    }}
+                />
                 <TablePagination
                     bind:offset
                     bind:limit
