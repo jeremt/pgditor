@@ -147,6 +147,8 @@
                                                             value: `${valueToSql(column, value)}`,
                                                         },
                                                     ];
+                                                    pg.whereSql = pg.whereFromFilters().trim();
+                                                    pg.appliedFilters = pg.whereFilters.length;
                                                     await pg.refreshData();
                                                 }}
                                                 title="{column.foreign_table_schema}.{column.foreign_table_name}.{column.foreign_column_name}"
