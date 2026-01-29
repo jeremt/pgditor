@@ -17,6 +17,7 @@
 
     const {oncontextmenu} = createContextMenu();
     let cell = $state<{element: HTMLElement; row: PgRow; column: PgColumn}>();
+    let lastCheckedIndex: number | null = null;
 </script>
 
 {#if pg.currentTable === undefined}
@@ -49,12 +50,36 @@
                 <div class="grid items-center px-2 h-10">
                     <CheckboxInput
                         checked={pg.selectedRows.indexOf(i) !== -1}
-                        onchange={(e) => {
-                            if (e.currentTarget.checked) {
-                                pg.selectedRows.push(i);
+                        onclick={(e) => {
+                            const isChecked = e.currentTarget.checked;
+                            const isShiftPressed = e.shiftKey;
+
+                            if (isShiftPressed && lastCheckedIndex !== null) {
+                                // Determine the range (works both top-to-bottom and bottom-to-top)
+                                const start = Math.min(lastCheckedIndex, i);
+                                const end = Math.max(lastCheckedIndex, i);
+
+                                for (let j = start; j <= end; j++) {
+                                    const alreadySelected = pg.selectedRows.indexOf(j) !== -1;
+
+                                    if (isChecked && !alreadySelected) {
+                                        pg.selectedRows.push(j);
+                                    } else if (!isChecked && alreadySelected) {
+                                        // Gmail also supports Shift+Deselect!
+                                        pg.selectedRows.splice(pg.selectedRows.indexOf(j), 1);
+                                    }
+                                }
                             } else {
-                                pg.selectedRows.splice(pg.selectedRows.indexOf(i), 1);
+                                // Standard single-click logic
+                                if (isChecked) {
+                                    pg.selectedRows.push(i);
+                                } else {
+                                    pg.selectedRows.splice(pg.selectedRows.indexOf(i), 1);
+                                }
                             }
+
+                            // 2. Update the reference for the next shift-click
+                            lastCheckedIndex = i;
                         }}
                     />
                 </div>
