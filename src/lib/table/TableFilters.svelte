@@ -138,10 +138,8 @@
                     })}><PlusIcon /> Ajouter un filtre</button
             >
         {/if}
-        <button
-            class="btn small ms-auto"
-            disabled={!filters.every((filter) => filter.column && filter.value)}
-            onclick={onapply}><CheckIcon --size="1.2rem" /> Apply filter</button
+        <button class="btn small ms-auto" disabled={!filters.every((filter) => filter.column)} onclick={onapply}
+            ><CheckIcon --size="1.2rem" /> Apply filter</button
         >
     </div>
 </Popover>

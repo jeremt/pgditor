@@ -68,7 +68,7 @@ export const filtersToWhere = (filters: WhereFilter[]) =>
             result +
             "\n" +
             (result === "" ? "where" : "and") +
-            ` ${filter.column} ${filter.operator} ${valueForOperator(filter.column_type, filter.operator, filter.value)}`
+            ` ${filter.column} ${filter.operator} ${filter.operator !== "is null" && filter.operator !== "is not null" ? valueForOperator(filter.column_type, filter.operator, filter.value) : ""}`
         );
     }, "");
 
