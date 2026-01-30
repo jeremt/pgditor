@@ -1,6 +1,6 @@
 {
     "name": "pgditor",
-    "version": "0.0.1",
+    "version": "0.0.20",
     "description": "A simple, minimalistic, and fast editor to work with your Postgres databases.",
     "type": "module",
     "scripts": {
@@ -11,7 +11,7 @@
         "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
         "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
         "tauri": "tauri",
-        "release": "pnpm version $1"
+        "release": "pnpm version $1 && git tag v$1 && git push --tags"
     },
     "license": "MIT",
     "dependencies": {
