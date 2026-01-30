@@ -11,8 +11,7 @@
         "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
         "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
         "tauri": "tauri",
-        "release": "pnpm tauri conf version $1 && git add . && git commit -m \"chore: release v$1\" && git tag v$1 && git push && git push --tags",
-        "release:auto": "pnpm tauri conf version $(npm version patch --no-git-tag-version | sed 's/v//') && git add . && git commit -m \"chore: release patch\" && git tag v$(node -p \"require('./package.json').version\") && git push && git push --tags"
+        "release": "pnpm version $1"
     },
     "license": "MIT",
     "dependencies": {
