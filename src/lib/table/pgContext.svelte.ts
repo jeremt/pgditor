@@ -28,13 +28,86 @@ export type PgColumn = {
 
 export type PgRow = Record<string, object | string | bigint | number | boolean | null>;
 
-export type WhereFilter = {column: string; operator: string; value: string};
+export const whereOperators = [
+    "=",
+    "!=",
+    ">",
+    "<",
+    "<=",
+    ">=",
+    "like",
+    "ilike",
+    "not like",
+    "~",
+    "~*",
+    "!~",
+    "!~*",
+    "is null",
+    "is not null",
+] as const;
+export type WhereOperator = (typeof whereOperators)[number];
+export type WhereFilter = {column: string; column_type: PgType; operator: WhereOperator; value: string};
+
+const valueForOperator = (data_type: PgType, operator: WhereOperator, value: string) => {
+    if (
+        operator === "like" ||
+        operator === "ilike" ||
+        operator === "not like" ||
+        operator === "~" ||
+        operator === "~*" ||
+        operator === "!~" ||
+        operator === "!~*"
+    ) {
+        return `'${value}'`;
+    }
+    return valueToSql({data_type}, value as any);
+};
 export const filtersToWhere = (filters: WhereFilter[]) =>
     filters.reduce((result, filter) => {
         return (
-            result + "\n" + (result === "" ? "where" : "and") + ` ${filter.column} ${filter.operator} ${filter.value}`
+            result +
+            "\n" +
+            (result === "" ? "where" : "and") +
+            ` ${filter.column} ${filter.operator} ${valueForOperator(filter.column_type, filter.operator, filter.value)}`
         );
     }, "");
+
+export const operatorsForColumn = (column: PgColumn | undefined): WhereOperator[] => {
+    if (column === undefined) {
+        return [];
+    }
+    const operators: WhereOperator[] = ["=", "!="];
+    if (column.is_nullable === "YES") {
+        operators.push("is null", "is not null");
+    }
+    if (
+        column.data_type === "text" ||
+        column.data_type === "varchar" ||
+        column.data_type === "character" ||
+        column.data_type === "character_varying"
+    ) {
+        operators.push("<", "<=", ">", "<=", "like", "ilike", "not like", "~", "~*", "!~", "!~*");
+    }
+    if (
+        column.data_type === "smallint" ||
+        column.data_type === "integer" ||
+        column.data_type === "bigint" ||
+        column.data_type === "int2" ||
+        column.data_type === "int4" ||
+        column.data_type === "int8" ||
+        column.data_type === "decimal" ||
+        column.data_type === "numeric" ||
+        column.data_type === "real" ||
+        column.data_type === "double_precision" ||
+        column.data_type === "smallserial" ||
+        column.data_type === "serial" ||
+        column.data_type === "bigserial" ||
+        column.data_type === "money"
+    ) {
+        operators.push("<", "<=", ">", "<=");
+    }
+    return operators;
+};
 
 const DEFAULT_LIMIT = 100;
 

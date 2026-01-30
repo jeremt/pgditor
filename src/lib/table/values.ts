@@ -21,6 +21,7 @@ export const defaultValues = {
     character: "",
     character_varying: "",
     text: "",
+    varchar: "",
 
     // 📅 Date / Time
     date: "1970-01-01",
@@ -99,7 +100,7 @@ export const defaultValues = {
 
 export type PgType = keyof typeof defaultValues;
 
-export const sqlToValue = (column: PgColumn, sql: string): unknown => {
+export const sqlToValue = (column: Pick<PgColumn, "data_type">, sql: string): unknown => {
     // strip explicit type casts
     if (sql.startsWith("'") && sql.endsWith(`'::${column.data_type}`)) {
         const result = sql.slice(1, sql.length - `'::${column.data_type}`.length);
@@ -111,7 +112,7 @@ export const sqlToValue = (column: PgColumn, sql: string): unknown => {
     return sql;
 };
 
-export const valueToSql = (column: PgColumn, value: any): string => {
+export const valueToSql = (column: Pick<PgColumn, "data_type">, value: any): string => {
     // Handle NULL values
     if (value === null || value === undefined) {
         return "NULL";

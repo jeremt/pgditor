@@ -7,7 +7,13 @@
     import MultilinesInput from "$lib/widgets/MultilinesInput.svelte";
     import Popover from "$lib/widgets/Popover.svelte";
     import Select from "$lib/widgets/Select.svelte";
-    import {filtersToWhere, type PgColumn, type WhereFilter} from "./pgContext.svelte";
+    import {
+        filtersToWhere,
+        operatorsForColumn,
+        type PgColumn,
+        type WhereFilter,
+        type WhereOperator,
+    } from "./pgContext.svelte";
 
     type Props = {
         isOpen: boolean;
@@ -28,15 +34,12 @@
 
     let mode = $state<"visual" | "sql">("visual");
 
-    const getPlaceholderByOperator = (operator: string) => {
-        if (["like", "ilike"].includes(operator)) {
-            return "'%value%'";
+    const getPlaceholderByOperator = (operator: WhereOperator) => {
+        if (operator === "like" || operator === "ilike" || operator === "not like") {
+            return "%value%";
         }
-        if (operator === "between") {
-            return "value1 and value2";
-        }
-        if (operator === "in") {
-            return `(value1, value2, value3)`;
+        if (operator === "~" || operator === "~*" || operator === "!~" || operator === "!~*") {
+            return "^[a-zA-Z].*[0-9]{3}$";
         }
         return "value";
     };
@@ -64,47 +67,47 @@
         </div>
         {#if mode === "visual"}
             {#each filters as filter, i}
+                {@const column = columns.find((col) => col.column_name === filter.column)}
                 <div class="flex gap-2">
-                    <Select class="w-40" bind:value={filters[i].column} placeholder="column name">
+                    <Select
+                        class="w-40"
+                        bind:value={filters[i].column}
+                        onchange={() => {
+                            console.log("IN", column, filters[i].column);
+                            if (column) {
+                                filters[i].column_type = column.data_type;
+                            }
+                        }}
+                    >
                         {#each columns ?? [] as column}
                             <option>{column.column_name}</option>
                         {/each}
                     </Select>
                     <Select class="small" bind:value={filter.operator}>
-                        <optgroup label="basic">
-                            <option>=</option>
-                            <option>&lt;</option>
-                            <option>&gt;</option>
-                            <option>&lt;=</option>
-                            <option>&gt;=</option>
-                            <option>&lt;&gt;</option>
-                            <option>!=</option>
-                            <option>like</option>
-                            <option>ilike</option>
-                            <option>in</option>
-                            <option>between</option>
-                            <option>is</option>
-                        </optgroup>
-                        <optgroup label="vector">
-                            <option>&lt;-&gt;</option>
-                            <!-- euclidean-->
-                            <option>&lt;#&gt;</option>
-                            <!-- !inner dot -->
-                            <option>&lt=&gt;</option>
-                            <!-- cosine -->
-                        </optgroup>
+                        {#each operatorsForColumn(column) as operator}
+                            <option>{operator}</option>
+                        {/each}
                     </Select>
-                    <input
-                        class="small grow"
-                        type="text"
-                        autocorrect="off"
-                        autocapitalize="off"
-                        autocomplete="off"
-                        bind:value={
-                            () => filters[i].value, (newValue) => (filters[i].value = newValue.replace(/[‘’]/g, "'"))
-                        }
-                        placeholder={getPlaceholderByOperator(filter.operator)}
-                    />
+                    {#if column?.enum_values}
+                        <Select
+                            class="small grow"
+                            bind:value={() => filters[i].value, (newValue) => (filters[i].value = newValue)}
+                        >
+                            {#each column.enum_values as enum_value}
+                                <option>{enum_value}</option>
+                            {/each}
+                        </Select>
+                    {:else if filter.operator !== "is null" && filter.operator !== "is not null"}
+                        <input
+                            class="small grow"
+                            type="text"
+                            autocorrect="off"
+                            autocapitalize="off"
+                            autocomplete="off"
+                            bind:value={() => filters[i].value, (newValue) => (filters[i].value = newValue)}
+                            placeholder={getPlaceholderByOperator(filter.operator)}
+                        />
+                    {/if}
                     <button
                         type="button"
                         aria-label="Trash"
@@ -129,6 +132,7 @@
                 onclick={() =>
                     filters.push({
                         column: columns[0].column_name ?? "",
+                        column_type: columns[0].data_type,
                         operator: "=",
                         value: "",
                     })}><PlusIcon /> Ajouter un filtre</button
