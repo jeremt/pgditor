@@ -168,6 +168,7 @@
                                                     pg.whereFilters = [
                                                         {
                                                             column: column.foreign_column_name!,
+                                                            column_type: column.data_type,
                                                             operator: "=",
                                                             value: `${valueToSql(column, value)}`,
                                                         },
