@@ -135,6 +135,7 @@
                         {#each pg.getSelectedColumns() as column (column.column_name)}
                             {@const value = row[column.column_name]}
                             <td
+                                class:text-fg-2={value === null}
                                 title={typeof value === "object"
                                     ? JSON.stringify(value)
                                     : value === null
