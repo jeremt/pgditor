@@ -170,8 +170,8 @@
                         {column.column_name}
                         <span class="font-normal">{column.data_type}</span>
                     </h2>
-                    <button class="btn secondary" onclick={() => (isDialogOpen = false)}
-                        ><CheckIcon --size="1.2rem" /> Valider</button
+                    <button class="btn" onclick={() => (isDialogOpen = false)}
+                        ><CheckIcon --size="1.2rem" /> Apply</button
                     >
                 </div>
             </header>

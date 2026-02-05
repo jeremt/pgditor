@@ -74,7 +74,6 @@
                         title={column?.data_type}
                         bind:value={filters[i].column}
                         onchange={() => {
-                            console.log("IN", column, filters[i].column);
                             if (column) {
                                 filters[i].column_type = column.data_type;
                             }
