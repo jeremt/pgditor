@@ -75,7 +75,7 @@
     {/if}
 </button>
 
-<button class="btn ghost icon" title="Save {commands.cmdOrCtrl} S" onclick={scripts.saveCurrentFile}>
+<button class="btn ghost icon" title="Save {commands.cmdOrCtrl}S" onclick={scripts.saveCurrentFile}>
     <SaveIcon --size="1.2rem" />
 </button>
 

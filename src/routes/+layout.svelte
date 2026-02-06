@@ -20,8 +20,8 @@
     const connections = setConnectionsContext();
     const pg = setPgContext();
     const scripts = setScriptsContext();
-    const commands = setCommandsContext();
     const settings = setSettingsContext();
+    const commands = setCommandsContext();
 
     onMount(async () => {
         await connections.load();

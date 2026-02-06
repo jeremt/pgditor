@@ -11,6 +11,7 @@
     import {onMount} from "svelte";
     import {invoke} from "@tauri-apps/api/core";
     import {getSettingsContext} from "$lib/settings/settingsContext.svelte";
+    import SearchIcon from "$lib/icons/SearchIcon.svelte";
 
     const commands = getCommandsContext();
     const settings = getSettingsContext();
@@ -24,7 +25,12 @@
     <ConnectionButton />
     <button
         class="btn ghost icon"
-        title={"Visualize tables"}
+        title="Command palette {commands.cmdOrCtrl}P"
+        onclick={() => commands.execute("Open command palette")}><SearchIcon --size="1.2rem" /></button
+    >
+    <button
+        class="btn ghost icon"
+        title="Visualize tables {commands.cmdOrCtrl}1"
         disabled={commands.mode === "tables"}
         onclick={() => (commands.mode = "tables")}
     >
@@ -32,7 +38,7 @@
     </button>
     <button
         class="btn ghost icon"
-        title={"Run raw sql queries"}
+        title="Run raw sql queries {commands.cmdOrCtrl}2"
         disabled={commands.mode === "script"}
         onclick={() => (commands.mode = "script")}
     >

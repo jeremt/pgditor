@@ -42,6 +42,10 @@ class SettingsContext extends StoreContext {
             }
         })();
     }
+
+    toggleColorScheme = () => {
+        this.colorScheme = this.colorScheme === "light" ? "dark" : "light";
+    };
 }
 
 const key = Symbol("settings");

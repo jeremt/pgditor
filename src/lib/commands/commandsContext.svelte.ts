@@ -3,6 +3,7 @@ import {globalShortcuts} from "$lib/tauri/globalShortcuts";
 import type {ShortcutEvent} from "@tauri-apps/plugin-global-shortcut";
 import {getContext, setContext} from "svelte";
 import {platform} from "@tauri-apps/plugin-os";
+import {getSettingsContext} from "$lib/settings/settingsContext.svelte";
 
 export type Command = {
     keys: string;
@@ -14,6 +15,7 @@ export type Command = {
 
 class CommandsContext {
     #pg = getPgContext();
+    #settings = getSettingsContext();
 
     #all = $state<Command[]>([]);
     get all() {
@@ -142,8 +144,20 @@ class CommandsContext {
                     }
                 },
             },
+            {
+                keys: "",
+                prettyKeys: ``,
+                title: "Toggle between Light/Dark ColorScheme",
+                description: "Override the default system color scheme.",
+
+                action: (event) => {
+                    if (event.state === "Pressed") {
+                        this.#settings.toggleColorScheme();
+                    }
+                },
+            },
         ];
-        this.#shortcuts = globalShortcuts(this.#all);
+        this.#shortcuts = globalShortcuts(this.#all.filter((cmd) => cmd.keys !== "" && cmd.prettyKeys !== ""));
     }
 
     execute = (title: string) => {
