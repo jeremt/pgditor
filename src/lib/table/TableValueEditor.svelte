@@ -8,6 +8,7 @@
     import FKEditor from "./valueEditors/FKEditor.svelte";
     import IntegerValueEditor from "./valueEditors/IntegerValueEditor.svelte";
     import FloatValueEditor from "./valueEditors/FloatValueEditor.svelte";
+    import DateValueEditor from "./valueEditors/DateValueEditor.svelte";
 
     type Props = {
         inlined: boolean;
@@ -80,6 +81,8 @@
         {column}
         {inlined}
     />
+{:else if column.data_type === "timestamptz"}
+    <DateValueEditor bind:value={row[column.column_name] as string} {column} {inlined} />
 {:else if column.data_type === "tsvector"}
     <input
         id={column.column_name}

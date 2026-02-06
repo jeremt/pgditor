@@ -324,6 +324,7 @@ ${this.selectedRowsJson
             this.toastContext.toast(`SQL error: ${data.message}`, {kind: "error"});
             return;
         }
+        console.log("rows = ", data.rows);
         this.selectedRows = [];
         this.currentTable.rows = data.rows;
         for (let i = 0; i < this.currentTable.rows.length; i++) {

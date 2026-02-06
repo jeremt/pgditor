@@ -19,6 +19,8 @@ pub async fn raw_query(connection_string: String, sql: String) -> Result<QueryRe
     tokio::task::spawn_blocking(move || {
         let mut client = create_secure_client(&conn)?;
 
+        println!("psql > {}", sql_text);
+
         // Start timer
         let start = Instant::now();
         let messages = client.simple_query(&sql_text).map_err(PgError::from)?;
