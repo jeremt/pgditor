@@ -15,7 +15,7 @@
     import {getToastContext} from "$lib/widgets/Toaster.svelte";
     import {getPgContext, type PgColumn, type PgRow} from "./pgContext.svelte";
     import TableValueEditor from "./TableValueEditor.svelte";
-    import {defaultValues, valueToSql} from "./values";
+    import {defaultValues, valueTypeIsBoolean, valueTypeIsNumber, valueToSql} from "./values";
     import {writeText} from "@tauri-apps/plugin-clipboard-manager";
 
     type Props = {
@@ -99,13 +99,14 @@
         if (!target) {
             return false;
         }
+        if (target.column.foreign_table_name !== null) {
+            return false;
+        }
         if (target.column.is_primary_key === "YES" || noPk) {
             return true;
         }
-        switch (target.column.data_type) {
-            case "bool":
-            case "boolean":
-                return true;
+        if (valueTypeIsNumber(target.column.data_type) || valueTypeIsBoolean(target.column.data_type)) {
+            return true;
         }
         if (target.column.enum_values !== null) {
             return true;
@@ -183,7 +184,7 @@ where ${row.reduce((result, [name, value], index) => {
                                             target!.row[target!.column.column_name] = null;
                                         } else {
                                             target!.row[target!.column.column_name] =
-                                                defaultValues[target!.column.data_type];
+                                                defaultValues[target!.column.data_type] ?? "";
                                         }
                                     }}
                                 />

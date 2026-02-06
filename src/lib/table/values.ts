@@ -1,21 +1,20 @@
 import type {PgColumn} from "./pgContext.svelte";
 
 export const defaultValues = {
-    // 🧮 Numeric
     smallint: 0,
     integer: 0,
     bigint: 0n, // BigInt for 64-bit integers
     int2: 0,
     int4: 0,
     int8: 0n, // BigInt for 64-bit integers
-    decimal: "0.0",
-    numeric: "0.0",
-    real: 0.0,
-    double_precision: 0.0,
     smallserial: 1,
     serial: 1,
     bigserial: 1n,
-    money: "0.00",
+
+    float4: 0.0,
+    float8: 0.0,
+
+    numeric: "0.0",
 
     // 🔤 Character
     character: "",
@@ -67,12 +66,12 @@ export const defaultValues = {
     xml: "<root></root>",
 
     // 🗂️ UUID
-    uuid: "00000000-0000-0000-0000-000000000000",
+    uuid: crypto.randomUUID(),
 
     // 📚 Arrays
     integer_array: [0],
     text_array: [""],
-    uuid_array: ["00000000-0000-0000-0000-000000000000"],
+    uuid_array: [crypto.randomUUID()],
 
     // 🗝️ Range Types
     int4range: "[0,10)",
@@ -112,6 +111,42 @@ export const sqlToValue = (column: Pick<PgColumn, "data_type">, sql: string): un
     return sql;
 };
 
+export const valueTypeIsInteger = (data_type: PgType) => {
+    return (
+        data_type === "smallint" ||
+        data_type === "integer" ||
+        data_type === "bigint" ||
+        data_type === "int2" ||
+        data_type === "int4" ||
+        data_type === "int8" ||
+        data_type === "smallserial" ||
+        data_type === "serial" ||
+        data_type === "bigserial"
+    );
+};
+
+export const valueTypeIsFloat = (data_type: PgType) => {
+    return data_type === "float4" || data_type === "float8";
+};
+
+export const valueTypeIsNumber = (data_type: PgType) => {
+    return valueTypeIsFloat(data_type) || valueTypeIsInteger(data_type);
+};
+
+export const valueTypeIsBoolean = (data_type: PgType) => {
+    return data_type === "bool" || data_type === "boolean";
+};
+
+export const valueTypeIsDate = (data_type: PgType) => {
+    return (
+        data_type === "date" ||
+        data_type === "time" ||
+        data_type === "timetz" ||
+        data_type === "timestamp" ||
+        data_type === "timestamptz"
+    );
+};
+
 export const valueToSql = (column: Pick<PgColumn, "data_type">, value: any): string => {
     // Handle NULL values
     if (value === null || value === undefined) {
@@ -135,7 +170,7 @@ export const valueToSql = (column: Pick<PgColumn, "data_type">, value: any): str
     }
 
     // 📅 Date/Time types Convert ISO 8601 format to PostgreSQL format (replace T with space)
-    if (["date", "time", "timetz", "timestamp", "timestamptz"].includes(type)) {
+    if (valueTypeIsDate(type)) {
         const pgFormat = String(value).replace("T", " ");
         const escaped = pgFormat.replace(/'/g, "''");
         return `'${escaped}'`;
@@ -203,11 +238,6 @@ export const valueToSql = (column: Pick<PgColumn, "data_type">, value: any): str
         return `'\\x${value}'`;
     }
 
-    // 💰 Money type
-    if (type === "money") {
-        return `'${value}'`;
-    }
-
     // 🧮 BigInt types
     if (type === "bigint" || type === "int8" || type === "bigserial") {
         return String(value).replace("n", "");
@@ -231,26 +261,12 @@ export const valueToSql = (column: Pick<PgColumn, "data_type">, value: any): str
     }
 
     // ✅ Boolean
-    if (type === "boolean" || type === "bool") {
+    if (valueTypeIsBoolean(type)) {
         return value === true ? "true" : value === false ? "false" : value;
     }
 
     // 🧮 Numeric types (no quoting needed)
-    if (
-        [
-            "smallint",
-            "integer",
-            "int2",
-            "int4",
-            "decimal",
-            "numeric",
-            "real",
-            "double_precision",
-            "smallserial",
-            "serial",
-            "oid",
-        ].includes(type)
-    ) {
+    if (valueTypeIsNumber(type)) {
         return String(value);
     }
 

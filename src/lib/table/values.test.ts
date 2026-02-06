@@ -43,10 +43,6 @@ describe("formatValue", () => {
             expect(valueToSql(makeColumn("bigserial"), 123n)).toBe("123");
         });
 
-        it("should format decimal as string", () => {
-            expect(valueToSql(makeColumn("decimal"), "123.45")).toBe("123.45");
-        });
-
         it("should format numeric as string", () => {
             expect(valueToSql(makeColumn("numeric"), "0.123456789")).toBe("0.123456789");
         });
@@ -126,43 +122,43 @@ describe("formatValue", () => {
         // NEW TESTS - ISO 8601 format conversion
         it("should convert ISO 8601 timestamp to PostgreSQL format", () => {
             expect(valueToSql(makeColumn("timestamp"), "2025-11-13T19:36:55.266893")).toBe(
-                "'2025-11-13 19:36:55.266893'"
+                "'2025-11-13 19:36:55.266893'",
             );
         });
 
         it("should convert ISO 8601 timestamptz to PostgreSQL format", () => {
             expect(valueToSql(makeColumn("timestamptz"), "2025-11-13T19:36:55.266893+00:00")).toBe(
-                "'2025-11-13 19:36:55.266893+00:00'"
+                "'2025-11-13 19:36:55.266893+00:00'",
             );
         });
 
         it("should convert ISO 8601 timestamptz with Z timezone", () => {
             expect(valueToSql(makeColumn("timestamptz"), "2025-11-13T19:36:55.266893Z")).toBe(
-                "'2025-11-13 19:36:55.266893Z'"
+                "'2025-11-13 19:36:55.266893Z'",
             );
         });
 
         it("should handle timestamp with microseconds", () => {
             expect(valueToSql(makeColumn("timestamp"), "2025-01-15 14:30:00.123456")).toBe(
-                "'2025-01-15 14:30:00.123456'"
+                "'2025-01-15 14:30:00.123456'",
             );
         });
 
         it("should handle ISO 8601 timestamp with microseconds", () => {
             expect(valueToSql(makeColumn("timestamp"), "2025-01-15T14:30:00.123456")).toBe(
-                "'2025-01-15 14:30:00.123456'"
+                "'2025-01-15 14:30:00.123456'",
             );
         });
 
         it("should handle timestamptz with different timezone offsets", () => {
             expect(valueToSql(makeColumn("timestamptz"), "2025-11-13T19:36:55+01:00")).toBe(
-                "'2025-11-13 19:36:55+01:00'"
+                "'2025-11-13 19:36:55+01:00'",
             );
         });
 
         it("should handle timestamptz with negative timezone offset", () => {
             expect(valueToSql(makeColumn("timestamptz"), "2025-11-13T19:36:55-05:00")).toBe(
-                "'2025-11-13 19:36:55-05:00'"
+                "'2025-11-13 19:36:55-05:00'",
             );
         });
 
@@ -184,7 +180,7 @@ describe("formatValue", () => {
 
         it("should handle interval with complex format", () => {
             expect(valueToSql(makeColumn("interval"), "1 year 2 months 3 days 4 hours 5 minutes 6 seconds")).toBe(
-                "'1 year 2 months 3 days 4 hours 5 minutes 6 seconds'"
+                "'1 year 2 months 3 days 4 hours 5 minutes 6 seconds'",
             );
         });
 
@@ -194,7 +190,7 @@ describe("formatValue", () => {
 
         it("should escape single quotes in date strings", () => {
             expect(valueToSql(makeColumn("timestamp"), "2025-01-15T14:30:00 O'Clock")).toBe(
-                "'2025-01-15 14:30:00 O''Clock'"
+                "'2025-01-15 14:30:00 O''Clock'",
             );
         });
 
@@ -336,7 +332,7 @@ describe("formatValue", () => {
 
         it("should format xml", () => {
             expect(valueToSql(makeColumn("xml"), "<root><item>test</item></root>")).toBe(
-                "'<root><item>test</item></root>'"
+                "'<root><item>test</item></root>'",
             );
         });
     });
@@ -344,7 +340,7 @@ describe("formatValue", () => {
     describe("🗂️ UUID", () => {
         it("should format uuid", () => {
             expect(valueToSql(makeColumn("uuid"), "550e8400-e29b-41d4-a716-446655440000")).toBe(
-                "'550e8400-e29b-41d4-a716-446655440000'"
+                "'550e8400-e29b-41d4-a716-446655440000'",
             );
         });
     });
@@ -361,7 +357,7 @@ describe("formatValue", () => {
         it("should format uuid_array", () => {
             const uuids = ["550e8400-e29b-41d4-a716-446655440000", "6ba7b810-9dad-11d1-80b4-00c04fd430c8"];
             expect(valueToSql(makeColumn("uuid_array"), uuids)).toBe(
-                '\'{"550e8400-e29b-41d4-a716-446655440000","6ba7b810-9dad-11d1-80b4-00c04fd430c8"}\''
+                '\'{"550e8400-e29b-41d4-a716-446655440000","6ba7b810-9dad-11d1-80b4-00c04fd430c8"}\'',
             );
         });
 
@@ -393,19 +389,19 @@ describe("formatValue", () => {
 
         it("should format tsrange", () => {
             expect(valueToSql(makeColumn("tsrange"), "['2025-01-01 00:00:00','2025-12-31 23:59:59')")).toBe(
-                "'['2025-01-01 00:00:00','2025-12-31 23:59:59')'"
+                "'['2025-01-01 00:00:00','2025-12-31 23:59:59')'",
             );
         });
 
         it("should format tstzrange", () => {
             expect(valueToSql(makeColumn("tstzrange"), "['2025-01-01 00:00:00+00','2025-12-31 23:59:59+00')")).toBe(
-                "'['2025-01-01 00:00:00+00','2025-12-31 23:59:59+00')'"
+                "'['2025-01-01 00:00:00+00','2025-12-31 23:59:59+00')'",
             );
         });
 
         it("should format daterange", () => {
             expect(valueToSql(makeColumn("daterange"), "['2025-01-01','2025-12-31')")).toBe(
-                "'['2025-01-01','2025-12-31')'"
+                "'['2025-01-01','2025-12-31')'",
             );
         });
     });
@@ -413,7 +409,7 @@ describe("formatValue", () => {
     describe("🧱 Composite types", () => {
         it("should format composite type", () => {
             expect(valueToSql(makeColumn("composite"), {field1: "value1", field2: "value2"})).toBe(
-                "ROW('value1','value2')"
+                "ROW('value1','value2')",
             );
         });
 

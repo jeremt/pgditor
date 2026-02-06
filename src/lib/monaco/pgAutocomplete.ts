@@ -91,7 +91,6 @@ const keywords = [
     "serial",
     "bigserial",
     "numeric",
-    "decimal",
     "real",
     "double precision",
     "boolean",
@@ -105,8 +104,10 @@ const keywords = [
     "json",
     "jsonb",
     "bytea",
+    "vector",
     // Constraints and Definitions
     "primary key",
+    "generated always as identity",
     "foreign key",
     "references",
     "default",
@@ -372,7 +373,7 @@ export const addPgAutocomplete = (Monaco: typeof monaco, tables: PgTable[]) => {
     currentDisposable = Monaco.languages.registerCompletionItemProvider("pgsql", {
         provideCompletionItems: (
             model: monaco.editor.ITextModel,
-            position: monaco.Position
+            position: monaco.Position,
         ): monaco.languages.ProviderResult<monaco.languages.CompletionList> => {
             const suggestions: monaco.languages.CompletionItem[] = [];
             const wordInfo = model.getWordUntilPosition(position);
@@ -380,7 +381,7 @@ export const addPgAutocomplete = (Monaco: typeof monaco, tables: PgTable[]) => {
                 position.lineNumber,
                 wordInfo.startColumn,
                 position.lineNumber,
-                wordInfo.endColumn
+                wordInfo.endColumn,
             );
 
             const context = analyzeContext(model, position);

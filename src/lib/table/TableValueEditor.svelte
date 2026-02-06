@@ -2,10 +2,12 @@
     import Select from "$lib/widgets/Select.svelte";
     import JsonValueEditor from "./valueEditors/JsonValueEditor.svelte";
     import type {PgColumn, PgRow} from "./pgContext.svelte";
-    import {valueToSql} from "./values";
+    import {valueToSql, valueTypeIsFloat, valueTypeIsInteger} from "./values";
     import TextValueEditor from "./valueEditors/TextValueEditor.svelte";
     import EnumValueEditor from "./valueEditors/EnumValueEditor.svelte";
     import FKEditor from "./valueEditors/FKEditor.svelte";
+    import IntegerValueEditor from "./valueEditors/IntegerValueEditor.svelte";
+    import FloatValueEditor from "./valueEditors/FloatValueEditor.svelte";
 
     type Props = {
         inlined: boolean;
@@ -56,6 +58,24 @@
             (newValue) => {
                 row[column.column_name] = JSON.parse(newValue);
             }
+        }
+        {column}
+        {inlined}
+    />
+{:else if valueTypeIsInteger(column.data_type)}
+    <IntegerValueEditor
+        bind:value={
+            () => parseInt(row[column.column_name] as string, 10),
+            (newValue) => (row[column.column_name] = newValue.toString())
+        }
+        {column}
+        {inlined}
+    />
+{:else if valueTypeIsFloat(column.data_type)}
+    <FloatValueEditor
+        bind:value={
+            () => parseFloat(row[column.column_name] as string),
+            (newValue) => (row[column.column_name] = newValue.toString())
         }
         {column}
         {inlined}

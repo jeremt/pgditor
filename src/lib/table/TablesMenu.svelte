@@ -30,7 +30,7 @@
                         ? sqlToValue(column, column.column_default)
                         : column.is_nullable === "YES" || column.is_primary_key === "YES"
                           ? null
-                          : defaultValues[column.data_type],
+                          : (defaultValues[column.data_type] ?? ""),
             };
         }, {}) ?? {},
     );

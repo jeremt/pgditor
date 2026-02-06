@@ -10,7 +10,7 @@
         max?: number;
         unit?: string;
         nullable?: boolean;
-        onchange: (event: Event) => void;
+        onchange?: (event: Event) => void;
     }
     let {value = $bindable(), type, unit, nullable, onchange, ...props}: Props = $props();
 

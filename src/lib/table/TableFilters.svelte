@@ -14,6 +14,9 @@
         type WhereFilter,
         type WhereOperator,
     } from "./pgContext.svelte";
+    import FloatValueEditor from "./valueEditors/FloatValueEditor.svelte";
+    import IntegerValueEditor from "./valueEditors/IntegerValueEditor.svelte";
+    import {valueTypeIsFloat, valueTypeIsInteger} from "./values";
 
     type Props = {
         isOpen: boolean;
@@ -97,6 +100,24 @@
                                 <option>{enum_value}</option>
                             {/each}
                         </Select>
+                    {:else if column && valueTypeIsInteger(column.data_type)}
+                        <IntegerValueEditor
+                            bind:value={
+                                () => parseInt(filters[i].value, 10),
+                                (newValue) => (filters[i].value = newValue.toString())
+                            }
+                            {column}
+                            inlined={true}
+                        />
+                    {:else if column && valueTypeIsFloat(column.data_type)}
+                        <FloatValueEditor
+                            bind:value={
+                                () => parseFloat(filters[i].value),
+                                (newValue) => (filters[i].value = newValue.toString())
+                            }
+                            {column}
+                            inlined={true}
+                        />
                     {:else if filter.operator !== "is null" && filter.operator !== "is not null"}
                         <input
                             class="small grow"

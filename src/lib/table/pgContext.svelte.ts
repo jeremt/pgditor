@@ -3,7 +3,7 @@ import {catchError} from "$lib/helpers/catchError";
 import {debounced} from "$lib/helpers/debounced.svelte";
 import {invoke} from "@tauri-apps/api/core";
 import {getContext, setContext} from "svelte";
-import {valueToSql, type PgType} from "./values";
+import {valueToSql, valueTypeIsNumber, type PgType} from "./values";
 import {getToastContext} from "$lib/widgets/Toaster.svelte";
 
 export type PgTable = {
@@ -88,22 +88,7 @@ export const operatorsForColumn = (column: PgColumn | undefined): WhereOperator[
     ) {
         operators.push("<", "<=", ">", "<=", "like", "ilike", "not like", "~", "~*", "!~", "!~*");
     }
-    if (
-        column.data_type === "smallint" ||
-        column.data_type === "integer" ||
-        column.data_type === "bigint" ||
-        column.data_type === "int2" ||
-        column.data_type === "int4" ||
-        column.data_type === "int8" ||
-        column.data_type === "decimal" ||
-        column.data_type === "numeric" ||
-        column.data_type === "real" ||
-        column.data_type === "double_precision" ||
-        column.data_type === "smallserial" ||
-        column.data_type === "serial" ||
-        column.data_type === "bigserial" ||
-        column.data_type === "money"
-    ) {
+    if (valueTypeIsNumber(column.data_type)) {
         operators.push("<", "<=", ">", "<=");
     }
     return operators;
