@@ -26,8 +26,8 @@ export const defaultValues = {
     date: "1970-01-01",
     time: "00:00:00",
     timetz: "00:00:00+00",
-    timestamp: "1970-01-01 00:00:00",
-    timestamptz: "1970-01-01 00:00:00+00",
+    timestamp: "1970-01-01T00:00:00",
+    timestamptz: "1970-01-01T00:00:00.0+00:00",
     interval: "0 days",
 
     // ✅ Boolean
