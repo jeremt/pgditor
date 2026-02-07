@@ -12,9 +12,12 @@
     import {valueToSql} from "./values";
     import ProgressCircle from "$lib/widgets/ProgressCircle.svelte";
     import TableValueUpdate from "./TableValueUpdate.svelte";
+    import {writeText} from "@tauri-apps/plugin-clipboard-manager";
+    import {getToastContext} from "$lib/widgets/Toaster.svelte";
 
     const pg = getPgContext();
 
+    const {toast} = getToastContext();
     const {oncontextmenu} = createContextMenu();
     let cell = $state<{element: HTMLElement; row: PgRow; column: PgColumn}>();
     let lastCheckedIndex: number | null = null;
@@ -141,9 +144,18 @@
                                     : value === null
                                       ? "null"
                                       : value.toString()}
-                                onclick={(e) => {
-                                    if (e.currentTarget instanceof HTMLElement) {
-                                        cell = {element: e.currentTarget, column, row: JSON.parse(JSON.stringify(row))};
+                                onclick={async (e) => {
+                                    if (pg.currentTable?.type === "BASE TABLE") {
+                                        if (e.currentTarget instanceof HTMLElement) {
+                                            cell = {
+                                                element: e.currentTarget,
+                                                column,
+                                                row: JSON.parse(JSON.stringify(row)),
+                                            };
+                                        }
+                                    } else if (pg.currentTable?.type === "VIEW") {
+                                        await writeText(row[column.column_name]?.toString() ?? "null");
+                                        toast("Value copied to clipboard");
                                     }
                                 }}
                                 oncontextmenu={(e) => oncontextmenu(e, column, $state.snapshot(row))}
