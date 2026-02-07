@@ -17,6 +17,7 @@ export type PgTable = {
 export type PgColumn = {
     column_name: string;
     data_type: PgType;
+    data_type_params: string | null;
     is_nullable: "YES" | "NO";
     column_default: string | null;
     is_primary_key: "YES" | "NO";
@@ -233,6 +234,7 @@ ${this.selectedRowsJson
             this.toastContext.toast(`Server error: ${columns.message}`, {kind: "error"});
             return;
         }
+        console.log("COLUMNS = ", columns);
         const t = this.tables.find((item) => item.schema === table.schema && item.name === table.name);
         if (!t) {
             console.error(`Table ${table.schema}.${table.name} not found`);

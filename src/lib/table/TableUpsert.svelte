@@ -88,7 +88,8 @@
                         ><LinkIcon --size="1.2rem" /></span
                     >
                 {/if}
-                <strong>{column.column_name}</strong>{column.data_type}
+                <strong>{column.column_name}</strong
+                >{column.data_type}{#if column.data_type_params}{column.data_type_params}{/if}
                 {#if column.is_nullable === "YES"}
                     <label class="text-xs ml-auto flex gap-2 items-center"
                         >NULL

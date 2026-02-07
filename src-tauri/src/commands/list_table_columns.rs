@@ -16,13 +16,8 @@ pub async fn list_table_columns(
         let query = r#"
             SELECT 
                 c.column_name,
-                CASE 
-                    WHEN a.atttypmod > 0 AND t.typname IN ('varchar', 'bpchar', 'numeric') 
-                    THEN t.typname || '(' || (a.atttypmod - 4) || ')'
-                    WHEN a.atttypmod > 0 AND t.typname = 'numeric'
-                    THEN t.typname || '(' || ((a.atttypmod - 4) >> 16) || ',' || ((a.atttypmod - 4) & 65535) || ')'
-                    ELSE t.typname
-                END AS data_type,
+                t.typname AS data_type,
+                substring(format_type(a.atttypid, a.atttypmod) from '\(.*\)') AS data_type_params,
                 c.is_nullable,
                 c.column_default,
                 CASE WHEN pk.column_name IS NOT NULL THEN 'YES' ELSE 'NO' END AS is_primary_key,
@@ -97,6 +92,7 @@ pub async fn list_table_columns(
             PgColumn {
                 column_name: row.get("column_name"),
                 data_type,
+                data_type_params: row.get("data_type_params"),
                 is_nullable: row.get("is_nullable"),
                 column_default: row.get("column_default"),
                 is_primary_key: row.get("is_primary_key"),

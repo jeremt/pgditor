@@ -122,7 +122,9 @@
                                 {/if}
                                 <div>
                                     {column.column_name}
-                                    <span class="font-normal text-xs! pl-2">{column.data_type}</span>
+                                    <span class="font-normal text-xs! pl-2"
+                                        >{column.data_type}{#if column.data_type_params}{column.data_type_params}{/if}</span
+                                    >
                                 </div>
                                 {#if column.column_name === pg.orderBy?.column}
                                     <ArrowIcon direction={pg.orderBy.direction === "asc" ? "top" : "bottom"} />

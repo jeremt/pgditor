@@ -15,6 +15,7 @@ pub struct PgTable {
 pub struct PgColumn {
     pub column_name: String,
     pub data_type: String,
+    pub data_type_params: Option<String>,
     pub is_nullable: String,
     pub column_default: Option<String>,
     pub is_primary_key: String,

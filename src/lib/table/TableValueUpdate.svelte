@@ -96,22 +96,17 @@
     const noPk = $derived(pg.currentTable && !pg.currentTable.columns.some((col) => col.is_primary_key === "YES"));
 
     const smallDialog = $derived.by(() => {
-        if (!target) {
+        if (!target || target.column.foreign_table_name !== null) {
             return false;
         }
-        if (target.column.foreign_table_name !== null) {
-            return false;
-        }
-        if (target.column.is_primary_key === "YES" || noPk) {
-            return true;
-        }
-        if (valueTypeIsNumber(target.column.data_type) || valueTypeIsBoolean(target.column.data_type)) {
-            return true;
-        }
-        if (target.column.enum_values !== null) {
-            return true;
-        }
-        return false;
+        return (
+            target.column.is_primary_key === "YES" ||
+            noPk ||
+            target.column.data_type === "uuid" ||
+            valueTypeIsNumber(target.column.data_type) ||
+            valueTypeIsBoolean(target.column.data_type) ||
+            target.column.enum_values !== null
+        );
     });
 </script>
 
@@ -150,7 +145,7 @@ where ${row.reduce((result, [name, value], index) => {
             </div>
         </div>
     {:else if target}
-        <div class="flex flex-col {smallDialog ? 'w-sm' : 'w-xl h-full'}">
+        <div class="flex flex-col {smallDialog ? 'w-md' : 'w-xl h-full'}">
             <header class="flex flex-col pt-4 px-4">
                 <div class="flex gap-2 items-center pb-4">
                     <button
@@ -166,7 +161,10 @@ where ${row.reduce((result, [name, value], index) => {
                             <KeyIcon --size="1.2rem" />
                         {/if}
                         {target.column.column_name}
-                        <span class="font-normal">{target.column.data_type}</span>
+                        <span class="font-normal"
+                            >{target.column.data_type}{#if target.column.data_type_params}{target.column
+                                    .data_type_params}{/if}</span
+                        >
                         {#if target.column.foreign_table_schema !== null && target.column.foreign_table_name !== null}
                             <span class="font-mono text-sm bg-bg-1 py-0.5 px-2 rounded-md ml-1">
                                 {target.column.foreign_table_schema}.{target.column.foreign_table_name}
