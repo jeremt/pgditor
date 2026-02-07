@@ -91,17 +91,17 @@ class CommandsContext {
                     }
                 },
             },
-            {
-                keys: "CommandOrControl+F",
-                prettyKeys: `${this.cmdOrCtrl} F`,
-                title: "Apply filters",
-                description: "Open the popover to apply some quick filter to the currently selected table",
-                action: (event) => {
-                    if (event.state === "Pressed") {
-                        this.#pg.isFilterPopover = true;
-                    }
-                },
-            },
+            // {
+            //     keys: "CommandOrControl+F",
+            //     prettyKeys: `${this.cmdOrCtrl} F`,
+            //     title: "Apply filters",
+            //     description: "Open the popover to apply some quick filter to the currently selected table",
+            //     action: (event) => {
+            //         if (event.state === "Pressed") {
+            //             this.#pg.isFilterPopover = true;
+            //         }
+            //     },
+            // },
             {
                 keys: "CommandOrControl+R",
                 prettyKeys: `${this.cmdOrCtrl} R`,
