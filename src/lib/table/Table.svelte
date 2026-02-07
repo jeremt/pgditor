@@ -14,6 +14,7 @@
     import TableValueUpdate from "./TableValueUpdate.svelte";
     import {writeText} from "@tauri-apps/plugin-clipboard-manager";
     import {getToastContext} from "$lib/widgets/Toaster.svelte";
+    import {formatSpatialData, parseSpatialData} from "$lib/helpers/spatialData";
 
     const pg = getPgContext();
 
@@ -141,11 +142,13 @@
                             {@const value = row[column.column_name]}
                             <td
                                 class:text-fg-2={value === null}
-                                title={typeof value === "object"
-                                    ? JSON.stringify(value)
-                                    : value === null
-                                      ? "null"
-                                      : value.toString()}
+                                title={column.data_type === "geography"
+                                    ? formatSpatialData(parseSpatialData(value as string))
+                                    : typeof value === "object"
+                                      ? JSON.stringify(value)
+                                      : value === null
+                                        ? "null"
+                                        : value.toString()}
                                 onclick={async (e) => {
                                     if (pg.currentTable?.type === "BASE TABLE") {
                                         if (e.currentTarget instanceof HTMLElement) {
@@ -166,6 +169,8 @@
                                     null
                                 {:else if typeof value === "object"}
                                     {JSON.stringify(value).slice(0, 50)}
+                                {:else if column.data_type === "geography"}
+                                    {formatSpatialData(parseSpatialData(value as string))}
                                 {:else}
                                     <div class="flex gap-2 items-center">
                                         <span class="grow"

@@ -34,6 +34,8 @@ export const defaultValues = {
     boolean: false,
     bool: false,
 
+    geography: "",
+
     // 🧩 Geometric
     point: {x: 0, y: 0},
     line: "[0,0,0]",
