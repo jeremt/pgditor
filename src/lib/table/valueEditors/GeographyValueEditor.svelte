@@ -1,4 +1,5 @@
 <script lang="ts">
+    import {catchError} from "$lib/helpers/catchError";
     import {formatSpatialData, parseSpatialData, spatialDataToHex} from "$lib/helpers/spatialData";
     import MultilinesInput from "$lib/widgets/MultilinesInput.svelte";
     import {type PgColumn} from "../pgContext.svelte";
@@ -12,7 +13,12 @@
 
     let parsed = {
         get value() {
-            return formatSpatialData(parseSpatialData(value));
+            const newValue = catchError(() => formatSpatialData(parseSpatialData(value)));
+            if (newValue instanceof Error) {
+                console.warn(newValue.message);
+                return "";
+            }
+            return newValue;
         },
         set value(newValue) {
             value = spatialDataToHex(newValue);
