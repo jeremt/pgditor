@@ -46,7 +46,7 @@
                 [target.column.column_name]: target.row[target.column.column_name],
             }),
         );
-        if (error instanceof ErrorIcon) {
+        if (error instanceof Error) {
             errorMessage = error.message;
         } else {
             target = undefined;

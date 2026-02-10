@@ -193,11 +193,6 @@ export const valueToSql = (column: Pick<PgColumn, "data_type">, value: any): str
         return `'{${arrayElements.join(",")}}'`;
     }
 
-    // 🗝️ Range types
-    if (type.includes("range")) {
-        return `'${value}'`;
-    }
-
     // ✅ Boolean
     if (valueTypeIsBoolean(type)) {
         return value === true ? "true" : value === false ? "false" : value;
