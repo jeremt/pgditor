@@ -15,6 +15,7 @@
     import {writeText} from "@tauri-apps/plugin-clipboard-manager";
     import {getToastContext} from "$lib/widgets/Toaster.svelte";
     import {formatSpatialData, parseSpatialData} from "$lib/helpers/spatialData";
+    import {formatGeometryData, type GeoJSONGeometry} from "$lib/helpers/geometryData";
 
     const pg = getPgContext();
 
@@ -144,11 +145,13 @@
                                 class:text-fg-2={value === null}
                                 title={column.data_type === "geography"
                                     ? formatSpatialData(parseSpatialData(value as string))
-                                    : typeof value === "object"
-                                      ? JSON.stringify(value)
-                                      : value === null
-                                        ? "null"
-                                        : value.toString()}
+                                    : column.data_type === "geometry"
+                                      ? formatGeometryData(value as GeoJSONGeometry)
+                                      : typeof value === "object"
+                                        ? JSON.stringify(value)
+                                        : value === null
+                                          ? "null"
+                                          : value.toString()}
                                 onclick={async (e) => {
                                     if (pg.currentTable?.type === "BASE TABLE") {
                                         if (e.currentTarget instanceof HTMLElement) {
@@ -167,6 +170,8 @@
                             >
                                 {#if value === null}
                                     null
+                                {:else if column.data_type === "geometry"}
+                                    {formatGeometryData(value as GeoJSONGeometry)}
                                 {:else if typeof value === "object"}
                                     {JSON.stringify(value).slice(0, 50)}
                                 {:else if column.data_type === "geography"}

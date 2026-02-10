@@ -11,8 +11,8 @@ export const defaultValues = {
     serial: 1,
     bigserial: 1n,
 
-    float4: 0.0,
-    float8: 0.0,
+    float4: 0.0, // float
+    float8: 0.0, // double
 
     numeric: "0.0",
 
@@ -35,28 +35,10 @@ export const defaultValues = {
     bool: false,
 
     geography: "",
-
-    // 🧩 Geometric
-    point: {x: 0, y: 0},
-    line: "[0,0,0]",
-    lseg: "[(0,0),(1,1)]",
-    box: "((0,0),(1,1))",
-    path: "((0,0),(1,1))",
-    polygon: "((0,0),(1,1),(1,0))",
-    circle: "<(0,0),1>",
-
-    // 🌐 Network
-    cidr: "192.168.0.0/24",
-    inet: "127.0.0.1",
-    macaddr: "00:00:00:00:00:00",
-    macaddr8: "00:00:00:00:00:00:00:00",
+    geometry: "",
 
     // 💾 Binary
     bytea: new Uint8Array([]), // or Uint8Array
-
-    // 🧱 Bit Strings
-    bit: "0",
-    varbit: "0",
 
     // 📜 Text Search
     tsvector: "'example':1",
@@ -82,18 +64,6 @@ export const defaultValues = {
     tsrange: "['1970-01-01 00:00:00','1970-01-02 00:00:00')",
     tstzrange: "['1970-01-01 00:00:00+00','1970-01-02 00:00:00+00')",
     daterange: "['1970-01-01','1970-01-02')",
-
-    // 🧮 Composite (placeholder)
-    composite: {field1: null},
-
-    // 📦 System / Special Types
-    oid: 0,
-    regclass: "pg_class",
-    regtype: "text",
-    regproc: "now",
-    pg_lsn: "0/00000000",
-    txid_snapshot: "0:0:",
-    jsonpath: "$.example",
 
     // 🧠 Vector (pgvector extension)
     vector: [0.0, 0.0, 0.0],
@@ -152,7 +122,7 @@ export const valueTypeIsDate = (data_type: PgType) => {
 export const valueToSql = (column: Pick<PgColumn, "data_type">, value: any): string => {
     // Handle NULL values
     if (value === null || value === undefined) {
-        return "NULL";
+        return "null";
     }
 
     const type = column.data_type;
@@ -165,42 +135,21 @@ export const valueToSql = (column: Pick<PgColumn, "data_type">, value: any): str
         return `'${value}'`;
     }
 
-    // 📅 Interval (preserve ISO 8601 duration T separator)
+    // Interval (preserve ISO 8601 duration T separator)
     if (type === "interval") {
         const escaped = String(value).replace(/'/g, "''");
         return `'${escaped}'`;
     }
 
-    // 📅 Date/Time types Convert ISO 8601 format to PostgreSQL format (replace T with space)
+    // Date/Time types Convert ISO 8601 format to PostgreSQL format (replace T with space)
     if (valueTypeIsDate(type)) {
         const pgFormat = String(value).replace("T", " ");
         const escaped = pgFormat.replace(/'/g, "''");
         return `'${escaped}'`;
     }
 
-    // 🔤 String types (need quoting and escaping)
-    if (
-        [
-            "character",
-            "character_varying",
-            "text",
-            "cidr",
-            "inet",
-            "macaddr",
-            "macaddr8",
-            "uuid",
-            "xml",
-            "bit",
-            "varbit",
-            "tsquery",
-            "jsonpath",
-            "regclass",
-            "regtype",
-            "regproc",
-            "pg_lsn",
-            "txid_snapshot",
-        ].includes(type)
-    ) {
+    // String types (need quoting and escaping)
+    if (["character", "character_varying", "text", "uuid", "xml", "tsquery"].includes(type)) {
         const escaped = String(value).replace(/'/g, "''");
         return `'${escaped}'`;
     }
@@ -216,19 +165,6 @@ export const valueToSql = (column: Pick<PgColumn, "data_type">, value: any): str
         return `'${escaped}'`;
     }
 
-    // 🧩 Geometric types (string representation)
-    if (["line", "lseg", "box", "path", "polygon", "circle"].includes(type)) {
-        return `'${value}'`;
-    }
-
-    // 🧩 Point type (special handling)
-    if (type === "point") {
-        if (typeof value === "object" && "x" in value && "y" in value) {
-            return `'(${value.x},${value.y})'`;
-        }
-        return `'${value}'`;
-    }
-
     // 💾 Binary data
     if (type === "bytea") {
         if (value instanceof Uint8Array) {
@@ -240,7 +176,7 @@ export const valueToSql = (column: Pick<PgColumn, "data_type">, value: any): str
         return `'\\x${value}'`;
     }
 
-    // 🧮 BigInt types
+    // Remove JS n anotation to send numbers to PG
     if (type === "bigint" || type === "int8" || type === "bigserial") {
         return String(value).replace("n", "");
     }
@@ -267,21 +203,14 @@ export const valueToSql = (column: Pick<PgColumn, "data_type">, value: any): str
         return value === true ? "true" : value === false ? "false" : value;
     }
 
-    // 🧮 Numeric types (no quoting needed)
+    // Numeric types (no quoting needed)
     if (valueTypeIsNumber(type)) {
         return String(value);
     }
 
-    // 🧱 Composite types
-    if (type === "composite") {
-        const values = Object.values(value).map((v) => (v === null ? "NULL" : `'${String(v).replace(/'/g, "''")}'`));
-        return `ROW(${values.join(",")})`;
-    }
-
-    // enums
-    // check if already shaped like an enum value
+    // check if already using explicit cast
     if (value.includes(`::${type}`)) {
         return value;
-    }
+    } // otherwise, explicitly cast and wrap in quote special types
     return `'${value}'::${type}`;
 };

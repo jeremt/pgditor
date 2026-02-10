@@ -11,6 +11,7 @@
     import DateValueEditor from "./valueEditors/DateValueEditor.svelte";
     import UuidValueEditor from "./valueEditors/UuidValueEditor.svelte";
     import GeographyValueEditor from "./valueEditors/GeographyValueEditor.svelte";
+    import GeometryValueEditor from "./valueEditors/GeometryValueEditor.svelte";
 
     type Props = {
         inlined: boolean;
@@ -85,6 +86,8 @@
     />
 {:else if column.data_type === "geography"}
     <GeographyValueEditor bind:value={row[column.column_name] as string} {column} {inlined} />
+{:else if column.data_type === "geometry"}
+    <GeometryValueEditor bind:value={row[column.column_name] as string} {column} {inlined} />
 {:else if column.data_type === "timestamptz"}
     <DateValueEditor bind:value={row[column.column_name] as string} {column} {inlined} />
 {:else if column.data_type === "uuid"}
