@@ -50,102 +50,104 @@
 </script>
 
 {#snippet editor()}
-    <div class="flex flex-col">
-        <input
-            id={column.column_name}
-            class="font-mono! w-full"
-            type="text"
-            bind:value
-            autocomplete="off"
-            autocapitalize="off"
-        />
-        <div class="flex gap-2 items-center pt-2">
-            {#if data}
-                <TableFilters
-                    bind:isOpen={isFiltersOpen}
-                    bind:filters={whereFilters}
-                    bind:whereSql
-                    {appliedFilters}
-                    columns={data.columns}
-                    onapply={async () => {
-                        appliedFilters = whereFilters.length;
-                        isFiltersOpen = false;
-                        await loadData();
-                    }}
-                />
-                <TablePagination
-                    bind:offset
-                    bind:limit
-                    count={data.count}
-                    onchange={() => {
-                        loadData();
-                    }}
-                />
-            {/if}
+    <div class="flex flex-col w-full h-full">
+        <div class="flex flex-col">
+            <input
+                id={column.column_name}
+                class="font-mono! w-full"
+                type="text"
+                bind:value
+                autocomplete="off"
+                autocapitalize="off"
+            />
+            <div class="flex gap-2 items-center pt-2 grow">
+                {#if data}
+                    <TableFilters
+                        bind:isOpen={isFiltersOpen}
+                        bind:filters={whereFilters}
+                        bind:whereSql
+                        {appliedFilters}
+                        columns={data.columns}
+                        onapply={async () => {
+                            appliedFilters = whereFilters.length;
+                            isFiltersOpen = false;
+                            await loadData();
+                        }}
+                    />
+                    <TablePagination
+                        bind:offset
+                        bind:limit
+                        count={data.count}
+                        onchange={() => {
+                            loadData();
+                        }}
+                    />
+                {/if}
+            </div>
         </div>
-    </div>
-    <div class="w-full overflow-x-auto grow">
-        {#if data === undefined}
-            <!-- If loading loader else No data -->
-        {:else if errorMessage !== undefined}
-            <div class="text-error">{errorMessage}</div>
-        {:else}
-            <table class="h-fit w-full">
-                <thead class="sticky top-0 bg-bg z-10">
-                    <tr>
-                        {#each data.columns as column (column.column_name)}
-                            <th>
-                                <div class="flex gap-2 items-center px-1">
-                                    {#if column.is_primary_key === "YES"}<KeyIcon --size="1.2rem" />{/if}
-                                    {#if column.foreign_table_schema && column.foreign_table_name}
-                                        <LinkIcon --size="1.2rem" />
-                                    {/if}
-                                    <div>
-                                        {column.column_name}
-                                        <span class="font-normal text-xs! pl-2">{column.data_type}</span>
-                                    </div>
-                                </div>
-                            </th>
-                        {/each}
-                    </tr>
-                </thead>
-                <tbody>
-                    {#each data.rows as row (row.__index)}
-                        <tr
-                            onclick={() => {
-                                const pk = data?.columns.find((column) => column.is_primary_key === "YES");
-                                if (pk) {
-                                    value = row[pk.column_name]?.toString() ?? value;
-                                }
-                            }}
-                        >
+        <div class="w-full overflow-auto grow">
+            {#if data === undefined}
+                <!-- If loading loader else No data -->
+            {:else if errorMessage !== undefined}
+                <div class="text-error">{errorMessage}</div>
+            {:else}
+                <table class="h-fit w-full">
+                    <thead class="sticky top-0 bg-bg z-10">
+                        <tr>
                             {#each data.columns as column (column.column_name)}
-                                {@const value = row[column.column_name]}
-                                <td
-                                    title={typeof value === "object"
-                                        ? JSON.stringify(value)
-                                        : value === null
-                                          ? "null"
-                                          : value.toString()}
-                                >
-                                    {#if value === null}
-                                        null
-                                    {:else if typeof value === "object"}
-                                        {JSON.stringify(value).slice(0, 50)}
-                                    {:else}
-                                        <div class="flex gap-2 items-center">
-                                            <span class="grow"
-                                                >{typeof value === "string" ? value.slice(0, 50) : value}</span
-                                            >
+                                <th>
+                                    <div class="flex gap-2 items-center px-1">
+                                        {#if column.is_primary_key === "YES"}<KeyIcon --size="1.2rem" />{/if}
+                                        {#if column.foreign_table_schema && column.foreign_table_name}
+                                            <LinkIcon --size="1.2rem" />
+                                        {/if}
+                                        <div>
+                                            {column.column_name}
+                                            <span class="font-normal text-xs! pl-2">{column.data_type}</span>
                                         </div>
-                                    {/if}
-                                </td>
+                                    </div>
+                                </th>
                             {/each}
                         </tr>
-                    {/each}
-                </tbody>
-            </table>
-        {/if}
+                    </thead>
+                    <tbody>
+                        {#each data.rows as row (row.__index)}
+                            <tr
+                                onclick={() => {
+                                    const pk = data?.columns.find((column) => column.is_primary_key === "YES");
+                                    if (pk) {
+                                        value = row[pk.column_name]?.toString() ?? value;
+                                    }
+                                }}
+                            >
+                                {#each data.columns as column (column.column_name)}
+                                    {@const value = row[column.column_name]}
+                                    <td
+                                        title={typeof value === "object"
+                                            ? JSON.stringify(value)
+                                            : value === null
+                                              ? "null"
+                                              : value.toString()}
+                                    >
+                                        {#if value === null}
+                                            null
+                                        {:else if typeof value === "object"}
+                                            {JSON.stringify(value).slice(0, 50)}
+                                        {:else}
+                                            <div class="flex gap-2 items-center">
+                                                <span class="grow"
+                                                    >{typeof value === "string" ? value.slice(0, 50) : value}</span
+                                                >
+                                            </div>
+                                        {/if}
+                                    </td>
+                                {/each}
+                            </tr>
+                        {/each}
+                    </tbody>
+                </table>
+            {/if}
+        </div>
     </div>
 {/snippet}
 

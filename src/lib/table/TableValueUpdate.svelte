@@ -199,7 +199,7 @@ where ${row.reduce((result, [name, value], index) => {
             {#if errorMessage}
                 <div class="text-sm text-error p-2 mx-4 mb-4 border border-bg-2 rounded-xl">{errorMessage}</div>
             {/if}
-            <div class="px-4 pb-4 w-full grow">
+            <div class="px-4 pb-4 w-full grow overflow-hidden">
                 <TableValueEditor column={target.column} bind:row={target.row} inlined={false} />
             </div>
             <div class="flex px-4 pb-4 gap-2">
