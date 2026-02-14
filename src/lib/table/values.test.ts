@@ -7,6 +7,7 @@ describe("formatValue", () => {
     const makeColumn = (data_type: string): PgColumn => ({
         column_name: "test_column",
         data_type: data_type as any,
+        data_type_params: null,
         is_nullable: "YES",
         is_primary_key: "NO",
         column_default: null,

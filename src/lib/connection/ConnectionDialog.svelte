@@ -3,7 +3,7 @@
     import TrashIcon from "$lib/icons/TrashIcon.svelte";
     import PasswordInput from "$lib/widgets/PasswordInput.svelte";
 
-    import {getConnectionsContext, type Connection} from "./connectionsContext.svelte";
+    import {get_connections_context, type Connection} from "./connectionsContext.svelte";
 
     type Props = {
         connection: Connection;
@@ -12,16 +12,16 @@
 
     let {connection = $bindable(), onclose}: Props = $props();
 
-    const connections = getConnectionsContext();
-    let errorMessage = $state<string>();
+    const connections = get_connections_context();
+    let error_message = $state<string>();
 
     const save = async () => {
         if (connection.id) {
-            errorMessage = await connections.edit(connection.id, connection.name, connection.connectionString);
+            error_message = await connections.edit(connection.id, connection.name, connection.connectionString);
         } else {
-            errorMessage = await connections.create(connection.name, connection.connectionString);
+            error_message = await connections.create(connection.name, connection.connectionString);
         }
-        if (!errorMessage) {
+        if (!error_message) {
             onclose();
         }
     };
@@ -58,7 +58,7 @@
             }}><TrashIcon --size="1.2rem" /> Remove</button
         >
     {/if}
-    {#if errorMessage}
-        <div class="text-sm text-error">{errorMessage}</div>
+    {#if error_message}
+        <div class="text-sm text-error">{error_message}</div>
     {/if}
 </div>

@@ -1,8 +1,10 @@
 <script lang="ts">
     import {get_commands_context} from "$lib/commands/commandsContext.svelte";
     import ArrowIcon from "$lib/icons/ArrowIcon.svelte";
+    import KeyIcon from "$lib/icons/KeyIcon.svelte";
+    import LinkIcon from "$lib/icons/LinkIcon.svelte";
     import TableIcon from "$lib/icons/TableIcon.svelte";
-    import {get_pg_context, type PgTable} from "$lib/table/pgContext.svelte";
+    import {get_pg_context, type PgColumn, type PgTable} from "$lib/table/pgContext.svelte";
     import {Handle, Position} from "@xyflow/svelte";
 
     let {data, id} = $props();
@@ -11,6 +13,20 @@
     const selectTable = (table: Pick<PgTable, "schema" | "name">) => {
         commands.mode = "tables";
         pg.select_table(table);
+    };
+    //     column_default
+    // enum_values
+    const column_title = (column: PgColumn) => {
+        let lines = [];
+        if (column.column_default !== null) {
+            lines.push(`default: ${column.column_default}`);
+        }
+        if (column.foreign_table_schema && column.foreign_table_name && column.foreign_column_name) {
+            lines.push(
+                `foreign key: ${column.column_name} <-> ${column.foreign_table_schema}.${column.foreign_table_name}.${column.foreign_column_name}`,
+            );
+        }
+        return lines.join("\n");
     };
 </script>
 
@@ -27,13 +43,19 @@
     </div>
     <div class="py-2">
         {#each data.columns as column}
-            <div class="column-row relative px-4 py-1 flex items-center gap-4">
+            <div class="column-row relative px-4 py-1 flex items-center gap-2" title={column_title(column)}>
                 <!-- Target handle (for incoming FK relationships) -->
                 <Handle type="target" position={Position.Left} id={`${id}.${column.column_name}-target`} />
-
+                {#if column.is_primary_key === "YES"}
+                    <KeyIcon --size="1rem" />
+                {:else if column.foreign_column_name !== null}
+                    <LinkIcon --size="1rem" />
+                {/if}
                 <span class="column-name">{column.column_name}</span>
-                <span class="ms-auto text-fg-2 text-sm"
-                    >{column.data_type}{#if column.is_nullable === "YES"}?{/if}</span
+                <span
+                    class="ms-auto text-fg-2 text-sm"
+                    title={column.enum_values ? column.enum_values.join(", ") : undefined}
+                    >{column.data_type}{#if column.data_type_params}{column.data_type_params}{/if}{#if column.is_nullable === "YES"}?{/if}</span
                 >
 
                 <!-- Source handle (for outgoing FK relationships) -->

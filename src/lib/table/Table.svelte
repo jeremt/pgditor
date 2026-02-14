@@ -112,7 +112,7 @@
                             }}
                         >
                             <div class="flex gap-2 items-center px-1">
-                                {#if column.is_primary_key === "YES"}<KeyIcon --size="1.2rem" />{/if}
+                                {#if column.is_primary_key === "YES"}<KeyIcon --size="1.1rem" />{/if}
                                 {#if column.foreign_table_schema && column.foreign_table_name}
                                     <button
                                         onclick={() =>

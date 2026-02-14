@@ -9,12 +9,12 @@
     import Popover from "$lib/widgets/Popover.svelte";
 
     import ConnectionDialog from "./ConnectionDialog.svelte";
-    import {getConnectionsContext, type Connection} from "./connectionsContext.svelte";
+    import {get_connections_context, type Connection} from "./connectionsContext.svelte";
 
-    const connections = getConnectionsContext();
+    const connections = get_connections_context();
     const commands = get_commands_context();
-    let connectionToEdit = $state<Connection>({id: "", name: "", connectionString: ""});
-    let isDialogOpen = $state(false);
+    let connection_to_edit = $state<Connection>({id: "", name: "", connectionString: ""});
+    let is_dialog_open = $state(false);
 </script>
 
 <Popover bind:isOpen={commands.is_connections_open} offsetY={10}>
@@ -31,11 +31,11 @@
                 <button
                     class="btn ghost flex-1 justify-start!"
                     onclick={() => {
-                        connections.use(connection.id);
+                        connections.connect(connection.id);
                         commands.is_connections_open = false;
                     }}
                 >
-                    {#if connection.id === connections.currentId}<CheckIcon --size="1rem" />{:else}<div
+                    {#if connection.id === connections.current_id}<CheckIcon --size="1rem" />{:else}<div
                             class="w-4"
                         ></div>{/if}
                     {connection.name}
@@ -44,8 +44,8 @@
                     class="btn ghost icon"
                     aria-label="Edit"
                     onclick={() => {
-                        connectionToEdit = {...connection};
-                        isDialogOpen = true;
+                        connection_to_edit = {...connection};
+                        is_dialog_open = true;
                         commands.is_connections_open = false;
                     }}><PenIcon --size="1rem" /></button
                 >
@@ -54,14 +54,14 @@
         <button
             class="btn"
             onclick={() => {
-                connectionToEdit = {id: "", name: "", connectionString: ""};
-                isDialogOpen = true;
+                connection_to_edit = {id: "", name: "", connectionString: ""};
+                is_dialog_open = true;
                 commands.is_connections_open = false;
             }}><PlusIcon /> Add connection</button
         >
     </div>
 </Popover>
 
-<Dialog isOpen={isDialogOpen} onrequestclose={() => (isDialogOpen = false)}>
-    <ConnectionDialog bind:connection={connectionToEdit} onclose={() => (isDialogOpen = false)} />
+<Dialog isOpen={is_dialog_open} onrequestclose={() => (is_dialog_open = false)}>
+    <ConnectionDialog bind:connection={connection_to_edit} onclose={() => (is_dialog_open = false)} />
 </Dialog>

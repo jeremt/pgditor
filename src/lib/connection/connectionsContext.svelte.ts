@@ -14,7 +14,7 @@ const storePath = "connections.json";
 
 class ConnectionsContext extends StoreContext {
     list = $state<Connection[]>([]);
-    currentId = $state<string>();
+    current_id = $state<string>();
 
     /**
      * Load all saved connections from _connections.json_.
@@ -23,7 +23,7 @@ class ConnectionsContext extends StoreContext {
         this.list = (await this.getFromStore<Connection[]>("connections")) ?? [];
         if (this.list.length) {
             const selectedId = await this.getFromStore<string>("selected_connection_id");
-            this.currentId =
+            this.current_id =
                 selectedId && this.list.find((c) => c.id === selectedId) !== undefined ? selectedId : this.list[0].id;
         }
     };
@@ -32,11 +32,11 @@ class ConnectionsContext extends StoreContext {
      * Select the connection with the given id. This is used to interact with the DB.
      * @param id connection id
      */
-    use = async (id: string) => {
+    connect = async (id: string) => {
         if (!this.list.find((connection) => connection.id === id)) {
             throw new Error(`Connection ${id} not found`);
         }
-        this.currentId = id;
+        this.current_id = id;
         await this.setToStore("selected_connection_id", id);
         await this.saveToStore();
     };
@@ -44,7 +44,7 @@ class ConnectionsContext extends StoreContext {
     /**
      * Get the lastly selected table to restore it when the app starts.
      */
-    getSelectedTable = async () => {
+    get_selected_table = async () => {
         return this.getFromStore<string>("selected_table");
     };
 
@@ -52,7 +52,7 @@ class ConnectionsContext extends StoreContext {
      * Save the given table to the store so it can be used when the app restarts
      * @param table
      */
-    saveSelectedTable = (table: PgTable | undefined) => {
+    save_selected_table = (table: PgTable | undefined) => {
         this.setToStore("selected_table", table === undefined ? undefined : `${table.schema}.${table.name}`);
         this.saveToStore();
     };
@@ -61,7 +61,7 @@ class ConnectionsContext extends StoreContext {
      * Returns the currently selected connection. This is used to interact with the DB.
      */
     get current() {
-        return this.list.find((connection) => connection.id === this.currentId);
+        return this.list.find((connection) => connection.id === this.current_id);
     }
 
     /**
@@ -73,9 +73,9 @@ class ConnectionsContext extends StoreContext {
         await this.setToStore("connections", this.list);
         await this.saveToStore();
         if (this.list.length === 0) {
-            this.currentId = undefined;
+            this.current_id = undefined;
         } else {
-            this.use(this.list[0].id);
+            this.connect(this.list[0].id);
         }
     };
 
@@ -86,14 +86,14 @@ class ConnectionsContext extends StoreContext {
      */
     create = async (name: string, connectionString: string) => {
         const connection = {id: crypto.randomUUID(), name, connectionString};
-        const errorMessage = await this.checkErrors(connection);
+        const errorMessage = await this.#check_errors(connection);
         if (errorMessage) {
             return errorMessage;
         }
         this.list.unshift(connection);
         await this.setToStore("connections", this.list);
         await this.saveToStore();
-        this.use(connection.id);
+        this.connect(connection.id);
     };
 
     /**
@@ -106,7 +106,7 @@ class ConnectionsContext extends StoreContext {
         if (i === -1) {
             return `Connection ${id} not found`;
         }
-        const errorMessage = await this.checkErrors({id, name, connectionString}, i);
+        const errorMessage = await this.#check_errors({id, name, connectionString}, i);
         if (errorMessage) {
             return errorMessage;
         }
@@ -114,13 +114,13 @@ class ConnectionsContext extends StoreContext {
         this.list[i].connectionString = connectionString;
         await this.setToStore("connections", this.list);
         await this.saveToStore();
-        this.use(this.list[i].id);
+        this.connect(this.list[i].id);
     };
 
     /**
      * Check all possible errors in the connection data.
      */
-    private checkErrors = async ({name, connectionString}: Connection, index?: number) => {
+    #check_errors = async ({name, connectionString}: Connection, index?: number) => {
         if (name === "") {
             return "Name is required";
         }
@@ -148,7 +148,7 @@ const key = Symbol("connectionsContext");
  * You must call `setConnectionsContext()` in a parent component to use it.
  * @returns the context
  */
-export const getConnectionsContext = () => getContext<ConnectionsContext>(key);
+export const get_connections_context = () => getContext<ConnectionsContext>(key);
 
 /**
  * Persist postgres connection strings using tauri's store plugin.
@@ -156,4 +156,4 @@ export const getConnectionsContext = () => getContext<ConnectionsContext>(key);
  * This must be called in order to use `getConnectionsContext()`.
  * @returns the context
  */
-export const setConnectionsContext = () => setContext(key, new ConnectionsContext(storePath));
+export const set_connections_context = () => setContext(key, new ConnectionsContext(storePath));

@@ -3,7 +3,7 @@ import {getToastContext} from "$lib/widgets/Toaster.svelte";
 import {get_pg_context} from "$lib/table/pgContext.svelte";
 import {catchError} from "$lib/helpers/catchError";
 import {StoreContext} from "$lib/helpers/StoreContext";
-import {getConnectionsContext} from "$lib/connection/connectionsContext.svelte";
+import {get_connections_context} from "$lib/connection/connectionsContext.svelte";
 import {readFile, writeTextFile} from "@tauri-apps/plugin-fs";
 import {save} from "@tauri-apps/plugin-dialog";
 
@@ -11,7 +11,7 @@ const storePath = "scripts.json";
 
 export type ScriptFile = {path: string; updated_at: string};
 class ScriptsContext extends StoreContext {
-    #connections = getConnectionsContext();
+    #connections = get_connections_context();
     #pg = get_pg_context();
     #toaster = getToastContext();
 

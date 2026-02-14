@@ -13,11 +13,12 @@
     import {getSettingsContext} from "$lib/settings/settingsContext.svelte";
     import SearchIcon from "$lib/icons/SearchIcon.svelte";
     import GraphIcon from "$lib/icons/GraphIcon.svelte";
-    import GraphView from "$lib/graph/GraphView.svelte";
+    import Graph from "$lib/graph/Graph.svelte";
     import {SvelteFlowProvider} from "@xyflow/svelte";
+    import GraphMenu from "$lib/graph/GraphMenu.svelte";
 
     const commands = get_commands_context();
-    const settings = getSettingsContext();
+    getSettingsContext();
 
     onMount(() => {
         invoke("show_main_window");
@@ -60,6 +61,10 @@
         <TablesMenu />
     {:else if commands.mode === "script"}
         <SqlScriptMenu />
+    {:else if commands.mode === "graph"}
+        <SvelteFlowProvider>
+            <GraphMenu />
+        </SvelteFlowProvider>
     {/if}
     <!-- <button
         class="btn ghost icon"
@@ -74,7 +79,7 @@
     <SqlScript />
 {:else if commands.mode === "graph"}
     <SvelteFlowProvider>
-        <GraphView />
+        <Graph />
     </SvelteFlowProvider>
 {/if}
 

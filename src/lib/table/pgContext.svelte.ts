@@ -1,4 +1,4 @@
-import {getConnectionsContext} from "$lib/connection/connectionsContext.svelte";
+import {get_connections_context} from "$lib/connection/connectionsContext.svelte";
 import {catchError} from "$lib/helpers/catchError";
 import {invoke} from "@tauri-apps/api/core";
 import {getContext, setContext} from "svelte";
@@ -173,7 +173,7 @@ ${this.selected_rows_json
 ;`;
     }
 
-    private connections = getConnectionsContext();
+    private connections = get_connections_context();
 
     get fullname() {
         if (!this.current_table) {
@@ -212,7 +212,7 @@ ${this.selected_rows_json
         }
         this.tables = unsortedTables.toSorted((table) => (table.schema === "public" ? -1 : 1));
         if (autoUse && this.tables[0]) {
-            const selectedTable = await this.connections.getSelectedTable();
+            const selectedTable = await this.connections.get_selected_table();
             const index = this.tables.findIndex((table) => `${table.schema}.${table.name}` === selectedTable);
             this.select_table(this.tables[index === -1 ? 0 : index]);
         }
@@ -260,7 +260,7 @@ ${this.selected_rows_json
         }
         this.current_table = {...t, columns, rows: [], count: 0};
         this.selected_columns = new Set(columns.map((col) => col.column_name));
-        this.connections.saveSelectedTable(this.current_table);
+        this.connections.save_selected_table(this.current_table);
         this.reset_filters();
         await this.refresh_data();
         this.is_loading = false;

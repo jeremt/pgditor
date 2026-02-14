@@ -4,7 +4,7 @@
     import {get_commands_context, type Command} from "./commandsContext.svelte";
 
     const commands = get_commands_context();
-    const itemToString = (item: Command) => item.title;
+    const item_to_string = (item: Command) => item.title;
     const onselect = (item: Command) => {
         commands.execute(item.title);
         commands.is_command_palette_open = false;
@@ -18,7 +18,7 @@
 >
     <ItemSelect
         items={commands.all}
-        {itemToString}
+        itemToString={item_to_string}
         {onselect}
         noItems="No commands loaded."
         noResult="No matching commands."
