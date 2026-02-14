@@ -6,9 +6,11 @@
     import LinkIcon from "$lib/icons/LinkIcon.svelte";
     import TableIcon from "$lib/icons/TableIcon.svelte";
     import {get_pg_context, type PgColumn, type PgTable} from "$lib/table/pgContext.svelte";
-    import {Handle, Position} from "@xyflow/svelte";
+    import {Handle, Position, type Node, type NodeProps} from "@xyflow/svelte";
 
-    let {data, id} = $props();
+    type Props = NodeProps<Node<{schema: string; label: string; type: PgTable["type"]; columns: PgColumn[]}>>;
+
+    let {data, id}: Props = $props();
     const commands = get_commands_context();
     const pg = get_pg_context();
     const selectTable = (table: Pick<PgTable, "schema" | "name">) => {
