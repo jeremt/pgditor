@@ -2,7 +2,7 @@
     import MonacoEditor from "$lib/monaco/MonacoEditor.svelte";
     import {getSettingsContext} from "$lib/settings/settingsContext.svelte";
     import MultilinesInput from "$lib/widgets/MultilinesInput.svelte";
-    import {getPgContext, type PgColumn} from "../pgContext.svelte";
+    import {get_pg_context, type PgColumn} from "../pgContext.svelte";
 
     type Props = {
         value: string;
@@ -11,7 +11,7 @@
     };
     let {value = $bindable(), column, inlined}: Props = $props();
 
-    const pg = getPgContext();
+    const pg = get_pg_context();
     const settings = getSettingsContext();
 </script>
 
@@ -29,13 +29,13 @@
     <MonacoEditor
         bind:value
         theme={settings.colorScheme}
-        selectedFile="{pg.currentTable!.name}-{column}.json"
-        files={[{path: `${pg.currentTable!.name}-${column}.json`, value: ""}]}
+        selectedFile="{pg.current_table!.name}-{column}.json"
+        files={[{path: `${pg.current_table!.name}-${column}.json`, value: ""}]}
         fontFamily="Space Mono"
         fontSize={12}
         showLineNumbers={true}
         onchange={(newValue, path) => {
-            if (path === `${pg.currentTable!.name}-${column}.json`) {
+            if (path === `${pg.current_table!.name}-${column}.json`) {
                 value = newValue;
             } else {
                 throw new Error(`File ${path} not found.`);

@@ -5,7 +5,7 @@
     import LinkIcon from "$lib/icons/LinkIcon.svelte";
     import CheckboxInput from "$lib/widgets/CheckboxInput.svelte";
     import {defaultValues} from "./values";
-    import {getPgContext, type PgRow} from "./pgContext.svelte";
+    import {get_pg_context, type PgRow} from "./pgContext.svelte";
     import TableValueEditor from "./TableValueEditor.svelte";
     import {catchError} from "$lib/helpers/catchError";
     import ActionButton from "$lib/widgets/ActionButton.svelte";
@@ -18,7 +18,7 @@
 
     let {row, onclose}: Props = $props();
 
-    const pg = getPgContext();
+    const pg = get_pg_context();
 
     let errorMessage = $state("");
 
@@ -29,10 +29,10 @@
     });
 
     const pk = $derived.by(() => {
-        if (!pg.currentTable) {
+        if (!pg.current_table) {
             return;
         }
-        return pg.currentTable.columns.find((column) => column.is_primary_key === "YES");
+        return pg.current_table.columns.find((column) => column.is_primary_key === "YES");
     });
 
     const hasPkValue = $derived(!pk ? false : localRow[pk.column_name] !== null);
@@ -44,7 +44,7 @@
     });
 
     const insertOrUpdate = async () => {
-        const error = await catchError(hasPkValue === false ? pg.insertRow(localRow) : pg.upsertRow(localRow));
+        const error = await catchError(hasPkValue === false ? pg.insert_row(localRow) : pg.upsert_row(localRow));
         if (error instanceof Error) {
             errorMessage = error.message;
         } else {
@@ -59,9 +59,9 @@
             <button class="btn icon ghost" type="button" aria-label="Cancel" onclick={onclose}><CrossIcon /></button>
             <h2>
                 {hasPkValue ? "Update set" : "Insert into"}
-                {#if pg.currentTable}
+                {#if pg.current_table}
                     <span class="font-mono text-sm bg-bg-1 py-0.5 px-2 rounded-md ml-1">
-                        {pg.currentTable.schema}.{pg.currentTable.name}
+                        {pg.current_table.schema}.{pg.current_table.name}
                     </span>
                 {/if}
             </h2>
@@ -80,7 +80,7 @@
                 Without primary key, you cannot update a specific row, use <TerminalIcon --size="1rem" /> instead.
             </div>
         {/if}
-        {#each pg.currentTable?.columns ?? [] as column (column.column_name)}
+        {#each pg.current_table?.columns ?? [] as column (column.column_name)}
             <label class="text-sm flex gap-2 items-center pt-2" for={column.column_name}>
                 {#if column.is_primary_key === "YES"}<KeyIcon --size="1.2rem" />{/if}
                 {#if column.foreign_column_name !== null}

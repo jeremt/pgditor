@@ -1,19 +1,19 @@
 <script lang="ts">
     import Dialog from "$lib/widgets/Dialog.svelte";
     import ItemSelect from "$lib/widgets/ItemSelect.svelte";
-    import {getCommandsContext, type Command} from "./commandsContext.svelte";
+    import {get_commands_context, type Command} from "./commandsContext.svelte";
 
-    const commands = getCommandsContext();
+    const commands = get_commands_context();
     const itemToString = (item: Command) => item.title;
     const onselect = (item: Command) => {
         commands.execute(item.title);
-        commands.isCommandPaletteOpen = false;
+        commands.is_command_palette_open = false;
     };
 </script>
 
 <Dialog
-    isOpen={commands.isCommandPaletteOpen}
-    onrequestclose={() => (commands.isCommandPaletteOpen = false)}
+    isOpen={commands.is_command_palette_open}
+    onrequestclose={() => (commands.is_command_palette_open = false)}
     --padding="1rem"
 >
     <ItemSelect
@@ -33,7 +33,7 @@
                 {/if}
                 <span class="font-normal text-xs text-fg-1">{item.description}</span>
             </div>
-            <span class="ms-auto font-normal font-mono text-fg-1">{item.prettyKeys}</span>
+            <span class="ms-auto font-normal font-mono text-fg-1">{item.pretty_keys}</span>
         {/snippet}
     </ItemSelect>
 </Dialog>

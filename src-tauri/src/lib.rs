@@ -27,7 +27,8 @@ pub fn run() {
             commands::list_table_columns::list_table_columns,
             commands::get_table_data::get_table_data,
             commands::raw_query::raw_query,
-            commands::show_main_window::show_main_window
+            commands::show_main_window::show_main_window,
+            commands::list_tables_for_graph::list_tables_for_graph
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

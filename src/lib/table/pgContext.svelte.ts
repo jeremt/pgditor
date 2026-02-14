@@ -1,6 +1,5 @@
 import {getConnectionsContext} from "$lib/connection/connectionsContext.svelte";
 import {catchError} from "$lib/helpers/catchError";
-import {debounced} from "$lib/helpers/debounced.svelte";
 import {invoke} from "@tauri-apps/api/core";
 import {getContext, setContext} from "svelte";
 import {valueToSql, valueTypeIsNumber, type PgType} from "./values";
@@ -27,6 +26,8 @@ export type PgColumn = {
     enum_values: string[] | null;
 };
 
+export type PgTableForGraph = Omit<PgTable, "column_names"> & {columns: PgColumn[]};
+
 export type PgRow = Record<string, object | string | bigint | number | boolean | null>;
 
 export const whereOperators = [
@@ -49,7 +50,7 @@ export const whereOperators = [
 export type WhereOperator = (typeof whereOperators)[number];
 export type WhereFilter = {column: string; column_type: PgType; operator: WhereOperator; value: string};
 
-const valueForOperator = (data_type: PgType, operator: WhereOperator, value: string) => {
+const value_for_operator = (data_type: PgType, operator: WhereOperator, value: string) => {
     if (
         operator === "like" ||
         operator === "ilike" ||
@@ -63,17 +64,17 @@ const valueForOperator = (data_type: PgType, operator: WhereOperator, value: str
     }
     return valueToSql({data_type}, value as any);
 };
-export const filtersToWhere = (filters: WhereFilter[]) =>
+export const filters_to_where = (filters: WhereFilter[]) =>
     filters.reduce((result, filter) => {
         return (
             result +
             "\n" +
             (result === "" ? "where" : "and") +
-            ` ${filter.column} ${filter.operator} ${filter.operator !== "is null" && filter.operator !== "is not null" ? valueForOperator(filter.column_type, filter.operator, filter.value) : ""}`
+            ` ${filter.column} ${filter.operator} ${filter.operator !== "is null" && filter.operator !== "is not null" ? value_for_operator(filter.column_type, filter.operator, filter.value) : ""}`
         );
     }, "");
 
-export const operatorsForColumn = (column: PgColumn | undefined): WhereOperator[] => {
+export const operators_for_column = (column: PgColumn | undefined): WhereOperator[] => {
     if (column === undefined) {
         return [];
     }
@@ -98,85 +99,87 @@ export const operatorsForColumn = (column: PgColumn | undefined): WhereOperator[
 const DEFAULT_LIMIT = 100;
 
 class PgContext {
-    toastContext = getToastContext();
+    #toast_context = getToastContext();
     tables = $state<PgTable[]>([]);
-    currentTable = $state<PgTable & {columns: PgColumn[]; rows: PgRow[]; count: number}>();
-    lastQueryTime = $state<number>();
-    isLoading = $state(false);
+    current_table = $state<PgTable & {columns: PgColumn[]; rows: PgRow[]; count: number}>();
+    last_query_time = $state<number>();
+    is_loading = $state(false);
 
-    selectedColumns = $state<Set<string>>(new Set([]));
-    getSelectedColumns = () => {
+    selected_columns = $state<Set<string>>(new Set([]));
+    get_selected_columns = () => {
         return (
-            this.currentTable?.columns.filter(
-                (col) => this.selectedColumns.size === 0 || this.selectedColumns.has(col.column_name),
+            this.current_table?.columns.filter(
+                (col) => this.selected_columns.size === 0 || this.selected_columns.has(col.column_name),
             ) ?? []
         );
     };
 
     // filters
-    isFilterPopover = $state(false);
-    whereFilters = $state<WhereFilter[]>([]);
-    appliedFilters = $state(0);
-    whereSql = $state("");
+    is_filters_open = $state(false);
+    where_filters = $state<WhereFilter[]>([]);
+    applied_filters = $state(0);
+    where_sql = $state("");
     offset = $state(0);
     limit = $state(DEFAULT_LIMIT);
-    orderBy = $state<{column: string; direction: "asc" | "desc"}>();
-    resetFilters = () => {
-        this.whereFilters = [];
-        this.appliedFilters = 0;
-        this.whereSql = "";
+    order_by = $state<{column: string; direction: "asc" | "desc"}>();
+    reset_filters = () => {
+        this.where_filters = [];
+        this.applied_filters = 0;
+        this.where_sql = "";
         this.offset = 0;
         this.limit = DEFAULT_LIMIT;
-        this.orderBy = undefined;
+        this.order_by = undefined;
     };
 
-    rowToUpdate = $state<PgRow>();
-    isUpdateOpen = $state(false);
+    row_to_update = $state<PgRow>();
+    is_update_open = $state(false);
 
-    openUpdateRow = (row: PgRow) => {
-        this.rowToUpdate = row;
-        this.isUpdateOpen = true;
+    open_update_row = (row: PgRow) => {
+        this.row_to_update = row;
+        this.is_update_open = true;
     };
 
-    selectedRows = $state<number[]>([]);
-    get selectedRowsJson() {
-        if (!this.currentTable) {
+    selected_rows = $state<number[]>([]);
+    get selected_rows_json() {
+        if (!this.current_table) {
             return [];
         }
-        return this.currentTable.rows.filter((_, i) => this.selectedRows.length === 0 || this.selectedRows.includes(i));
+        return this.current_table.rows.filter(
+            (_, i) => this.selected_rows.length === 0 || this.selected_rows.includes(i),
+        );
     }
-    get selectedRowsCsv() {
-        if (!this.currentTable) {
+    get selected_rows_csv() {
+        if (!this.current_table) {
             return "";
         }
         return (
-            this.currentTable.columns.map((col) => col.column_name).join(",") +
+            this.current_table.columns.map((col) => col.column_name).join(",") +
             "\n" +
-            this.selectedRowsJson
-                .map((row) => this.currentTable!.columns.map((col) => row[col.column_name]).join(","))
+            this.selected_rows_json
+                .map((row) => this.current_table!.columns.map((col) => row[col.column_name]).join(","))
                 .join("\n")
         );
     }
-    get selectedRowsSql() {
-        if (!this.currentTable) {
+    get selected_rows_sql() {
+        if (!this.current_table) {
             return "";
         }
-        return `INSERT INTO ${this.fullName}
-(${this.currentTable.columns.map((col) => col.column_name).join(",")})
+        return `INSERT INTO ${this.fullname}
+(${this.current_table.columns.map((col) => col.column_name).join(",")})
 VALUES
-${this.selectedRowsJson
-    .map((row) => `(${this.currentTable!.columns.map((col) => valueToSql(col, row[col.column_name])).join(",")})`)
+${this.selected_rows_json
+    .map((row) => `(${this.current_table!.columns.map((col) => valueToSql(col, row[col.column_name])).join(",")})`)
     .join(",\n")}
 ;`;
     }
 
     private connections = getConnectionsContext();
 
-    get fullName() {
-        if (!this.currentTable) {
+    get fullname() {
+        if (!this.current_table) {
             return undefined;
         }
-        return `"${this.currentTable.schema}"."${this.currentTable.name}"`;
+        return `"${this.current_table.schema}"."${this.current_table.name}"`;
     }
 
     /**
@@ -186,42 +189,57 @@ ${this.selectedRowsJson
      *
      * @param autoUse if true, a table will be automatically selected. It should be set to false for a simple refresh for instance.
      */
-    loadTables = async (autoUse = true) => {
+    load_tables = async (autoUse = true) => {
         if (!this.connections.current) {
             return;
         }
         const connectionString = this.connections.current.connectionString;
-        this.isLoading = true;
+        this.is_loading = true;
         const unsortedTables = await catchError(invoke<PgTable[]>("list_tables", {connectionString}));
         if (unsortedTables instanceof Error) {
             console.error(unsortedTables.message);
-            this.toastContext.toast(`Server error: ${unsortedTables.message} (${this.connections.current.name})`, {
+            this.#toast_context.toast(`Server error: ${unsortedTables.message} (${this.connections.current.name})`, {
                 kind: "error",
             });
             this.tables = [];
-            this.currentTable = undefined;
+            this.current_table = undefined;
             return;
         } else {
-            this.toastContext.toast(`Connected to ${this.connections.current.name}`, {kind: "success", timeout: 2000});
+            this.#toast_context.toast(`Connected to ${this.connections.current.name}`, {
+                kind: "success",
+                timeout: 2000,
+            });
         }
         this.tables = unsortedTables.toSorted((table) => (table.schema === "public" ? -1 : 1));
         if (autoUse && this.tables[0]) {
             const selectedTable = await this.connections.getSelectedTable();
             const index = this.tables.findIndex((table) => `${table.schema}.${table.name}` === selectedTable);
-            this.use(this.tables[index === -1 ? 0 : index]);
+            this.select_table(this.tables[index === -1 ? 0 : index]);
         }
-        this.isLoading = false;
+        this.is_loading = false;
+    };
+
+    list_tables_for_graph = async () => {
+        if (!this.connections.current) {
+            return new Error(`Couldn't connect to the database`);
+        }
+        const connectionString = this.connections.current.connectionString;
+        this.is_loading = true;
+
+        const unsortedTables = await catchError(invoke<PgTableForGraph[]>("list_tables_for_graph", {connectionString}));
+        this.is_loading = false;
+        return unsortedTables;
     };
 
     /**
      * Select the given table and show its rows automatically.
      */
-    use = async (table: Pick<PgTable, "schema" | "name">) => {
+    select_table = async (table: Pick<PgTable, "schema" | "name">) => {
         if (!this.connections.current) {
             return;
         }
         const connectionString = this.connections.current.connectionString;
-        this.isLoading = true;
+        this.is_loading = true;
         const columns = await catchError(
             invoke<PgColumn[]>("list_table_columns", {
                 connectionString,
@@ -231,28 +249,27 @@ ${this.selectedRowsJson
         );
         if (columns instanceof Error) {
             console.error(columns.message);
-            this.toastContext.toast(`Server error: ${columns.message}`, {kind: "error"});
+            this.#toast_context.toast(`Server error: ${columns.message}`, {kind: "error"});
             return;
         }
-        console.log("COLUMNS = ", columns);
         const t = this.tables.find((item) => item.schema === table.schema && item.name === table.name);
         if (!t) {
             console.error(`Table ${table.schema}.${table.name} not found`);
-            this.toastContext.toast(`Table ${table.schema}.${table.name} not found`);
+            this.#toast_context.toast(`Table ${table.schema}.${table.name} not found`);
             return;
         }
-        this.currentTable = {...t, columns, rows: [], count: 0};
-        this.selectedColumns = new Set(columns.map((col) => col.column_name));
-        this.connections.saveSelectedTable(this.currentTable);
-        this.resetFilters();
-        await this.refreshData();
-        this.isLoading = false;
+        this.current_table = {...t, columns, rows: [], count: 0};
+        this.selected_columns = new Set(columns.map((col) => col.column_name));
+        this.connections.saveSelectedTable(this.current_table);
+        this.reset_filters();
+        await this.refresh_data();
+        this.is_loading = false;
     };
 
     /**
      * Return rows for the given table.
      */
-    getTableData = async (table: Pick<PgTable, "schema" | "name">, where: string, offset: number, limit: number) => {
+    get_table_data = async (table: Pick<PgTable, "schema" | "name">, where: string, offset: number, limit: number) => {
         if (!this.connections.current) {
             return;
         }
@@ -294,28 +311,28 @@ ${this.selectedRowsJson
      * @param offset The offset to apply to the select query.
      * @param limit The maximal number of rows returns by the query.
      */
-    updateData = async (where: string, offset: number, limit: number) => {
-        if (!this.connections.current || !this.currentTable) {
+    update_data = async (where: string, offset: number, limit: number) => {
+        if (!this.connections.current || !this.current_table) {
             return;
         }
         const connectionString = this.connections.current.connectionString;
-        this.isLoading = true;
-        const primary_key = this.currentTable.columns.find((col) => col.is_primary_key === "YES");
+        this.is_loading = true;
+        const primary_key = this.current_table.columns.find((col) => col.is_primary_key === "YES");
         const data = await catchError(
             invoke<{rows: PgRow[]; count: number}>("get_table_data", {
                 connectionString,
-                schema: this.currentTable.schema,
-                table: this.currentTable.name,
+                schema: this.current_table.schema,
+                table: this.current_table.name,
                 columns:
-                    this.selectedColumns.size === 0 ||
-                    this.selectedColumns.size === this.currentTable.column_names.length
+                    this.selected_columns.size === 0 ||
+                    this.selected_columns.size === this.current_table.column_names.length
                         ? "*"
-                        : this.selectedColumns.values().toArray().join(", "),
+                        : this.selected_columns.values().toArray().join(", "),
                 offset,
                 limit,
                 whereClause: where,
-                orderBy: this.orderBy
-                    ? `order by ${this.orderBy.column} ${this.orderBy.direction}`
+                orderBy: this.order_by
+                    ? `order by ${this.order_by.column} ${this.order_by.direction}`
                     : primary_key !== undefined
                       ? `order by ${primary_key.column_name} asc`
                       : "",
@@ -323,24 +340,23 @@ ${this.selectedRowsJson
         );
         if (data instanceof Error) {
             console.error(data.message);
-            this.toastContext.toast(`SQL error: ${data.message}`, {kind: "error"});
+            this.#toast_context.toast(`SQL error: ${data.message}`, {kind: "error"});
             return;
         }
-        console.log("rows = ", data.rows);
-        this.selectedRows = [];
-        this.currentTable.rows = data.rows;
-        for (let i = 0; i < this.currentTable.rows.length; i++) {
-            this.currentTable.rows[i].__index = i;
+        this.selected_rows = [];
+        this.current_table.rows = data.rows;
+        for (let i = 0; i < this.current_table.rows.length; i++) {
+            this.current_table.rows[i].__index = i;
         }
-        this.currentTable.count = data.count;
-        this.isLoading = false;
+        this.current_table.count = data.count;
+        this.is_loading = false;
     };
 
     /**
      * Simple helper to re-run `updateData()` with the currently selected filters.
      */
-    refreshData = async () => {
-        await this.updateData(this.whereSql, this.offset, this.limit);
+    refresh_data = async () => {
+        await this.update_data(this.where_sql, this.offset, this.limit);
     };
 
     /**
@@ -348,72 +364,75 @@ ${this.selectedRowsJson
      * @param sql The raw query string to run.
      * @param throwError Throws an error by default, set to `false` if you want a toast like other helpers.
      */
-    rawQuery = async (sql: string, {throwError = true, refresh = true} = {}) => {
-        if (!this.connections.current || !this.currentTable) {
+    raw_query = async (sql: string, {throwError = true, refresh = true} = {}) => {
+        if (!this.connections.current || !this.current_table) {
             return;
         }
         const connectionString = this.connections.current.connectionString;
-        this.isLoading = true;
+        this.is_loading = true;
         const data = await catchError(
             invoke<{rows: Record<string, string | null>[]; duration_ms: number}>("raw_query", {
                 connectionString,
                 sql,
             }),
         );
-        this.isLoading = false;
+        this.is_loading = false;
 
         if (data instanceof Error) {
             console.error(data.message, sql);
             if (throwError) {
                 throw data;
             }
-            this.toastContext.toast(`SQL error: ${data.message}`, {kind: "error", details: sql});
+            this.#toast_context.toast(`SQL error: ${data.message}`, {kind: "error", details: sql});
             return;
         }
         if (refresh) {
-            this.isLoading = true;
+            this.is_loading = true;
             // FIXME: this is a bit wasteful to refresh data, it could be done through optimistic update directly
-            await this.refreshData();
-            this.isLoading = false;
+            await this.refresh_data();
+            this.is_loading = false;
         }
-        this.lastQueryTime = data.duration_ms;
+        this.last_query_time = data.duration_ms;
         return data.rows;
     };
 
-    getPrimaryKey = () => {
-        if (!this.currentTable) {
+    /**
+     * Get the primary key column of the currently selected table.
+     */
+    get_primary_key = () => {
+        if (!this.current_table) {
             return;
         }
-        const primary_key = this.currentTable.columns.find((col) => col.is_primary_key === "YES");
+        const primary_key = this.current_table.columns.find((col) => col.is_primary_key === "YES");
         if (primary_key === undefined) {
-            this.toastContext.toast(`Cannot update row without primary key.`, {kind: "error"});
+            this.#toast_context.toast(`Cannot update row without primary key.`, {kind: "error"});
             return;
         }
         return primary_key;
     };
 
-    deleteSelection = async () => {
-        const pk = this.getPrimaryKey();
-        if (!pk || !this.currentTable) {
+    delete_selection = async () => {
+        const pk = this.get_primary_key();
+        if (!pk || !this.current_table) {
             return;
         }
-        const query = `delete from ${this.fullName}
-where ${pk.column_name} = any(array[${this.selectedRows
-            .map((index) => valueToSql(pk, this.currentTable!.rows[index][pk.column_name]))
+        const query = `delete from ${this.fullname}
+where ${pk.column_name} = any(array[${this.selected_rows
+            .map((index) => valueToSql(pk, this.current_table!.rows[index][pk.column_name]))
             .join(", ")}]);`;
-        await this.rawQuery(query);
-        this.selectedRows = [];
-        this.resetFilters();
+        await this.raw_query(query);
+        this.selected_rows = [];
+        this.reset_filters();
     };
 
-    truncateTable = async () => {
-        await this.rawQuery(`truncate ${this.fullName} restart identity cascade`, {throwError: false});
-        this.resetFilters();
+    truncate_table = async () => {
+        await this.raw_query(`truncate ${this.fullname} restart identity cascade`, {throwError: false});
+        this.reset_filters();
     };
 
-    generateUpdateRow = async (row: PgRow) => {
-        const pk = this.getPrimaryKey();
-        if (!pk || !this.currentTable) {
+    generate_update_row = async (row: PgRow) => {
+        const pk = this.get_primary_key();
+        if (!pk || !this.current_table) {
             console.warn(`Cannot update without primary key.`);
             return;
         }
@@ -421,8 +440,8 @@ where ${pk.column_name} = any(array[${this.selectedRows
             column.is_primary_key === "NO" &&
             column.data_type !== "tsvector" &&
             Object.keys(row).includes(column.column_name);
-        return `UPDATE ${this.fullName} SET
-${this.currentTable.columns
+        return `UPDATE ${this.fullname} SET
+${this.current_table.columns
     .filter(editableColumns)
     .map((col) => `${col.column_name} = ${valueToSql(col, row[col.column_name])}`)
     .join(",\n  ")}
@@ -430,71 +449,71 @@ WHERE ${pk.column_name} = ${valueToSql(pk, row[pk.column_name])};
                         `;
     };
 
-    updateRow = async (row: PgRow, {throwError = true} = {}) => {
-        const query = await this.generateUpdateRow(row);
+    update_row = async (row: PgRow, {throwError = true} = {}) => {
+        const query = await this.generate_update_row(row);
         if (!query) {
             return;
         }
-        await this.rawQuery(query, {throwError});
+        await this.raw_query(query, {throwError});
     };
 
     /**
      * Simple helper function to do an insert into or an update depending on whether there is a primary key or not.
      */
-    upsertRow = async (row: PgRow, {throwError = true} = {}) => {
-        if (!this.currentTable) {
+    upsert_row = async (row: PgRow, {throwError = true} = {}) => {
+        if (!this.current_table) {
             return;
         }
-        const primary_key = this.getPrimaryKey();
+        const primary_key = this.get_primary_key();
         if (!primary_key) {
-            this.toastContext.toast(`Can't update row without primary key`);
+            this.#toast_context.toast(`Can't update row without primary key`);
             return;
         }
         const editableColumns = (column: PgColumn) => column.is_primary_key === "NO" && column.data_type !== "tsvector";
         const primary_key_value = primary_key ? row[primary_key.column_name] : null;
         const query = primary_key_value
             ? // updae
-              `update ${this.fullName}
+              `update ${this.fullname}
 set
-  ${this.currentTable.columns
+  ${this.current_table.columns
       .filter(editableColumns)
       .map((col) => `${col.column_name} = ${valueToSql(col, row[col.column_name])}`)
       .join(",\n  ")}
 where ${primary_key!.column_name} = ${valueToSql(primary_key!, primary_key_value)};`
             : // insert
-              `insert into ${this.fullName}
-(${this.currentTable.columns
+              `insert into ${this.fullname}
+(${this.current_table.columns
                   .filter(editableColumns)
                   .map(({column_name}) => column_name)
                   .join(", ")})
 values
-(${this.currentTable.columns
+(${this.current_table.columns
                   .filter(editableColumns)
                   .map((col) => valueToSql(col, row[col.column_name]))
                   .join(", ")});`;
 
-        return await this.rawQuery(query, {throwError});
+        return await this.raw_query(query, {throwError});
     };
 
-    insertRow = async (row: PgRow, {throwError = true} = {}) => {
-        if (!this.currentTable) {
+    insert_row = async (row: PgRow, {throwError = true} = {}) => {
+        if (!this.current_table) {
             return;
         }
         const editableColumns = (column: PgColumn) => column.is_primary_key === "NO" && column.data_type !== "tsvector";
-        const query = `insert into ${this.fullName}
-(${this.currentTable.columns
+        const query = `insert into ${this.fullname}
+(${this.current_table.columns
             .filter(editableColumns)
             .map(({column_name}) => column_name)
             .join(", ")})
 values
-(${this.currentTable.columns
+(${this.current_table.columns
             .filter(editableColumns)
             .map((col) => valueToSql(col, row[col.column_name]))
             .join(", ")});`;
-        return await this.rawQuery(query, {throwError});
+        return await this.raw_query(query, {throwError});
     };
 }
 const key = Symbol("pgContext");
 
-export const getPgContext = () => getContext<PgContext>(key);
-export const setPgContext = () => setContext(key, new PgContext());
+export const get_pg_context = () => getContext<PgContext>(key);
+export const set_pg_context = () => setContext(key, new PgContext());

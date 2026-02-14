@@ -1,4 +1,4 @@
-import {getPgContext} from "$lib/table/pgContext.svelte";
+import {get_pg_context} from "$lib/table/pgContext.svelte";
 import {globalShortcuts} from "$lib/tauri/globalShortcuts";
 import type {ShortcutEvent} from "@tauri-apps/plugin-global-shortcut";
 import {getContext, setContext} from "svelte";
@@ -7,14 +7,20 @@ import {getSettingsContext} from "$lib/settings/settingsContext.svelte";
 
 export type Command = {
     keys: string;
-    prettyKeys: string;
+    pretty_keys: string;
     title: string;
     description: string;
     action: (event: ShortcutEvent) => void;
 };
 
 class CommandsContext {
-    #pg = getPgContext();
+    is_command_palette_open = $state(false);
+
+    mode = $state<"tables" | "script" | "graph">("tables");
+    is_connections_open = $state(false);
+    is_tables_open = $state(false);
+
+    #pg = get_pg_context();
     #settings = getSettingsContext();
 
     #all = $state<Command[]>([]);
@@ -24,13 +30,7 @@ class CommandsContext {
 
     #shortcuts: ReturnType<typeof globalShortcuts> | undefined = undefined;
 
-    isCommandPaletteOpen = $state(false);
-
-    mode = $state<"tables" | "script">("tables");
-    isConnectionsOpen = $state(false);
-    isTablesOpen = $state(false);
-
-    get cmdOrCtrl() {
+    get cmd_or_ctrl() {
         return platform() === "macos" ? "⌘" : "Ctrl";
     }
 
@@ -38,29 +38,29 @@ class CommandsContext {
         this.#all = [
             {
                 keys: "CommandOrControl+P",
-                prettyKeys: `${this.cmdOrCtrl} P`,
+                pretty_keys: `${this.cmd_or_ctrl} P`,
                 title: "Open command palette",
                 description: "Allows you to search through all available commands and execute them",
                 action: (event: ShortcutEvent) => {
                     if (event.state === "Pressed") {
-                        this.isCommandPaletteOpen = true;
+                        this.is_command_palette_open = true;
                     }
                 },
             },
             {
                 keys: "CommandOrControl+0",
-                prettyKeys: `${this.cmdOrCtrl} 0`,
+                pretty_keys: `${this.cmd_or_ctrl} 0`,
                 title: "Switch database connection",
                 description: "Open the popover to change the currently selected database connection",
                 action: (event: ShortcutEvent) => {
                     if (event.state === "Pressed") {
-                        this.isConnectionsOpen = true;
+                        this.is_connections_open = true;
                     }
                 },
             },
             {
                 keys: "CommandOrControl+1",
-                prettyKeys: `${this.cmdOrCtrl} 1`,
+                pretty_keys: `${this.cmd_or_ctrl} 1`,
                 title: "Open tables mode",
                 description: "Visualize and edit tables of the currently selected database",
                 action: (event: ShortcutEvent) => {
@@ -71,7 +71,7 @@ class CommandsContext {
             },
             {
                 keys: "CommandOrControl+2",
-                prettyKeys: `${this.cmdOrCtrl} 2`,
+                pretty_keys: `${this.cmd_or_ctrl} 2`,
                 title: "Open script mode",
                 description: "Perform raw queries on the currently selected database connection",
                 action: (event: ShortcutEvent) => {
@@ -82,12 +82,12 @@ class CommandsContext {
             },
             {
                 keys: "CommandOrControl+T",
-                prettyKeys: `${this.cmdOrCtrl} T`,
+                pretty_keys: `${this.cmd_or_ctrl} T`,
                 title: "Select tables and views",
                 description: "Open the dialog to search a table or view within any schema",
                 action: (event) => {
                     if (event.state === "Pressed") {
-                        this.isTablesOpen = true;
+                        this.is_tables_open = true;
                     }
                 },
             },
@@ -104,49 +104,49 @@ class CommandsContext {
             // },
             {
                 keys: "CommandOrControl+R",
-                prettyKeys: `${this.cmdOrCtrl} R`,
+                pretty_keys: `${this.cmd_or_ctrl} R`,
                 title: "Refresh data",
                 description: "Refresh the data of the currently selected table",
 
                 action: (event) => {
                     if (event.state === "Pressed") {
-                        this.#pg.loadTables();
+                        this.#pg.load_tables();
                     }
                 },
             },
             {
                 keys: "CommandOrControl+ArrowLeft",
-                prettyKeys: `${this.cmdOrCtrl} ←`,
+                pretty_keys: `${this.cmd_or_ctrl} ←`,
                 title: "Previous data page",
                 description: "Load the previous page of data with the current LIMIT value with an OFFSET of LIMIT",
 
                 action: (event) => {
                     if (event.state === "Pressed" && this.#pg.offset > 0) {
                         this.#pg.offset = Math.max(0, this.#pg.offset - this.#pg.limit);
-                        this.#pg.refreshData();
+                        this.#pg.refresh_data();
                     }
                 },
             },
             {
                 keys: "CommandOrControl+ArrowRight",
-                prettyKeys: `${this.cmdOrCtrl} →`,
+                pretty_keys: `${this.cmd_or_ctrl} →`,
                 title: "Next data page",
                 description: "Load the next page of data with the current LIMIT value with an OFFSET of LIMIT",
 
                 action: (event) => {
                     if (
                         event.state === "Pressed" &&
-                        this.#pg.currentTable &&
-                        this.#pg.offset + this.#pg.limit < this.#pg.currentTable.count
+                        this.#pg.current_table &&
+                        this.#pg.offset + this.#pg.limit < this.#pg.current_table.count
                     ) {
-                        this.#pg.offset = Math.min(this.#pg.currentTable.count, this.#pg.offset + this.#pg.limit);
-                        this.#pg.refreshData();
+                        this.#pg.offset = Math.min(this.#pg.current_table.count, this.#pg.offset + this.#pg.limit);
+                        this.#pg.refresh_data();
                     }
                 },
             },
             {
                 keys: "",
-                prettyKeys: ``,
+                pretty_keys: ``,
                 title: "Toggle between Light/Dark ColorScheme",
                 description: "Override the default system color scheme.",
 
@@ -157,7 +157,7 @@ class CommandsContext {
                 },
             },
         ];
-        this.#shortcuts = globalShortcuts(this.#all.filter((cmd) => cmd.keys !== "" && cmd.prettyKeys !== ""));
+        this.#shortcuts = globalShortcuts(this.#all.filter((cmd) => cmd.keys !== "" && cmd.pretty_keys !== ""));
     }
 
     execute = (title: string) => {
@@ -169,11 +169,11 @@ class CommandsContext {
         command.action({state: "Pressed"} as ShortcutEvent);
     };
 
-    mountShortcuts = async () => {
+    mount_shortcuts = async () => {
         await this.#shortcuts?.mount();
     };
 
-    unmountShortcuts = () => {
+    unmount_shortcuts = () => {
         this.#shortcuts?.unmount();
     };
 }
@@ -186,7 +186,7 @@ const key = Symbol("commandsContext");
  * You must call `setConnectionsContext()` in a parent component to use it.
  * @returns the context
  */
-export const getCommandsContext = () => getContext<CommandsContext>(key);
+export const get_commands_context = () => getContext<CommandsContext>(key);
 
 /**
  * Manage all commands.
@@ -194,4 +194,4 @@ export const getCommandsContext = () => getContext<CommandsContext>(key);
  * This must be called in order to use `getCommandsContext()`.
  * @returns the context
  */
-export const setCommandsContext = () => setContext(key, new CommandsContext());
+export const set_commands_context = () => setContext(key, new CommandsContext());

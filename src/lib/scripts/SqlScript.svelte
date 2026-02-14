@@ -4,13 +4,13 @@
     import {getScriptsContext} from "./scriptsContext.svelte";
     import {SplitPane} from "@rich_harris/svelte-split-pane";
     import {getToastContext} from "$lib/widgets/Toaster.svelte";
-    import {getPgContext} from "$lib/table/pgContext.svelte";
+    import {get_pg_context} from "$lib/table/pgContext.svelte";
     import ProgressCircle from "$lib/widgets/ProgressCircle.svelte";
     import {getSettingsContext} from "$lib/settings/settingsContext.svelte";
 
     const scripts = getScriptsContext();
     const {toast} = getToastContext();
-    const pg = getPgContext();
+    const pg = get_pg_context();
 
     let settings = getSettingsContext();
 </script>
@@ -46,7 +46,7 @@
                     <div class="text-error m-auto">
                         SQL Error: {scripts.errorMessage}
                     </div>
-                {:else if pg.isLoading}
+                {:else if pg.is_loading}
                     <div class="w-full h-full flex flex-col gap-4 items-center justify-center text-fg-1">
                         <ProgressCircle infinite={true} showValue={false} />
                     </div>

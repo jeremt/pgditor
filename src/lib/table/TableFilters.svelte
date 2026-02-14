@@ -8,8 +8,8 @@
     import Popover from "$lib/widgets/Popover.svelte";
     import Select from "$lib/widgets/Select.svelte";
     import {
-        filtersToWhere,
-        operatorsForColumn,
+        filters_to_where,
+        operators_for_column,
         type PgColumn,
         type WhereFilter,
         type WhereOperator,
@@ -48,7 +48,7 @@
     };
 
     $effect(() => {
-        whereSql = filtersToWhere(filters).trim();
+        whereSql = filters_to_where(filters).trim();
     });
 </script>
 
@@ -87,7 +87,7 @@
                         {/each}
                     </Select>
                     <Select class="small" bind:value={filter.operator}>
-                        {#each operatorsForColumn(column) as operator}
+                        {#each operators_for_column(column) as operator}
                             <option>{operator}</option>
                         {/each}
                     </Select>

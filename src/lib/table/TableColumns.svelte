@@ -4,17 +4,17 @@
     import CheckboxInput from "$lib/widgets/CheckboxInput.svelte";
     import Popover from "$lib/widgets/Popover.svelte";
     import {SvelteSet} from "svelte/reactivity";
-    import {getPgContext} from "./pgContext.svelte";
+    import {get_pg_context} from "./pgContext.svelte";
 
-    const pg = getPgContext();
+    const pg = get_pg_context();
     let isColumnsOpen = $state(false);
     const applyColumns = () => {
-        pg.selectedColumns = selectedColums;
-        pg.refreshData();
+        pg.selected_columns = selectedColums;
+        pg.refresh_data();
         isColumnsOpen = false;
     };
     let selectedColums = $derived.by(() => {
-        const copy = $state(new SvelteSet(pg.selectedColumns));
+        const copy = $state(new SvelteSet(pg.selected_columns));
         return copy;
     });
 </script>
@@ -27,28 +27,28 @@
     {/snippet}
     <div class="flex flex-col gap-4 max-h-96">
         <div class="flex flex-col gap-2 overflow-auto grow">
-            {#if pg.currentTable !== undefined}
+            {#if pg.current_table !== undefined}
                 <label class="flex gap-2 font-bold text-sm items-center">
                     <CheckboxInput
-                        checked={selectedColums.size === pg.currentTable.columns.length &&
-                            pg.currentTable.columns.length > 0}
-                        disabled={pg.currentTable.columns.length === 0}
+                        checked={selectedColums.size === pg.current_table.columns.length &&
+                            pg.current_table.columns.length > 0}
+                        disabled={pg.current_table.columns.length === 0}
                         indeterminate={selectedColums.size > 0 &&
-                            selectedColums.size !== pg.currentTable.columns.length}
+                            selectedColums.size !== pg.current_table.columns.length}
                         onchange={() => {
-                            if (pg.currentTable === undefined) {
+                            if (pg.current_table === undefined) {
                                 return;
                             }
-                            if (selectedColums.size === pg.currentTable.columns.length) {
+                            if (selectedColums.size === pg.current_table.columns.length) {
                                 selectedColums.clear();
                             } else {
-                                selectedColums = new SvelteSet(pg.currentTable.columns.map((col) => col.column_name));
+                                selectedColums = new SvelteSet(pg.current_table.columns.map((col) => col.column_name));
                             }
                         }}
                     />
                     <span>all columns</span>
                 </label>
-                {#each pg.currentTable.columns as column}
+                {#each pg.current_table.columns as column}
                     <label class="flex gap-2 font-bold text-sm items-center">
                         <CheckboxInput
                             bind:checked={

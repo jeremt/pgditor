@@ -1,6 +1,6 @@
 import {getContext, setContext} from "svelte";
 import {getToastContext} from "$lib/widgets/Toaster.svelte";
-import {getPgContext} from "$lib/table/pgContext.svelte";
+import {get_pg_context} from "$lib/table/pgContext.svelte";
 import {catchError} from "$lib/helpers/catchError";
 import {StoreContext} from "$lib/helpers/StoreContext";
 import {getConnectionsContext} from "$lib/connection/connectionsContext.svelte";
@@ -12,7 +12,7 @@ const storePath = "scripts.json";
 export type ScriptFile = {path: string; updated_at: string};
 class ScriptsContext extends StoreContext {
     #connections = getConnectionsContext();
-    #pg = getPgContext();
+    #pg = get_pg_context();
     #toaster = getToastContext();
 
     #files = $state<ScriptFile[]>([]);
@@ -122,7 +122,7 @@ class ScriptsContext extends StoreContext {
     run = async () => {
         this.errorMessage = "";
         const result = await catchError(
-            this.#pg.rawQuery(this.currentSelection ? this.currentSelection : this.currentValue),
+            this.#pg.raw_query(this.currentSelection ? this.currentSelection : this.currentValue),
         );
         if (result instanceof Error) {
             this.errorMessage = result.message;

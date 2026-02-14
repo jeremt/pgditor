@@ -50,7 +50,7 @@
 <script lang="ts">
     import {resize} from "$lib/helpers/resize";
     import {onMount} from "svelte";
-    import {getPgContext} from "$lib/table/pgContext.svelte";
+    import {get_pg_context} from "$lib/table/pgContext.svelte";
 
     type FileData = {path: string; value: string};
 
@@ -125,7 +125,7 @@
         onready?: () => void;
     };
 
-    const pg = getPgContext();
+    const pg = get_pg_context();
 
     let {
         files = [],
@@ -292,7 +292,7 @@
                                 text: newText,
                             },
                         ],
-                        () => []
+                        () => [],
                     );
                 }
             }

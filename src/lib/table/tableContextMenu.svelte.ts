@@ -3,10 +3,10 @@ import {Menu} from "@tauri-apps/api/menu";
 import {writeText} from "@tauri-apps/plugin-clipboard-manager";
 import {saveToFile} from "$lib/helpers/saveToFile";
 import {getToastContext} from "$lib/widgets/Toaster.svelte";
-import {getPgContext, type PgColumn, type PgRow} from "./pgContext.svelte";
+import {get_pg_context, type PgColumn, type PgRow} from "./pgContext.svelte";
 
 export const createContextMenu = () => {
-    const pg = getPgContext();
+    const pg = get_pg_context();
     const {toast} = getToastContext();
     let lastMenuContext: {column?: PgColumn; row?: PgRow} = {};
 
@@ -46,9 +46,9 @@ export const createContextMenu = () => {
 
         items.push({item: "Separator"}); // Predefined separator
 
-        if (pg.selectedRows.length) {
+        if (pg.selected_rows.length) {
             items.push({
-                text: `Copy ${pg.selectedRows.length} row${pg.selectedRows.length > 1 ? "s" : ""}`,
+                text: `Copy ${pg.selected_rows.length} row${pg.selected_rows.length > 1 ? "s" : ""}`,
                 items: [
                     {id: "copy_json", text: "JSON"},
                     {id: "copy_csv", text: "CSV"},
@@ -56,7 +56,7 @@ export const createContextMenu = () => {
                 ],
             });
             items.push({
-                text: `Export ${pg.selectedRows.length} row${pg.selectedRows.length > 1 ? "s" : ""}`,
+                text: `Export ${pg.selected_rows.length} row${pg.selected_rows.length > 1 ? "s" : ""}`,
                 items: [
                     {id: "export_json", text: "JSON"},
                     {id: "export_csv", text: "CSV"},
@@ -85,59 +85,59 @@ export const createContextMenu = () => {
                     break;
                 case "table_set_null": {
                     if (lastMenuContext.column) {
-                        await pg.updateRow({[lastMenuContext.column.column_name]: null}, {throwError: false});
+                        await pg.update_row({[lastMenuContext.column.column_name]: null}, {throwError: false});
                         toast("Value set to NULL");
                     }
                     break;
                 }
                 case "table_set_default": {
                     if (lastMenuContext.column) {
-                        await pg.updateRow(
+                        await pg.update_row(
                             {[lastMenuContext.column.column_name]: lastMenuContext.column.column_default},
-                            {throwError: false}
+                            {throwError: false},
                         );
                         toast("Value set to default");
                     }
                     break;
                 }
                 case "table_set_all_null":
-                    if (lastMenuContext.column && pg.currentTable) {
-                        await pg.rawQuery(`UPDATE ${pg.fullName} SET ${lastMenuContext.column.column_name} = null;`, {
+                    if (lastMenuContext.column && pg.current_table) {
+                        await pg.raw_query(`UPDATE ${pg.fullname} SET ${lastMenuContext.column.column_name} = null;`, {
                             throwError: false,
                         });
                         toast(`All values of column ${lastMenuContext.column.column_name} set to NULL`);
                     }
                     break;
                 case "table_set_all_default":
-                    if (lastMenuContext.column && pg.currentTable) {
-                        await pg.rawQuery(
-                            `UPDATE ${pg.fullName} SET ${lastMenuContext.column.column_name} = ${lastMenuContext.column.column_default};`,
-                            {throwError: false}
+                    if (lastMenuContext.column && pg.current_table) {
+                        await pg.raw_query(
+                            `UPDATE ${pg.fullname} SET ${lastMenuContext.column.column_name} = ${lastMenuContext.column.column_default};`,
+                            {throwError: false},
                         );
                         toast(`All values of column ${lastMenuContext.column.column_name} set to default`);
                     }
                     break;
                 case "copy_json":
-                    if (pg.currentTable) {
-                        await writeText(JSON.stringify(pg.selectedRowsJson));
+                    if (pg.current_table) {
+                        await writeText(JSON.stringify(pg.selected_rows_json));
                         toast("Selected rows copied to JSON");
                     }
                     break;
                 case "copy_csv":
-                    if (pg.currentTable) {
-                        await writeText(pg.selectedRowsCsv);
+                    if (pg.current_table) {
+                        await writeText(pg.selected_rows_csv);
                         toast("Selected rows copied to CSV");
                     }
                     break;
                 case "copy_sql":
-                    if (pg.currentTable) {
-                        await writeText(pg.selectedRowsSql);
+                    if (pg.current_table) {
+                        await writeText(pg.selected_rows_sql);
                         toast("Selected rows copied to SQL");
                     }
                     break;
                 case "export_json":
-                    if (pg.currentTable) {
-                        if (await saveToFile(JSON.stringify(pg.selectedRowsJson), ["json"])) {
+                    if (pg.current_table) {
+                        if (await saveToFile(JSON.stringify(pg.selected_rows_json), ["json"])) {
                             toast("Selected rows exported to JSON");
                         } else {
                             toast("Failed to export JSON", {kind: "error"});
@@ -145,14 +145,14 @@ export const createContextMenu = () => {
                     }
                     break;
                 case "export_csv":
-                    if (await saveToFile(pg.selectedRowsCsv, ["csv"])) {
+                    if (await saveToFile(pg.selected_rows_csv, ["csv"])) {
                         toast("Selected rows exported to CSV");
                     } else {
                         toast("Failed to export CSV", {kind: "error"});
                     }
                     break;
                 case "export_sql":
-                    if (await saveToFile(pg.selectedRowsSql, ["sql"])) {
+                    if (await saveToFile(pg.selected_rows_sql, ["sql"])) {
                         toast("Selected rows exported to SQL");
                     } else {
                         toast("Failed to export SQL", {kind: "error"});
@@ -160,7 +160,7 @@ export const createContextMenu = () => {
                     break;
                 case "table_update_row": {
                     if (lastMenuContext.row) {
-                        pg.openUpdateRow(lastMenuContext.row);
+                        pg.open_update_row(lastMenuContext.row);
                     }
                     break;
                 }

@@ -1,5 +1,5 @@
 <script lang="ts">
-    import {getCommandsContext} from "$lib/commands/commandsContext.svelte";
+    import {get_commands_context} from "$lib/commands/commandsContext.svelte";
     import {catchError} from "$lib/helpers/catchError";
     import CheckIcon from "$lib/icons/CheckIcon.svelte";
     import CopyIcon from "$lib/icons/CopyIcon.svelte";
@@ -13,7 +13,7 @@
     import CheckboxInput from "$lib/widgets/CheckboxInput.svelte";
     import Dialog from "$lib/widgets/Dialog.svelte";
     import {getToastContext} from "$lib/widgets/Toaster.svelte";
-    import {getPgContext, type PgColumn, type PgRow} from "./pgContext.svelte";
+    import {get_pg_context, type PgColumn, type PgRow} from "./pgContext.svelte";
     import TableValueEditor from "./TableValueEditor.svelte";
     import {defaultValues, valueTypeIsBoolean, valueTypeIsNumber, valueToSql} from "./values";
     import {writeText} from "@tauri-apps/plugin-clipboard-manager";
@@ -23,8 +23,8 @@
     };
     let {target = $bindable()}: Props = $props();
 
-    const pg = getPgContext();
-    const commands = getCommandsContext();
+    const pg = get_pg_context();
+    const commands = get_commands_context();
     const scripts = getScriptsContext();
     const {toast} = getToastContext();
 
@@ -36,12 +36,12 @@
     });
 
     const updateValue = async () => {
-        const pk = pg.getPrimaryKey();
+        const pk = pg.get_primary_key();
         if (target === undefined || pk === undefined) {
             return;
         }
         const error = await catchError(
-            pg.updateRow({
+            pg.update_row({
                 [pk.column_name]: target.row[pk.column_name],
                 [target.column.column_name]: target.row[target.column.column_name],
             }),
@@ -62,11 +62,11 @@
     };
 
     const copySql = async () => {
-        const pk = pg.getPrimaryKey();
+        const pk = pg.get_primary_key();
         if (target === undefined || pk === undefined) {
             return;
         }
-        const sql = await pg.generateUpdateRow({
+        const sql = await pg.generate_update_row({
             [pk.column_name]: target.row[pk.column_name],
             [target.column.column_name]: target.row[target.column.column_name],
         });
@@ -77,11 +77,11 @@
     };
 
     const editSql = async () => {
-        const pk = pg.getPrimaryKey();
+        const pk = pg.get_primary_key();
         if (target === undefined || pk === undefined) {
             return;
         }
-        const sql = await pg.generateUpdateRow({
+        const sql = await pg.generate_update_row({
             [pk.column_name]: target.row[pk.column_name],
             [target.column.column_name]: target.row[target.column.column_name],
         });
@@ -93,10 +93,10 @@
         }
     };
 
-    const noPk = $derived(pg.currentTable && !pg.currentTable.columns.some((col) => col.is_primary_key === "YES"));
+    const noPk = $derived(pg.current_table && !pg.current_table.columns.some((col) => col.is_primary_key === "YES"));
 
     const smallDialog = $derived.by(() => {
-        if (!target || target.column.foreign_table_name !== null) {
+        if (!target || (target.column.foreign_table_name !== null && !noPk)) {
             return false;
         }
         return (
@@ -128,13 +128,13 @@
                     onclick={() => {
                         commands.mode = "script";
                         const row = Object.entries(target!.row).filter(([key]) => key !== "__index");
-                        if (row.length > 0 && pg.currentTable) {
-                            scripts.currentValue = `update ${pg.fullName} set
-    ${row[0][0]} = ${valueToSql(pg.currentTable.columns.find((col) => col.column_name === row[0][0])!, row[0][1])}
+                        if (row.length > 0 && pg.current_table) {
+                            scripts.currentValue = `update ${pg.fullname} set
+    ${row[0][0]} = ${valueToSql(pg.current_table.columns.find((col) => col.column_name === row[0][0])!, row[0][1])}
 where ${row.reduce((result, [name, value], index) => {
                                 return (
                                     result +
-                                    `${name} = ${valueToSql(pg.currentTable!.columns.find((col) => col.column_name === name)!, value)}` +
+                                    `${name} = ${valueToSql(pg.current_table!.columns.find((col) => col.column_name === name)!, value)}` +
                                     (index < row.length - 1 ? `\nor ` : "")
                                 );
                             }, "")};`;
@@ -171,7 +171,7 @@ where ${row.reduce((result, [name, value], index) => {
                             </span>
                         {/if}
                     </h2>
-                    {#if pg.currentTable?.type === "BASE TABLE"}
+                    {#if pg.current_table?.type === "BASE TABLE"}
                         {#if target.column.is_nullable === "YES"}
                             <label class="text-xs ml-auto flex gap-2 items-center"
                                 >NULL

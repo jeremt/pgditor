@@ -7,13 +7,15 @@
     import TablesMenu from "$lib/table/TablesMenu.svelte";
     import SqlScriptMenu from "$lib/scripts/SqlScriptMenu.svelte";
     import CommandPalette from "$lib/commands/CommandPalette.svelte";
-    import {getCommandsContext} from "$lib/commands/commandsContext.svelte";
+    import {get_commands_context} from "$lib/commands/commandsContext.svelte";
     import {onMount} from "svelte";
     import {invoke} from "@tauri-apps/api/core";
     import {getSettingsContext} from "$lib/settings/settingsContext.svelte";
     import SearchIcon from "$lib/icons/SearchIcon.svelte";
+    import GraphIcon from "$lib/icons/GraphIcon.svelte";
+    import GraphView from "$lib/graph/GraphView.svelte";
 
-    const commands = getCommandsContext();
+    const commands = get_commands_context();
     const settings = getSettingsContext();
 
     onMount(() => {
@@ -25,12 +27,12 @@
     <ConnectionButton />
     <button
         class="btn ghost icon"
-        title="Command palette {commands.cmdOrCtrl}P"
+        title="Command palette {commands.cmd_or_ctrl}P"
         onclick={() => commands.execute("Open command palette")}><SearchIcon --size="1.2rem" /></button
     >
     <button
         class="btn ghost icon"
-        title="Visualize tables {commands.cmdOrCtrl}1"
+        title="Visualize tables {commands.cmd_or_ctrl}1"
         disabled={commands.mode === "tables"}
         onclick={() => (commands.mode = "tables")}
     >
@@ -38,15 +40,24 @@
     </button>
     <button
         class="btn ghost icon"
-        title="Run raw sql queries {commands.cmdOrCtrl}2"
+        title="Run raw sql queries {commands.cmd_or_ctrl}2"
         disabled={commands.mode === "script"}
         onclick={() => (commands.mode = "script")}
     >
         <TerminalIcon --size="1.2rem" />
     </button>
+    <button
+        class="btn ghost icon"
+        title="Visualize your db as a graph {commands.cmd_or_ctrl}3"
+        disabled={commands.mode === "graph"}
+        onclick={() => (commands.mode = "graph")}
+    >
+        <GraphIcon --size="1.2rem" />
+    </button>
+    <div class="rounded-e-full h-10/12 bg-bg-1" style:width="2px"></div>
     {#if commands.mode === "tables"}
         <TablesMenu />
-    {:else}
+    {:else if commands.mode === "script"}
         <SqlScriptMenu />
     {/if}
     <!-- <button
@@ -60,6 +71,8 @@
     <Table />
 {:else if commands.mode === "script"}
     <SqlScript />
+{:else if commands.mode === "graph"}
+    <GraphView />
 {/if}
 
 <CommandPalette />

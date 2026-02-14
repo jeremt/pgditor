@@ -109,7 +109,7 @@ pub async fn list_table_columns(
     .map_err(PgError::from)?
 }
 
-fn fetch_enum_values(
+pub fn fetch_enum_values(
     client: &mut postgres::Client,
     enum_type: &str,
 ) -> Result<Vec<String>, PgError> {

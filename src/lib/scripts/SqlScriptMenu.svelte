@@ -8,16 +8,16 @@
     import ItemSelect from "$lib/widgets/ItemSelect.svelte";
     import FileIcon from "$lib/icons/FileIcon.svelte";
     import {open} from "@tauri-apps/plugin-dialog";
-    import {getPgContext} from "$lib/table/pgContext.svelte";
+    import {get_pg_context} from "$lib/table/pgContext.svelte";
     import TrashIcon from "$lib/icons/TrashIcon.svelte";
     import SaveIcon from "$lib/icons/SaveIcon.svelte";
     import SearchIcon from "$lib/icons/SearchIcon.svelte";
-    import {getCommandsContext} from "$lib/commands/commandsContext.svelte";
+    import {get_commands_context} from "$lib/commands/commandsContext.svelte";
     import ActionButton from "$lib/widgets/ActionButton.svelte";
 
     const scripts = getScriptsContext();
-    const pg = getPgContext();
-    const commands = getCommandsContext();
+    const pg = get_pg_context();
+    const commands = get_commands_context();
 
     let isFileSelectOpen = $state(false);
     const itemToString = (item: ScriptFile) => item.path;
@@ -65,7 +65,7 @@
     const folderpath = (path: string) => path.slice(0, lastSlash(path));
 </script>
 
-<button class="btn ghost" title="{commands.cmdOrCtrl} F" onclick={() => (isFileSelectOpen = true)} disabled={false}>
+<button class="btn ghost" title="{commands.cmd_or_ctrl} F" onclick={() => (isFileSelectOpen = true)} disabled={false}>
     {#if scripts.currentFile}
         <FileIcon --size="1.2rem" />
         {filename(scripts.currentFile.path)}
@@ -75,7 +75,7 @@
     {/if}
 </button>
 
-<button class="btn ghost icon" title="Save {commands.cmdOrCtrl}S" onclick={scripts.saveCurrentFile}>
+<button class="btn ghost icon" title="Save {commands.cmd_or_ctrl}S" onclick={scripts.saveCurrentFile}>
     <SaveIcon --size="1.2rem" />
 </button>
 
@@ -98,8 +98,8 @@
 
 <div class="mr-auto"></div>
 
-{#if pg.lastQueryTime !== undefined}
-    <div class="ml-auto text-xs text-fg-1">{pg.lastQueryTime.toFixed(0)} ms</div>
+{#if pg.last_query_time !== undefined}
+    <div class="ml-auto text-xs text-fg-1">{pg.last_query_time.toFixed(0)} ms</div>
 {/if}
 
 <button
@@ -110,7 +110,7 @@
         scripts.lastResult = undefined;
     }}><ClearIcon --size="1.2rem" /> Clear output</button
 >
-<button class="btn" onclick={scripts.run} title="{commands.cmdOrCtrl} ↵"
+<button class="btn" onclick={scripts.run} title="{commands.cmd_or_ctrl} ↵"
     ><PlayIcon --size="1rem" /> Run{scripts.currentSelection ? " selection" : ""}</button
 >
 

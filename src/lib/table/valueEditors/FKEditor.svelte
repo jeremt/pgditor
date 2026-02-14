@@ -1,5 +1,5 @@
 <script lang="ts">
-    import {getPgContext, type WhereFilter, type PgColumn, type PgRow} from "../pgContext.svelte";
+    import {get_pg_context, type WhereFilter, type PgColumn, type PgRow} from "../pgContext.svelte";
     import LinkIcon from "$lib/icons/LinkIcon.svelte";
     import Dialog from "$lib/widgets/Dialog.svelte";
     import CheckIcon from "$lib/icons/CheckIcon.svelte";
@@ -15,7 +15,7 @@
     };
     let {value = $bindable(), column, inlined}: Props = $props();
 
-    const pg = getPgContext();
+    const pg = get_pg_context();
 
     let isDialogOpen = $state(false);
 
@@ -30,7 +30,7 @@
     let appliedFilters = $state(0);
     const loadData = async () => {
         if (column.foreign_table_schema !== null && column.foreign_table_name !== null) {
-            const dataOrError = await pg.getTableData(
+            const dataOrError = await pg.get_table_data(
                 {schema: column.foreign_table_schema, name: column.foreign_table_name},
                 appliedFilters ? whereSql : "",
                 offset,

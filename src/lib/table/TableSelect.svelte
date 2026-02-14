@@ -3,14 +3,14 @@
     import TableIcon from "$lib/icons/TableIcon.svelte";
     import {fuzzySearchWithHighlights, renderHighlightedMatch} from "$lib/helpers/fuzzySearch";
 
-    import {getPgContext} from "./pgContext.svelte";
+    import {get_pg_context} from "./pgContext.svelte";
     import Dialog from "$lib/widgets/Dialog.svelte";
     import EnterIcon from "$lib/icons/EnterIcon.svelte";
     import CheckIcon from "$lib/icons/CheckIcon.svelte";
-    import {getCommandsContext} from "$lib/commands/commandsContext.svelte";
+    import {get_commands_context} from "$lib/commands/commandsContext.svelte";
 
-    const pg = getPgContext();
-    const commands = getCommandsContext();
+    const pg = get_pg_context();
+    const commands = get_commands_context();
 
     let searchText = $state("");
     let searchResult = $derived(
@@ -39,9 +39,9 @@
                     ? pg.tables[selectedIndex]
                     : pg.tables.find((table) => `${table.schema}.${table.name}` === searchResult[selectedIndex].text);
             if (table) {
-                pg.use(table);
+                pg.select_table(table);
                 searchText = "";
-                commands.isTablesOpen = false;
+                commands.is_tables_open = false;
             }
         } else if (event.key === "ArrowUp") {
             selectedIndex =
@@ -71,18 +71,18 @@
 
 <button
     class="btn ghost"
-    title="{commands.cmdOrCtrl} T"
-    onclick={() => (commands.isTablesOpen = true)}
-    disabled={!pg.currentTable}
+    title="{commands.cmd_or_ctrl} T"
+    onclick={() => (commands.is_tables_open = true)}
+    disabled={!pg.current_table}
 >
-    {#if pg.currentTable}
-        {@render icon(pg.currentTable.type)} {pg.currentTable.schema}.{pg.currentTable.name}
+    {#if pg.current_table}
+        {@render icon(pg.current_table.type)} {pg.current_table.schema}.{pg.current_table.name}
     {:else}
         no tables
     {/if}
 </button>
 
-<Dialog isOpen={commands.isTablesOpen} onrequestclose={() => (commands.isTablesOpen = false)} --padding="1rem">
+<Dialog isOpen={commands.is_tables_open} onrequestclose={() => (commands.is_tables_open = false)} --padding="1rem">
     <div class="flex flex-col gap-2 w-2xl overflow-hidden">
         <input
             type="text"
@@ -99,11 +99,11 @@
                         class="btn ghost justify-start!"
                         class:selected-table={i === selectedIndex}
                         onclick={() => {
-                            pg.use(table);
-                            commands.isTablesOpen = false;
+                            pg.select_table(table);
+                            commands.is_tables_open = false;
                         }}
                     >
-                        {#if pg.currentTable && `${table.schema}.${table.name}` === `${pg.currentTable.schema}.${pg.currentTable.name}`}
+                        {#if pg.current_table && `${table.schema}.${table.name}` === `${pg.current_table.schema}.${pg.current_table.name}`}
                             <CheckIcon --size="1.2rem" />
                         {:else}
                             {@render icon(table.type)}
@@ -127,13 +127,13 @@
                             class:selected-table={i === selectedIndex}
                             onclick={() => {
                                 if (table) {
-                                    pg.use(table);
+                                    pg.select_table(table);
                                     searchText = "";
-                                    commands.isTablesOpen = false;
+                                    commands.is_tables_open = false;
                                 }
                             }}
                         >
-                            {#if pg.currentTable && text === `${pg.currentTable.schema}.${pg.currentTable.name}`}
+                            {#if pg.current_table && text === `${pg.current_table.schema}.${pg.current_table.name}`}
                                 <CheckIcon --size="1.2rem" />
                             {:else}
                                 {@render icon(table.type)}

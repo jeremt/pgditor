@@ -7,10 +7,10 @@
     import {onMount, onDestroy} from "svelte";
 
     import {setConnectionsContext} from "$lib/connection/connectionsContext.svelte";
-    import {setPgContext} from "$lib/table/pgContext.svelte";
+    import {set_pg_context} from "$lib/table/pgContext.svelte";
     import Toaster, {setToastContext} from "$lib/widgets/Toaster.svelte";
     import {setScriptsContext} from "$lib/scripts/scriptsContext.svelte";
-    import {setCommandsContext} from "$lib/commands/commandsContext.svelte";
+    import {set_commands_context} from "$lib/commands/commandsContext.svelte";
     import {setSettingsContext} from "$lib/settings/settingsContext.svelte";
 
     let {children} = $props();
@@ -18,22 +18,22 @@
     setToastContext();
 
     const connections = setConnectionsContext();
-    const pg = setPgContext();
+    const pg = set_pg_context();
     const scripts = setScriptsContext();
     const settings = setSettingsContext();
-    const commands = setCommandsContext();
+    const commands = set_commands_context();
 
     onMount(async () => {
         await connections.load();
-        await commands.mountShortcuts();
+        await commands.mount_shortcuts();
     });
 
     onDestroy(() => {
-        commands.unmountShortcuts();
+        commands.unmount_shortcuts();
     });
 
     $effect(() => {
-        pg.loadTables();
+        pg.load_tables();
     });
 </script>
 

@@ -26,6 +26,14 @@ pub struct PgColumn {
 }
 
 #[derive(Debug, Serialize)]
+pub struct PgTableForGraph {
+    pub schema: String,
+    pub name: String,
+    pub table_type: String,
+    pub columns: Vec<PgColumn>,
+}
+
+#[derive(Debug, Serialize)]
 pub struct PgTableData {
     pub rows: Vec<JsonValue>,
     pub count: i64,

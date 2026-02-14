@@ -2,7 +2,7 @@
     import ChevronIcon from "$lib/icons/ChevronIcon.svelte";
     import TrashIcon from "$lib/icons/TrashIcon.svelte";
     import TableSelect from "$lib/table/TableSelect.svelte";
-    import {getPgContext, type PgRow} from "$lib/table/pgContext.svelte";
+    import {get_pg_context, type PgRow} from "$lib/table/pgContext.svelte";
     import TableFilters from "$lib/table/TableFilters.svelte";
     import NumberInput from "$lib/widgets/NumberInput.svelte";
     import TableUpsert from "$lib/table/TableUpsert.svelte";
@@ -18,11 +18,11 @@
     import TableColumns from "./TableColumns.svelte";
     import TablePagination from "./TablePagination.svelte";
 
-    const pg = getPgContext();
+    const pg = get_pg_context();
     const {toast} = getToastContext();
 
     const rowToInsert = $derived<PgRow>(
-        pg.currentTable?.columns.reduce((result, column) => {
+        pg.current_table?.columns.reduce((result, column) => {
             return {
                 ...result,
                 [column.column_name]:
@@ -38,10 +38,10 @@
     let isInsertOpen = $state(false);
 
     const deleteRows = async () => {
-        if (pg.selectedRows.length > 0 && pg.currentTable?.type === "BASE TABLE") {
-            pg.deleteSelection();
+        if (pg.selected_rows.length > 0 && pg.current_table?.type === "BASE TABLE") {
+            pg.delete_selection();
         } else {
-            pg.truncateTable();
+            pg.truncate_table();
         }
     };
 
@@ -54,60 +54,60 @@
         setTimeout(() => {
             refreshing = false;
         }, 500);
-        await pg.loadTables(false);
-        await pg.refreshData();
+        await pg.load_tables(false);
+        await pg.refresh_data();
     };
 </script>
 
 <TableSelect />
 
-{#if pg.currentTable}
+{#if pg.current_table}
     <TableFilters
-        bind:isOpen={pg.isFilterPopover}
-        bind:filters={pg.whereFilters}
-        bind:whereSql={pg.whereSql}
-        appliedFilters={pg.appliedFilters}
-        columns={pg.currentTable.columns}
+        bind:isOpen={pg.is_filters_open}
+        bind:filters={pg.where_filters}
+        bind:whereSql={pg.where_sql}
+        appliedFilters={pg.applied_filters}
+        columns={pg.current_table.columns}
         onapply={() => {
-            pg.appliedFilters = pg.whereFilters.length;
-            pg.refreshData();
-            pg.isFilterPopover = false;
+            pg.applied_filters = pg.where_filters.length;
+            pg.refresh_data();
+            pg.is_filters_open = false;
         }}
     />
     <TableColumns />
     <TablePagination
         bind:offset={pg.offset}
         bind:limit={pg.limit}
-        count={pg.currentTable.count}
-        onchange={pg.refreshData}
+        count={pg.current_table.count}
+        onchange={pg.refresh_data}
     />
     <ActionButton
         class="btn ghost icon relative"
         onaction={deleteRows}
         title="Delete"
-        disabled={pg.currentTable.type !== "BASE TABLE"}
+        disabled={pg.current_table.type !== "BASE TABLE"}
         confirm={{
-            title: pg.selectedRows.length
-                ? `Remove ${pg.selectedRows.length} rows`
+            title: pg.selected_rows.length
+                ? `Remove ${pg.selected_rows.length} rows`
                 : `Truncate table and restart identity`,
-            description: pg.selectedRows.length
+            description: pg.selected_rows.length
                 ? "Once you delete the selected rows, it can't be undone."
                 : "Once you truncate the table, it can't be undone.\nThe identity of the primary key will be automatically restarted.",
             buttonClass: "btn error",
             buttonText: "Confirm delete",
         }}
         ><TrashIcon --size="1.2rem" />
-        {#if pg.selectedRows.length && pg.currentTable.type === "BASE TABLE"}<span
+        {#if pg.selected_rows.length && pg.current_table.type === "BASE TABLE"}<span
                 class="badge absolute top-0"
-                style:right="-0.6rem">{pg.selectedRows.length > 100 ? "99+" : pg.selectedRows.length}</span
+                style:right="-0.6rem">{pg.selected_rows.length > 100 ? "99+" : pg.selected_rows.length}</span
             >{/if}
     </ActionButton>
     <Popover bind:isOpen={isExportOpen} offsetY={10}>
         {#snippet target()}
             <button class="btn ghost icon relative" title="Export" onclick={() => (isExportOpen = !isExportOpen)}
                 ><DownloadIcon --size="1.2rem" />
-                {#if pg.selectedRows.length}<span class="badge absolute top-0" style:right="-0.6rem"
-                        >{pg.selectedRows.length > 100 ? "99+" : pg.selectedRows.length}</span
+                {#if pg.selected_rows.length}<span class="badge absolute top-0" style:right="-0.6rem"
+                        >{pg.selected_rows.length > 100 ? "99+" : pg.selected_rows.length}</span
                     >{/if}
             </button>
         {/snippet}
@@ -115,47 +115,47 @@
             <button
                 class="btn ghost"
                 onclick={async () => {
-                    if (await saveToFile(JSON.stringify(pg.selectedRowsJson), ["json"])) {
+                    if (await saveToFile(JSON.stringify(pg.selected_rows_json), ["json"])) {
                         toast("Selected rows exported to JSON", {kind: "success"});
                     } else {
                         toast("Failed to export JSON", {kind: "error"});
                     }
                     isExportOpen = false;
-                }}>Export {pg.selectedRows.length > 0 ? `${pg.selectedRows.length} rows` : "all rows"} to JSON</button
+                }}>Export {pg.selected_rows.length > 0 ? `${pg.selected_rows.length} rows` : "all rows"} to JSON</button
             >
             <button
                 class="btn ghost"
                 onclick={async () => {
-                    if (await saveToFile(pg.selectedRowsCsv, ["csv"])) {
+                    if (await saveToFile(pg.selected_rows_csv, ["csv"])) {
                         toast("Selected rows exported to CSV", {kind: "success"});
                     } else {
                         toast("Failed to export CSV", {kind: "error"});
                     }
                     isExportOpen = false;
-                }}>Export {pg.selectedRows.length > 0 ? `${pg.selectedRows.length} rows` : "all rows"} to CSV</button
+                }}>Export {pg.selected_rows.length > 0 ? `${pg.selected_rows.length} rows` : "all rows"} to CSV</button
             >
             <button
                 class="btn ghost"
                 onclick={async () => {
-                    if (await saveToFile(pg.selectedRowsSql, ["sql"])) {
+                    if (await saveToFile(pg.selected_rows_sql, ["sql"])) {
                         toast("Selected rows exported to SQL", {kind: "success"});
                     } else {
                         toast("Failed to export SQL", {kind: "error"});
                     }
                     isExportOpen = false;
-                }}>Export {pg.selectedRows.length > 0 ? `${pg.selectedRows.length} rows` : "all rows"} to SQL</button
+                }}>Export {pg.selected_rows.length > 0 ? `${pg.selected_rows.length} rows` : "all rows"} to SQL</button
             >
         </div>
     </Popover>
     <button class="btn icon ghost" onclick={refresh} title="Refresh">
         <RefreshIcon --size="1.2rem" spinning={refreshing} />
     </button>
-    <button class="btn" disabled={pg.currentTable.type !== "BASE TABLE"} onclick={() => (isInsertOpen = true)}
+    <button class="btn" disabled={pg.current_table.type !== "BASE TABLE"} onclick={() => (isInsertOpen = true)}
         ><PlusIcon --size="1.2rem" /> Insert</button
     >
 {/if}
 
-{#if pg.currentTable}
+{#if pg.current_table}
     <Dialog
         --padding="0"
         isOpen={isInsertOpen}
