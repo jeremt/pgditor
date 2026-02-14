@@ -29,6 +29,7 @@ pub struct PgColumn {
 pub struct PgTableForGraph {
     pub schema: String,
     pub name: String,
+    #[serde(rename = "type")]
     pub table_type: String,
     pub columns: Vec<PgColumn>,
 }

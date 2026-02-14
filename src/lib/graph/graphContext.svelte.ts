@@ -23,9 +23,11 @@ class GraphContext {
     };
 
     apply_layout = () => {
-        const layout = build_layout(this.nodes, this.edges);
-        this.nodes = layout.nodes;
-        this.edges = layout.edges;
+        const newNodes = build_layout(this.nodes, this.edges);
+        if (newNodes instanceof Error) {
+            return;
+        }
+        this.nodes = newNodes;
     };
 }
 

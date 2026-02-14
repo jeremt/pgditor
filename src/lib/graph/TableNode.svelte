@@ -1,6 +1,7 @@
 <script lang="ts">
     import {get_commands_context} from "$lib/commands/commandsContext.svelte";
     import ArrowIcon from "$lib/icons/ArrowIcon.svelte";
+    import EyeIcon from "$lib/icons/EyeIcon.svelte";
     import KeyIcon from "$lib/icons/KeyIcon.svelte";
     import LinkIcon from "$lib/icons/LinkIcon.svelte";
     import TableIcon from "$lib/icons/TableIcon.svelte";
@@ -32,7 +33,11 @@
 
 <div class=" bg-bg border border-bg-2 rounded-xl hover:border-fg-2 min-w-60">
     <div class="flex gap-2 items-center px-4 py-2 border-b border-b-bg-2">
-        <TableIcon />
+        {#if data.type === "BASE TABLE"}
+            <TableIcon --size="1.2rem" />
+        {:else if data.type === "VIEW"}
+            <EyeIcon --size="1.2rem" />
+        {/if}
         <strong class="text-lg">{data.label}</strong>
         <span class="font-mono text-sm bg-bg-1 py-0.5 px-2 rounded-md ms-auto">
             {data.schema}

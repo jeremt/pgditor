@@ -3,16 +3,19 @@ import type {PgTableForGraph} from "$lib/table/pgContext.svelte";
 import {MarkerType, Position, type Edge, type Node} from "@xyflow/svelte";
 
 export const build_nodes = (tables: PgTableForGraph[]) =>
-    tables.map((table, index) => ({
-        id: `${table.schema}.${table.name}`,
-        position: {x: index * 300, y: 100},
-        data: {
-            label: table.name,
-            schema: table.schema,
-            columns: table.columns,
-        },
-        type: "table",
-    }));
+    tables.map((table, index) => {
+        return {
+            id: `${table.schema}.${table.name}`,
+            position: {x: index * 300, y: 100},
+            data: {
+                label: table.name,
+                schema: table.schema,
+                type: table.type,
+                columns: table.columns,
+            },
+            type: "table",
+        };
+    });
 
 export const build_edges = (tables: PgTableForGraph[]) =>
     tables.flatMap((table) =>
@@ -28,16 +31,25 @@ export const build_edges = (tables: PgTableForGraph[]) =>
                         targetHandle: `${table.schema}.${table.name}.${col.column_name}-target`,
                         style: "stroke: var(--color-fg); stroke-width: 1px;",
                         type: "smoothstep",
-                        markerEnd: {type: MarkerType.Arrow, width: 30, height: 30, color: "var(--color-fg)"},
-                        markerStart: {type: MarkerType.Arrow, width: 30, height: 30, color: "var(--color-fg)"},
+                        markerEnd: {
+                            type: MarkerType.Arrow,
+                            width: 30,
+                            height: 30,
+                            strokeWidth: 1,
+                            color: "var(--color-fg)",
+                        },
+                        markerStart: {
+                            type: MarkerType.Arrow,
+                            width: 30,
+                            height: 30,
+                            strokeWidth: 1,
+                            color: "var(--color-fg)",
+                        },
                     }) satisfies Edge,
             ),
     );
 
-const nodeWidth = 1;
-const nodeHeight = 1;
-
-export const build_layout = (nodes: Node[], edges: Edge[], direction = "TB") => {
+export const build_layout = (nodes: Node[], edges: Edge[], direction = "LR") => {
     const dagreGraph = new dagre.graphlib.Graph();
     dagreGraph.setDefaultEdgeLabel(() => ({}));
 
@@ -45,35 +57,37 @@ export const build_layout = (nodes: Node[], edges: Edge[], direction = "TB") => 
     dagreGraph.setGraph({rankdir: direction});
 
     for (const node of nodes) {
+        const nodeSize = node.measured;
+        if (nodeSize === undefined || nodeSize.width === undefined || nodeSize.height === undefined) {
+            return new Error(`Cannot layout if the node isn't rendered yet.`);
+        }
         dagreGraph.setNode(node.id, {
-            width: node.measured?.width ?? nodeWidth,
-            height: node.measured?.height ?? nodeHeight,
+            width: nodeSize.width,
+            height: nodeSize.height,
         });
     }
-
-    edges.forEach((edge) => {
+    for (const edge of edges) {
         dagreGraph.setEdge(edge.source, edge.target);
-    });
+    }
 
     dagre.layout(dagreGraph);
 
-    const layoutedNodes = nodes.map((node) => {
+    const layoutedNodes: Node[] = [];
+    for (const node of nodes) {
+        const nodeSize = node.measured;
+        if (nodeSize === undefined || nodeSize.width === undefined || nodeSize.height === undefined) {
+            return new Error(`Cannot layout if the node isn't rendered yet.`);
+        }
         const nodeWithPosition = dagreGraph.node(node.id);
-        // Get the actual width/height used for this node
-        const width = node.measured?.width ?? nodeWidth;
-        const height = node.measured?.height ?? nodeHeight;
-
         node.targetPosition = isHorizontal ? Position.Left : Position.Top;
         node.sourcePosition = isHorizontal ? Position.Right : Position.Bottom;
-
-        return {
+        layoutedNodes.push({
             ...node,
             position: {
-                x: nodeWithPosition.x - width / 2, // Use actual width
-                y: nodeWithPosition.y - height / 2, // Use actual height
+                x: nodeWithPosition.x - nodeSize.width / 2, // Use actual width
+                y: nodeWithPosition.y - nodeSize.height / 2, // Use actual height
             },
-        };
-    });
-
-    return {nodes: layoutedNodes, edges};
+        });
+    }
+    return layoutedNodes;
 };

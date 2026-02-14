@@ -15,9 +15,9 @@ pub async fn list_tables_for_graph(
 
         let query = r#"
         SELECT 
-            t.table_schema,
-            t.table_name,
-            t.table_type,
+            t.table_schema as schema,
+            t.table_name as name,
+            t.table_type as type,
 
             c.column_name,
             pt.typname AS data_type,
@@ -101,9 +101,9 @@ pub async fn list_tables_for_graph(
         let mut tables: HashMap<(String, String), PgTableForGraph> = HashMap::new();
 
         for row in rows {
-            let schema: String = row.get("table_schema");
-            let table_name: String = row.get("table_name");
-            let table_type: String = row.get("table_type");
+            let schema: String = row.get("schema");
+            let table_name: String = row.get("name");
+            let table_type: String = row.get("type");
 
             let key = (schema.clone(), table_name.clone());
 

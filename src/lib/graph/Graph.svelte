@@ -16,22 +16,22 @@
     import {get_graph_context} from "./graphContext.svelte";
 
     const graph = get_graph_context();
-    const nodesInitialized = useNodesInitialized();
-    let initialized = false; // breaks the infinite effect loop
+    // const nodesInitialized = useNodesInitialized();
+    // let initialized = false; // breaks the infinite effect loop
 
     $effect(() => {
         graph.load_db();
-        initialized = false;
-        console.log("load db");
+        // initialized = false;
+        // console.log("load db");
     });
 
-    $effect(() => {
-        if (!initialized && nodesInitialized.current) {
-            console.log("apply layout");
-            graph.apply_layout();
-            initialized = true;
-        }
-    });
+    // $effect(() => {
+    //     if (!initialized && nodesInitialized.current) {
+    //         console.log("apply layout");
+    //         graph.apply_layout();
+    //         initialized = true;
+    //     }
+    // });
 
     const nodeTypes = {
         table: TableNode,
@@ -48,9 +48,11 @@
         minZoom={0.1}
     >
         <MiniMap
-            width={160}
-            height={90}
-            nodeColor="var(--color-fg-1)"
+            width={120}
+            height={120}
+            nodeColor="var(--color-bg)"
+            nodeStrokeColor="var(--color-fg)"
+            nodeStrokeWidth={6}
             maskColor="var(--color-backdrop)"
             bgColor="var(--color-bg)"
         />
