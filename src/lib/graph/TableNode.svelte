@@ -21,13 +21,13 @@
         <span class="font-mono text-sm bg-bg-1 py-0.5 px-2 rounded-md ms-auto">
             {data.schema}
         </span>
-        <button class="btn ghost icon ms-auto" onclick={() => selectTable({schema: data.schema, name: data.label})}
+        <button class="btn ghost icon" onclick={() => selectTable({schema: data.schema, name: data.label})}
             ><ArrowIcon direction="right" /></button
         >
     </div>
     <div class="py-2">
         {#each data.columns as column}
-            <div class="column-row relative px-4 py-1 flex items-center">
+            <div class="column-row relative px-4 py-1 flex items-center gap-4">
                 <!-- Target handle (for incoming FK relationships) -->
                 <Handle type="target" position={Position.Left} id={`${id}.${column.column_name}-target`} />
 

@@ -14,6 +14,7 @@
     import SearchIcon from "$lib/icons/SearchIcon.svelte";
     import GraphIcon from "$lib/icons/GraphIcon.svelte";
     import GraphView from "$lib/graph/GraphView.svelte";
+    import {SvelteFlowProvider} from "@xyflow/svelte";
 
     const commands = get_commands_context();
     const settings = getSettingsContext();
@@ -72,7 +73,9 @@
 {:else if commands.mode === "script"}
     <SqlScript />
 {:else if commands.mode === "graph"}
-    <GraphView />
+    <SvelteFlowProvider>
+        <GraphView />
+    </SvelteFlowProvider>
 {/if}
 
 <CommandPalette />

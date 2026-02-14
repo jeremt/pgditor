@@ -15,6 +15,7 @@
   },
   "license": "MIT",
   "dependencies": {
+    "@dagrejs/dagre": "^2.0.4",
     "@fontsource-variable/space-grotesk": "^5.2.10",
     "@fontsource/space-mono": "^5.2.9",
     "@rich_harris/svelte-split-pane": "^3.0.0",
