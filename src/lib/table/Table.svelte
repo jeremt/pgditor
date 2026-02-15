@@ -218,8 +218,8 @@
         </table>
     </div>
     {#if pg.current_table.rows.length === 0}
-        <div class="text-fg-2 grow">
-            <div class="border border-dashed border-bg-2 p-4 w-fit rounded-2xl mx-auto">
+        <div class="fixed top-1/2 w-full flex justify-center pointer-events-none">
+            <div class="border border-dashed border-bg-2 p-4 w-fit rounded-2xl">
                 This table doesn't contain any rows, you can use <strong>Insert</strong> to add some!
             </div>
         </div>
