@@ -62,9 +62,7 @@
     {:else if commands.mode === "script"}
         <SqlScriptMenu />
     {:else if commands.mode === "graph"}
-        <SvelteFlowProvider>
-            <GraphMenu />
-        </SvelteFlowProvider>
+        <GraphMenu />
     {/if}
     <!-- <button
         class="btn ghost icon"

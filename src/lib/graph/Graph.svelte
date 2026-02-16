@@ -1,37 +1,18 @@
 <script lang="ts">
-    import {get_pg_context, type PgTableForGraph} from "$lib/table/pgContext.svelte";
-    import {
-        SvelteFlow,
-        Background,
-        BackgroundVariant,
-        MiniMap,
-        type Node,
-        type Edge,
-        useNodesInitialized,
-    } from "@xyflow/svelte";
-    import {build_edges, build_nodes} from "./graph";
+    import {SvelteFlow, Background, BackgroundVariant, MiniMap, useNodes, useSvelteFlow} from "@xyflow/svelte";
     import TableNode from "./TableNode.svelte";
 
     import "@xyflow/svelte/dist/style.css";
     import {get_graph_context} from "./graphContext.svelte";
 
     const graph = get_graph_context();
-    // const nodesInitialized = useNodesInitialized();
-    // let initialized = false; // breaks the infinite effect loop
+    const {fitView} = useSvelteFlow();
+
+    graph.fit_view = fitView;
 
     $effect(() => {
         graph.load_db();
-        // initialized = false;
-        // console.log("load db");
     });
-
-    // $effect(() => {
-    //     if (!initialized && nodesInitialized.current) {
-    //         console.log("apply layout");
-    //         graph.apply_layout();
-    //         initialized = true;
-    //     }
-    // });
 
     const nodeTypes = {
         table: TableNode,

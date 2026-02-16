@@ -8,8 +8,21 @@ class GraphContext {
     edges = $state.raw<Edge[]>([]);
     error_message = $state("");
 
+    fit_view = () => {};
+
     #pg = get_pg_context();
     #tables = $state<PgTableForGraph[]>([]);
+
+    #initialized = false;
+    constructor() {
+        $effect(() => {
+            // initialized check MUST BE after because its not reactive
+            if (this.nodes.every((node) => node.measured) && !this.#initialized) {
+                this.apply_layout();
+                this.#initialized = true;
+            }
+        });
+    }
 
     load_db = async () => {
         const res = await this.#pg.list_tables_for_graph();
@@ -17,17 +30,19 @@ class GraphContext {
             this.error_message = res.message;
         } else {
             this.#tables = res;
+            this.#initialized = false;
             this.nodes = build_nodes(this.#tables);
             this.edges = build_edges(this.#tables);
         }
     };
 
     apply_layout = () => {
-        const newNodes = build_layout(this.nodes, this.edges);
-        if (newNodes instanceof Error) {
+        const new_nodes = build_layout(this.nodes, this.edges);
+        if (new_nodes instanceof Error) {
             return;
         }
-        this.nodes = newNodes;
+        this.nodes = new_nodes;
+        this.fit_view();
     };
 }
 

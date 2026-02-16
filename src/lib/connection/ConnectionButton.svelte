@@ -20,7 +20,6 @@
 <Popover bind:isOpen={commands.is_connections_open} offsetY={10}>
     {#snippet target()}
         <button class="btn secondary" onclick={() => (commands.is_connections_open = !commands.is_connections_open)}>
-            <PlugIcon --size="1.2rem" />
             {connections.current ? connections.current.name : "Add connection"}
             <ChevronIcon --size="1rem" direction={commands.is_connections_open ? "top" : "bottom"} />
         </button>
