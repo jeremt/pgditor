@@ -197,7 +197,7 @@
                                                             column: column.foreign_column_name!,
                                                             column_type: column.data_type,
                                                             operator: "=",
-                                                            value: `${valueToSql(column, value)}`,
+                                                            value: `${value}`,
                                                         },
                                                     ];
                                                     pg.where_sql = filters_to_where(pg.where_filters).trim();
