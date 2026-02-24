@@ -6,10 +6,9 @@
     import CheckboxInput from "$lib/widgets/CheckboxInput.svelte";
     import Dialog from "$lib/widgets/Dialog.svelte";
 
-    import {filters_to_where, get_pg_context, type PgColumn, type PgRow} from "./pgContext.svelte";
+    import {filters_to_where, get_pg_context, type PgColumn, type PgRow} from "./pg_context.svelte";
     import TableUpsert from "./TableUpsert.svelte";
     import {createContextMenu} from "./tableContextMenu.svelte";
-    import {valueToSql} from "./values";
     import ProgressCircle from "$lib/widgets/ProgressCircle.svelte";
     import TableValueUpdate from "./TableValueUpdate.svelte";
     import {writeText} from "@tauri-apps/plugin-clipboard-manager";

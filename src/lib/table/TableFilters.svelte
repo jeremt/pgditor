@@ -13,7 +13,7 @@
         type PgColumn,
         type WhereFilter,
         type WhereOperator,
-    } from "./pgContext.svelte";
+    } from "./pg_context.svelte";
     import FloatValueEditor from "./valueEditors/FloatValueEditor.svelte";
     import IntegerValueEditor from "./valueEditors/IntegerValueEditor.svelte";
     import {valueTypeIsFloat, valueTypeIsInteger} from "./values";

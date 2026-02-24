@@ -7,7 +7,7 @@
     import {onMount, onDestroy} from "svelte";
 
     import {set_connections_context} from "$lib/connection/connectionsContext.svelte";
-    import {set_pg_context} from "$lib/table/pgContext.svelte";
+    import {set_pg_context} from "$lib/table/pg_context.svelte";
     import Toaster, {setToastContext} from "$lib/widgets/Toaster.svelte";
     import {setScriptsContext} from "$lib/scripts/scriptsContext.svelte";
     import {set_commands_context} from "$lib/commands/commandsContext.svelte";

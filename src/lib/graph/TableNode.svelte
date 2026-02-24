@@ -5,7 +5,7 @@
     import KeyIcon from "$lib/icons/KeyIcon.svelte";
     import LinkIcon from "$lib/icons/LinkIcon.svelte";
     import TableIcon from "$lib/icons/TableIcon.svelte";
-    import {get_pg_context, type PgColumn, type PgTable} from "$lib/table/pgContext.svelte";
+    import {get_pg_context, type PgColumn, type PgTable} from "$lib/table/pg_context.svelte";
     import {Handle, Position, type Node, type NodeProps} from "@xyflow/svelte";
 
     type Props = NodeProps<Node<{schema: string; label: string; type: PgTable["type"]; columns: PgColumn[]}>>;

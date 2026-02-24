@@ -1,5 +1,5 @@
 <script lang="ts">
-    import {get_pg_context, type WhereFilter, type PgColumn, type PgRow} from "../pgContext.svelte";
+    import {get_pg_context, type WhereFilter, type PgColumn, type PgRow} from "../pg_context.svelte";
     import LinkIcon from "$lib/icons/LinkIcon.svelte";
     import Dialog from "$lib/widgets/Dialog.svelte";
     import CheckIcon from "$lib/icons/CheckIcon.svelte";

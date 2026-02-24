@@ -4,7 +4,7 @@
     import CheckboxInput from "$lib/widgets/CheckboxInput.svelte";
     import Popover from "$lib/widgets/Popover.svelte";
     import {SvelteSet} from "svelte/reactivity";
-    import {get_pg_context} from "./pgContext.svelte";
+    import {get_pg_context} from "./pg_context.svelte";
 
     const pg = get_pg_context();
     let isColumnsOpen = $state(false);

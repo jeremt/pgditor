@@ -1,4 +1,4 @@
-import {get_pg_context, type PgTableForGraph} from "$lib/table/pgContext.svelte";
+import {get_pg_context, type PgTableForGraph} from "$lib/table/pg_context.svelte";
 import {type Node, type Edge, useNodesInitialized} from "@xyflow/svelte";
 import {getContext, setContext} from "svelte";
 import {build_edges, build_layout, build_nodes} from "./graph";

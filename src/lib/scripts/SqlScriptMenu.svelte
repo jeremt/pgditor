@@ -8,7 +8,7 @@
     import ItemSelect from "$lib/widgets/ItemSelect.svelte";
     import FileIcon from "$lib/icons/FileIcon.svelte";
     import {open} from "@tauri-apps/plugin-dialog";
-    import {get_pg_context} from "$lib/table/pgContext.svelte";
+    import {get_pg_context} from "$lib/table/pg_context.svelte";
     import TrashIcon from "$lib/icons/TrashIcon.svelte";
     import SaveIcon from "$lib/icons/SaveIcon.svelte";
     import SearchIcon from "$lib/icons/SearchIcon.svelte";

@@ -5,7 +5,7 @@
     import LinkIcon from "$lib/icons/LinkIcon.svelte";
     import CheckboxInput from "$lib/widgets/CheckboxInput.svelte";
     import {defaultValues} from "./values";
-    import {get_pg_context, type PgRow} from "./pgContext.svelte";
+    import {get_pg_context, type PgRow} from "./pg_context.svelte";
     import TableValueEditor from "./TableValueEditor.svelte";
     import {catchError} from "$lib/helpers/catchError";
     import ActionButton from "$lib/widgets/ActionButton.svelte";

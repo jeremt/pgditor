@@ -1,4 +1,4 @@
-import type {PgTable} from "$lib/table/pgContext.svelte";
+import type {PgTable} from "$lib/table/pg_context.svelte";
 import type monaco from "monaco-editor";
 
 const keywords = [

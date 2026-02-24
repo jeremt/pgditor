@@ -4,7 +4,7 @@
     import {getScriptsContext} from "./scriptsContext.svelte";
     import {SplitPane} from "@rich_harris/svelte-split-pane";
     import {getToastContext} from "$lib/widgets/Toaster.svelte";
-    import {get_pg_context} from "$lib/table/pgContext.svelte";
+    import {get_pg_context} from "$lib/table/pg_context.svelte";
     import ProgressCircle from "$lib/widgets/ProgressCircle.svelte";
     import {getSettingsContext} from "$lib/settings/settingsContext.svelte";
 

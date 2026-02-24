@@ -2,7 +2,7 @@
     import {catchError} from "$lib/helpers/catchError";
     import {formatGeometryData, type GeoJSONGeometry} from "$lib/helpers/geometryData";
     import MultilinesInput from "$lib/widgets/MultilinesInput.svelte";
-    import {type PgColumn} from "../pgContext.svelte";
+    import {type PgColumn} from "../pg_context.svelte";
 
     type Props = {
         value: GeoJSONGeometry | string;

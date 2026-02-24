@@ -3,7 +3,7 @@
     import TableIcon from "$lib/icons/TableIcon.svelte";
     import {fuzzySearchWithHighlights, renderHighlightedMatch} from "$lib/helpers/fuzzySearch";
 
-    import {get_pg_context} from "./pgContext.svelte";
+    import {get_pg_context} from "./pg_context.svelte";
     import Dialog from "$lib/widgets/Dialog.svelte";
     import EnterIcon from "$lib/icons/EnterIcon.svelte";
     import CheckIcon from "$lib/icons/CheckIcon.svelte";

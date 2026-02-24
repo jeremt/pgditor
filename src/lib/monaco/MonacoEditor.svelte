@@ -50,7 +50,7 @@
 <script lang="ts">
     import {resize} from "$lib/helpers/resize";
     import {onMount} from "svelte";
-    import {get_pg_context} from "$lib/table/pgContext.svelte";
+    import {get_pg_context} from "$lib/table/pg_context.svelte";
 
     type FileData = {path: string; value: string};
 

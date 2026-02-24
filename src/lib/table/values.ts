@@ -1,4 +1,4 @@
-import type {PgColumn} from "./pgContext.svelte";
+import type {PgColumn} from "./pg_context.svelte";
 
 export const defaultValues = {
     smallint: 0,

@@ -2,7 +2,7 @@
     import MonacoEditor from "$lib/monaco/MonacoEditor.svelte";
     import {getSettingsContext} from "$lib/settings/settingsContext.svelte";
     import MultilinesInput from "$lib/widgets/MultilinesInput.svelte";
-    import {get_pg_context, type PgColumn} from "../pgContext.svelte";
+    import {get_pg_context, type PgColumn} from "../pg_context.svelte";
 
     type Props = {
         value: string;

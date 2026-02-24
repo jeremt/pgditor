@@ -3,7 +3,7 @@ import {Menu} from "@tauri-apps/api/menu";
 import {writeText} from "@tauri-apps/plugin-clipboard-manager";
 import {saveToFile} from "$lib/helpers/saveToFile";
 import {getToastContext} from "$lib/widgets/Toaster.svelte";
-import {get_pg_context, type PgColumn, type PgRow} from "./pgContext.svelte";
+import {get_pg_context, type PgColumn, type PgRow} from "./pg_context.svelte";
 
 export const createContextMenu = () => {
     const pg = get_pg_context();

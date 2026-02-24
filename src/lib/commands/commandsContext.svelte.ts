@@ -1,4 +1,4 @@
-import {get_pg_context} from "$lib/table/pgContext.svelte";
+import {get_pg_context} from "$lib/table/pg_context.svelte";
 import {globalShortcuts} from "$lib/tauri/globalShortcuts";
 import type {ShortcutEvent} from "@tauri-apps/plugin-global-shortcut";
 import {getContext, setContext} from "svelte";

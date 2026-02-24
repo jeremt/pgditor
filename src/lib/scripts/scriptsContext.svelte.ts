@@ -1,6 +1,6 @@
 import {getContext, setContext} from "svelte";
 import {getToastContext} from "$lib/widgets/Toaster.svelte";
-import {get_pg_context} from "$lib/table/pgContext.svelte";
+import {get_pg_context} from "$lib/table/pg_context.svelte";
 import {catchError} from "$lib/helpers/catchError";
 import {StoreContext} from "$lib/helpers/StoreContext";
 import {get_connections_context} from "$lib/connection/connectionsContext.svelte";

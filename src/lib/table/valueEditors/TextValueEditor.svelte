@@ -1,6 +1,6 @@
 <script lang="ts">
     import MultilinesInput from "$lib/widgets/MultilinesInput.svelte";
-    import {type PgColumn} from "../pgContext.svelte";
+    import {type PgColumn} from "../pg_context.svelte";
 
     type Props = {
         value: string;

@@ -1,7 +1,7 @@
 <script lang="ts">
     import Select from "$lib/widgets/Select.svelte";
     import JsonValueEditor from "./valueEditors/JsonValueEditor.svelte";
-    import type {PgColumn, PgRow} from "./pgContext.svelte";
+    import type {PgColumn, PgRow} from "./pg_context.svelte";
     import {valueToSql, valueTypeIsFloat, valueTypeIsInteger} from "./values";
     import TextValueEditor from "./valueEditors/TextValueEditor.svelte";
     import EnumValueEditor from "./valueEditors/EnumValueEditor.svelte";

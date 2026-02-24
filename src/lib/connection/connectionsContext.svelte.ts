@@ -1,6 +1,6 @@
 import {catchError} from "$lib/helpers/catchError";
 import {StoreContext} from "$lib/helpers/StoreContext";
-import type {PgTable} from "$lib/table/pgContext.svelte";
+import type {PgTable} from "$lib/table/pg_context.svelte";
 import {invoke} from "@tauri-apps/api/core";
 import {getContext, setContext} from "svelte";
 

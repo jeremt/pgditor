@@ -1,5 +1,5 @@
 import dagre from "@dagrejs/dagre";
-import type {PgTableForGraph} from "$lib/table/pgContext.svelte";
+import type {PgTableForGraph} from "$lib/table/pg_context.svelte";
 import {MarkerType, Position, type Edge, type Node} from "@xyflow/svelte";
 
 export const build_nodes = (tables: PgTableForGraph[]) =>

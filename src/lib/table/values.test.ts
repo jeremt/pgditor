@@ -1,6 +1,6 @@
 import {describe, expect, it} from "vitest";
 import {valueToSql} from "./values";
-import type {PgColumn} from "./pgContext.svelte";
+import type {PgColumn} from "./pg_context.svelte";
 
 describe("formatValue", () => {
     // Helper to create a column

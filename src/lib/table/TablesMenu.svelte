@@ -2,7 +2,7 @@
     import ChevronIcon from "$lib/icons/ChevronIcon.svelte";
     import TrashIcon from "$lib/icons/TrashIcon.svelte";
     import TableSelect from "$lib/table/TableSelect.svelte";
-    import {get_pg_context, type PgRow} from "$lib/table/pgContext.svelte";
+    import {get_pg_context, type PgRow} from "$lib/table/pg_context.svelte";
     import TableFilters from "$lib/table/TableFilters.svelte";
     import NumberInput from "$lib/widgets/NumberInput.svelte";
     import TableUpsert from "$lib/table/TableUpsert.svelte";

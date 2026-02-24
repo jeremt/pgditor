@@ -1,7 +1,7 @@
 <script lang="ts">
     import Calendar from "$lib/widgets/Calendar.svelte";
     import {SvelteDate} from "svelte/reactivity";
-    import {type PgColumn} from "../pgContext.svelte";
+    import {type PgColumn} from "../pg_context.svelte";
     import Select from "$lib/widgets/Select.svelte";
     import NumberInput from "$lib/widgets/NumberInput.svelte";
     import CalendarIcon from "$lib/icons/CalendarIcon.svelte";

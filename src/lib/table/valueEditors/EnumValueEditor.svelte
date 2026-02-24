@@ -1,6 +1,6 @@
 <script lang="ts">
     import Select from "$lib/widgets/Select.svelte";
-    import type {PgColumn} from "../pgContext.svelte";
+    import type {PgColumn} from "../pg_context.svelte";
 
     type Props = {
         value: string;

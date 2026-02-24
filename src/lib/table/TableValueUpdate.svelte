@@ -13,7 +13,7 @@
     import CheckboxInput from "$lib/widgets/CheckboxInput.svelte";
     import Dialog from "$lib/widgets/Dialog.svelte";
     import {getToastContext} from "$lib/widgets/Toaster.svelte";
-    import {get_pg_context, type PgColumn, type PgRow} from "./pgContext.svelte";
+    import {get_pg_context, type PgColumn, type PgRow} from "./pg_context.svelte";
     import TableValueEditor from "./TableValueEditor.svelte";
     import {defaultValues, valueTypeIsBoolean, valueTypeIsNumber, valueToSql} from "./values";
     import {writeText} from "@tauri-apps/plugin-clipboard-manager";

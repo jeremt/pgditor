@@ -341,6 +341,7 @@ ${this.selected_rows_json
         if (data instanceof Error) {
             console.error(data.message);
             this.#toast_context.toast(`SQL error: ${data.message}`, {kind: "error"});
+            this.is_loading = false;
             return;
         }
         this.selected_rows = [];
