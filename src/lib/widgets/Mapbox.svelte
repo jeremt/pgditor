@@ -6,7 +6,7 @@
     import {PUBLIC_MAPBOX_TOKEN} from "$env/static/public";
 
     const styles = {
-        light: "mapbox://styles/mapbox/light-v11",
+        light: "mapbox://styles/jeremtab/cmm199je1002d01seg08ue19s",
         dark: "mapbox://styles/mapbox/dark-v11",
     };
 
