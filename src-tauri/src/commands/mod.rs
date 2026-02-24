@@ -5,3 +5,4 @@ pub mod list_tables;
 pub mod raw_query;
 pub mod test_connection;
 pub mod show_main_window;
+pub mod get_table_data_async;

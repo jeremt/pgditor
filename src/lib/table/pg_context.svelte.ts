@@ -4,6 +4,7 @@ import {invoke} from "@tauri-apps/api/core";
 import {getContext, setContext} from "svelte";
 import {value_to_sql, value_type_is_number, type PgType} from "./values";
 import {get_toast_context} from "$lib/widgets/Toaster.svelte";
+import {listen} from "@tauri-apps/api/event";
 
 export type PgTable = {
     schema: string;
@@ -175,6 +176,29 @@ ${this.selected_rows_json
 
     private connections = get_connections_context();
 
+    constructor() {
+        listen<{rows: PgRow[]; count: number}>("get_table_data/result", (event) => {
+            if (this.current_table === undefined) {
+                return;
+            }
+            const data = event.payload;
+            // console.log();
+            //     if (data instanceof Error) {
+            //     console.error(data.message);
+            //     this.#toast_context.toast(`SQL error: ${data.message}`, {kind: "error"});
+            //     this.is_loading = false;
+            //     return;
+            // }
+            this.selected_rows = [];
+            this.current_table.rows = data.rows;
+            // for (let i = 0; i < this.current_table.rows.length; i++) {
+            //     this.current_table.rows[i].__index = i;
+            // }
+            this.current_table.count = data.count;
+            this.is_loading = false;
+        });
+    }
+
     get fullname() {
         if (!this.current_table) {
             return undefined;
@@ -320,39 +344,40 @@ ${this.selected_rows_json
         const connectionString = this.connections.current.connectionString;
         this.is_loading = true;
         const primary_key = this.current_table.columns.find((col) => col.is_primary_key === "YES");
-        const data = await catch_error(
-            invoke<{rows: PgRow[]; count: number}>("get_table_data", {
-                connectionString,
-                schema: this.current_table.schema,
-                table: this.current_table.name,
-                columns:
-                    this.selected_columns.size === 0 ||
-                    this.selected_columns.size === this.current_table.column_names.length
-                        ? "*"
-                        : this.selected_columns.values().toArray().join(", "),
-                offset,
-                limit,
-                whereClause: where,
-                orderBy: this.order_by
-                    ? `order by ${this.order_by.column} ${this.order_by.direction}`
-                    : primary_key !== undefined
-                      ? `order by ${primary_key.column_name} asc`
-                      : "",
-            }),
-        );
-        if (data instanceof Error) {
-            console.error(data.message);
-            this.#toast_context.toast(`SQL error: ${data.message}`, {kind: "error"});
-            this.is_loading = false;
-            return;
-        }
-        this.selected_rows = [];
-        this.current_table.rows = data.rows;
-        for (let i = 0; i < this.current_table.rows.length; i++) {
-            this.current_table.rows[i].__index = i;
-        }
-        this.current_table.count = data.count;
-        this.is_loading = false;
+        invoke<{rows: PgRow[]; count: number}>("get_table_data_async", {
+            connectionString,
+            schema: this.current_table.schema,
+            table: this.current_table.name,
+            columns:
+                this.selected_columns.size === 0 ||
+                this.selected_columns.size === this.current_table.column_names.length
+                    ? "*"
+                    : this.selected_columns.values().toArray().join(", "),
+            offset,
+            limit,
+            whereClause: where,
+            orderBy: this.order_by
+                ? `order by ${this.order_by.column} ${this.order_by.direction}`
+                : primary_key !== undefined
+                  ? `order by ${primary_key.column_name} asc`
+                  : "",
+        });
+        // const data = catch_error(
+
+        // );
+        // if (data instanceof Error) {
+        //     console.error(data.message);
+        //     this.#toast_context.toast(`SQL error: ${data.message}`, {kind: "error"});
+        //     this.is_loading = false;
+        //     return;
+        // }
+        // this.selected_rows = [];
+        // this.current_table.rows = data.rows;
+        // for (let i = 0; i < this.current_table.rows.length; i++) {
+        //     this.current_table.rows[i].__index = i;
+        // }
+        // this.current_table.count = data.count;
+        // this.is_loading = false;
     };
 
     /**

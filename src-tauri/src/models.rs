@@ -34,7 +34,7 @@ pub struct PgTableForGraph {
     pub columns: Vec<PgColumn>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 pub struct PgTableData {
     pub rows: Vec<JsonValue>,
     pub count: i64,

@@ -22,6 +22,12 @@
     const {oncontextmenu} = create_context_menu();
     let cell = $state<{element: HTMLElement; row: PgRow; column: PgColumn}>();
     let last_checked_index: number | null = null;
+
+    const selected_columns_list = $derived(
+        pg.current_table?.columns.filter(
+            (col) => pg.selected_columns.size === 0 || pg.selected_columns.has(col.column_name),
+        ) ?? [],
+    );
 </script>
 
 {#if pg.current_table === undefined}
@@ -94,7 +100,7 @@
         <table class="h-fit">
             <thead class="sticky top-0 bg-bg z-10">
                 <tr>
-                    {#each pg.get_selected_columns() as column (column.column_name)}
+                    {#each selected_columns_list as column (column.column_name)}
                         <th
                             class="cursor-pointer"
                             onclick={() => {
@@ -140,7 +146,7 @@
             <tbody>
                 {#each pg.current_table.rows as row (row.__index)}
                     <tr>
-                        {#each pg.get_selected_columns() as column (column.column_name)}
+                        {#each selected_columns_list as column (column.column_name)}
                             {@const value = row[column.column_name]}
                             <td
                                 class:text-fg-2={value === null}
@@ -149,10 +155,10 @@
                                     : column.data_type === "geometry"
                                       ? format_geometry_data(value as GeoJSONGeometry)
                                       : typeof value === "object"
-                                        ? JSON.stringify(value)
+                                        ? JSON.stringify(value).slice(0, 200)
                                         : value === null
                                           ? "null"
-                                          : value.toString()}
+                                          : value.toString().slice(0, 200)}
                                 onclick={async (e) => {
                                     if (pg.current_table?.type === "BASE TABLE") {
                                         if (e.currentTarget instanceof HTMLElement) {
