@@ -1,5 +1,5 @@
 import {test, expect} from "vitest";
-import {format_spatial_data, parse_spatial_data, spatialDataToHex} from "./spatial_data";
+import {format_spatial_data, parse_spatial_data, spatial_data_to_Hex} from "./spatial_data";
 
 // Test formatSpatialData
 test("formatSpatialData formats Point geometry", () => {
@@ -216,13 +216,13 @@ test("parseSpatialData and formatSpatialData round-trip for Point", () => {
 
 test("spatialDataToHex converts Point", () => {
     const formatted = "Point(-122.4194 37.7749)";
-    const hex = spatialDataToHex(formatted);
+    const hex = spatial_data_to_Hex(formatted);
     expect(hex).toMatch(/^01[0-9a-f]+$/); // Starts with 01 (little endian)
 });
 
 test("spatialDataToHex converts LineString", () => {
     const formatted = "LineString(-122.4194 37.7749, -122.4084 37.7849)";
-    const hex = spatialDataToHex(formatted);
+    const hex = spatial_data_to_Hex(formatted);
     expect(hex).toMatch(/^01[0-9a-f]+$/);
 });
 
@@ -232,7 +232,7 @@ test("spatialDataToHex round-trip", () => {
         coordinates: {lng: -122.4194, lat: 37.7749},
     };
     const formatted = format_spatial_data(original);
-    const hex = spatialDataToHex(formatted);
+    const hex = spatial_data_to_Hex(formatted);
     // The hex should be valid WKB format
     expect(hex).toBeTruthy();
     expect(hex.length).toBeGreaterThan(0);

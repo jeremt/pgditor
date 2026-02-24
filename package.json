@@ -32,6 +32,7 @@
     "@tauri-apps/plugin-store": "~2.4.1",
     "@xyflow/svelte": "^1.5.0",
     "emmet-monaco-es": "^5.6.1",
+    "mapbox-gl": "^3.18.1",
     "monaco-editor": "^0.55.1",
     "monaco-sql-languages": "^0.15.1",
     "shiki": "^3.15.0"

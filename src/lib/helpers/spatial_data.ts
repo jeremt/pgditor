@@ -219,7 +219,7 @@ function getGeometryType(type: number) {
     return typeName;
 }
 
-export function spatialDataToHex(formattedString: string): string {
+export function spatial_data_to_Hex(formattedString: string): string {
     const parsed = parsePostGISString(formattedString);
     return geometryToWKB(parsed);
 }
