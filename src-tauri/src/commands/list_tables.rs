@@ -28,8 +28,8 @@ pub async fn list_tables(connection_string: String) -> Result<Vec<PgTable>, PgEr
                 WHERE 
                     t.table_schema NOT IN ('pg_catalog', 'information_schema')
                 ORDER BY 
-                    t.table_schema,
-                    t.table_name;",
+                    t.table_schema DESC,
+                    t.table_name DESC;",
                 &[],
             )
             .map_err(PgError::from)?;
