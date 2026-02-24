@@ -3,7 +3,7 @@
     import mapboxgl from "mapbox-gl";
     import "mapbox-gl/dist/mapbox-gl.css";
     import {get_settings_context} from "$lib/settings/settings_context.svelte";
-    import {PUBLIC_MABOX_TOKEN} from "$env/static/public";
+    import {PUBLIC_MAPBOX_TOKEN} from "$env/static/public";
 
     const styles = {
         light: "mapbox://styles/mapbox/light-v11",
@@ -49,7 +49,7 @@
     onMount(() => {
         if (!mapContainer) return;
 
-        mapboxgl.accessToken = PUBLIC_MABOX_TOKEN;
+        mapboxgl.accessToken = PUBLIC_MAPBOX_TOKEN;
 
         map = new mapboxgl.Map({
             container: mapContainer,
