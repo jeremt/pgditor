@@ -2,7 +2,7 @@
     import CleanBrushIcon from "$lib/icons/CleanBrushIcon.svelte";
     import FitViewIcon from "$lib/icons/FitViewIcon.svelte";
     import RefreshIcon from "$lib/icons/RefreshIcon.svelte";
-    import {get_graph_context} from "./graphContext.svelte";
+    import {get_graph_context} from "./graph_context.svelte";
 
     const graph = get_graph_context();
 

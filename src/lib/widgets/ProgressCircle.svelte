@@ -5,10 +5,10 @@
         value?: number;
         thickness?: number;
         infinite?: boolean;
-        showValue?: boolean;
+        show_value?: boolean;
         end?: Snippet;
     }
-    let {value = 0.25, thickness = 0.1, infinite = false, showValue = true, end}: Props = $props();
+    let {value = 0.25, thickness = 0.1, infinite = false, show_value = true, end}: Props = $props();
 
     const baseSize = 512; // px
     const radius = baseSize / 2;
@@ -38,7 +38,7 @@
                 stroke-dashoffset={dashoffset}
             />
         </svg>
-        {#if showValue}
+        {#if show_value}
             <figcaption>{(Math.min(value, 1) * 100).toFixed(0)}%</figcaption>
         {/if}
     </figure>

@@ -1,9 +1,9 @@
-import {get_connections_context} from "$lib/connection/connectionsContext.svelte";
-import {catchError} from "$lib/helpers/catchError";
+import {get_connections_context} from "$lib/connection/connections_context.svelte";
+import {catch_error} from "$lib/helpers/catch_error";
 import {invoke} from "@tauri-apps/api/core";
 import {getContext, setContext} from "svelte";
-import {valueToSql, valueTypeIsNumber, type PgType} from "./values";
-import {getToastContext} from "$lib/widgets/Toaster.svelte";
+import {value_to_sql, value_type_is_number, type PgType} from "./values";
+import {get_toast_context} from "$lib/widgets/Toaster.svelte";
 
 export type PgTable = {
     schema: string;
@@ -62,7 +62,7 @@ const value_for_operator = (data_type: PgType, operator: WhereOperator, value: s
     ) {
         return `'${value}'`;
     }
-    return valueToSql({data_type}, value as any);
+    return value_to_sql({data_type}, value as any);
 };
 export const filters_to_where = (filters: WhereFilter[]) =>
     filters.reduce((result, filter) => {
@@ -90,7 +90,7 @@ export const operators_for_column = (column: PgColumn | undefined): WhereOperato
     ) {
         operators.push("<", "<=", ">", "<=", "like", "ilike", "not like", "~", "~*", "!~", "!~*");
     }
-    if (valueTypeIsNumber(column.data_type)) {
+    if (value_type_is_number(column.data_type)) {
         operators.push("<", "<=", ">", "<=");
     }
     return operators;
@@ -99,7 +99,7 @@ export const operators_for_column = (column: PgColumn | undefined): WhereOperato
 const DEFAULT_LIMIT = 100;
 
 class PgContext {
-    #toast_context = getToastContext();
+    #toast_context = get_toast_context();
     tables = $state<PgTable[]>([]);
     current_table = $state<PgTable & {columns: PgColumn[]; rows: PgRow[]; count: number}>();
     last_query_time = $state<number>();
@@ -168,7 +168,7 @@ class PgContext {
 (${this.current_table.columns.map((col) => col.column_name).join(",")})
 VALUES
 ${this.selected_rows_json
-    .map((row) => `(${this.current_table!.columns.map((col) => valueToSql(col, row[col.column_name])).join(",")})`)
+    .map((row) => `(${this.current_table!.columns.map((col) => value_to_sql(col, row[col.column_name])).join(",")})`)
     .join(",\n")}
 ;`;
     }
@@ -195,7 +195,7 @@ ${this.selected_rows_json
         }
         const connectionString = this.connections.current.connectionString;
         this.is_loading = true;
-        const unsortedTables = await catchError(invoke<PgTable[]>("list_tables", {connectionString}));
+        const unsortedTables = await catch_error(invoke<PgTable[]>("list_tables", {connectionString}));
         if (unsortedTables instanceof Error) {
             console.error(unsortedTables.message);
             this.#toast_context.toast(`Server error: ${unsortedTables.message} (${this.connections.current.name})`, {
@@ -226,7 +226,9 @@ ${this.selected_rows_json
         const connectionString = this.connections.current.connectionString;
         this.is_loading = true;
 
-        const unsortedTables = await catchError(invoke<PgTableForGraph[]>("list_tables_for_graph", {connectionString}));
+        const unsortedTables = await catch_error(
+            invoke<PgTableForGraph[]>("list_tables_for_graph", {connectionString}),
+        );
         this.is_loading = false;
         return unsortedTables;
     };
@@ -240,7 +242,7 @@ ${this.selected_rows_json
         }
         const connectionString = this.connections.current.connectionString;
         this.is_loading = true;
-        const columns = await catchError(
+        const columns = await catch_error(
             invoke<PgColumn[]>("list_table_columns", {
                 connectionString,
                 schema: table.schema,
@@ -274,7 +276,7 @@ ${this.selected_rows_json
             return;
         }
         const connectionString = this.connections.current.connectionString;
-        const columns = await catchError(
+        const columns = await catch_error(
             invoke<PgColumn[]>("list_table_columns", {
                 connectionString,
                 schema: table.schema,
@@ -284,7 +286,7 @@ ${this.selected_rows_json
         if (columns instanceof Error) {
             return columns;
         }
-        const data = await catchError(
+        const data = await catch_error(
             invoke<{rows: PgRow[]; count: number}>("get_table_data", {
                 connectionString,
                 schema: table.schema,
@@ -318,7 +320,7 @@ ${this.selected_rows_json
         const connectionString = this.connections.current.connectionString;
         this.is_loading = true;
         const primary_key = this.current_table.columns.find((col) => col.is_primary_key === "YES");
-        const data = await catchError(
+        const data = await catch_error(
             invoke<{rows: PgRow[]; count: number}>("get_table_data", {
                 connectionString,
                 schema: this.current_table.schema,
@@ -371,7 +373,7 @@ ${this.selected_rows_json
         }
         const connectionString = this.connections.current.connectionString;
         this.is_loading = true;
-        const data = await catchError(
+        const data = await catch_error(
             invoke<{rows: Record<string, string | null>[]; duration_ms: number}>("raw_query", {
                 connectionString,
                 sql,
@@ -419,7 +421,7 @@ ${this.selected_rows_json
         }
         const query = `delete from ${this.fullname}
 where ${pk.column_name} = any(array[${this.selected_rows
-            .map((index) => valueToSql(pk, this.current_table!.rows[index][pk.column_name]))
+            .map((index) => value_to_sql(pk, this.current_table!.rows[index][pk.column_name]))
             .join(", ")}]);`;
         await this.raw_query(query);
         this.selected_rows = [];
@@ -444,9 +446,9 @@ where ${pk.column_name} = any(array[${this.selected_rows
         return `UPDATE ${this.fullname} SET
 ${this.current_table.columns
     .filter(editableColumns)
-    .map((col) => `${col.column_name} = ${valueToSql(col, row[col.column_name])}`)
+    .map((col) => `${col.column_name} = ${value_to_sql(col, row[col.column_name])}`)
     .join(",\n  ")}
-WHERE ${pk.column_name} = ${valueToSql(pk, row[pk.column_name])};
+WHERE ${pk.column_name} = ${value_to_sql(pk, row[pk.column_name])};
                         `;
     };
 
@@ -478,9 +480,9 @@ WHERE ${pk.column_name} = ${valueToSql(pk, row[pk.column_name])};
 set
   ${this.current_table.columns
       .filter(editableColumns)
-      .map((col) => `${col.column_name} = ${valueToSql(col, row[col.column_name])}`)
+      .map((col) => `${col.column_name} = ${value_to_sql(col, row[col.column_name])}`)
       .join(",\n  ")}
-where ${primary_key!.column_name} = ${valueToSql(primary_key!, primary_key_value)};`
+where ${primary_key!.column_name} = ${value_to_sql(primary_key!, primary_key_value)};`
             : // insert
               `insert into ${this.fullname}
 (${this.current_table.columns
@@ -490,7 +492,7 @@ where ${primary_key!.column_name} = ${valueToSql(primary_key!, primary_key_value
 values
 (${this.current_table.columns
                   .filter(editableColumns)
-                  .map((col) => valueToSql(col, row[col.column_name]))
+                  .map((col) => value_to_sql(col, row[col.column_name]))
                   .join(", ")});`;
 
         return await this.raw_query(query, {throwError});
@@ -509,7 +511,7 @@ values
 values
 (${this.current_table.columns
             .filter(editableColumns)
-            .map((col) => valueToSql(col, row[col.column_name]))
+            .map((col) => value_to_sql(col, row[col.column_name]))
             .join(", ")});`;
         return await this.raw_query(query, {throwError});
     };

@@ -2,10 +2,10 @@
     import type {HTMLTextareaAttributes} from "svelte/elements";
 
     interface Props extends HTMLTextareaAttributes {
-        minRows?: number;
+        min_rows?: number;
     }
 
-    let {value = $bindable(), minRows, rows, ...props}: Props = $props();
+    let {value = $bindable(), min_rows, rows, ...props}: Props = $props();
 
     let element: HTMLTextAreaElement;
     let shadowElement: HTMLTextAreaElement;
@@ -29,8 +29,8 @@
         const borderBlock = parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth);
 
         const height = Math.max(
-            rowHeight * (minRows ?? 0) + paddingBlock + borderBlock,
-            element.scrollHeight + borderBlock + paddingBlock
+            rowHeight * (min_rows ?? 0) + paddingBlock + borderBlock,
+            element.scrollHeight + borderBlock + paddingBlock,
         );
         element.style.height = `${height}px`;
     };
@@ -61,7 +61,7 @@
             },
             {
                 threshold: 0.01, // Trigger when at least 1% is visible
-            }
+            },
         );
 
         // Set up ResizeObserver to handle size changes
@@ -106,7 +106,7 @@
 
 <svelte:window onresize={resize} />
 <textarea bind:this={shadowElement} rows="1" aria-hidden="true" tabindex="-1"></textarea>
-<textarea bind:this={element} bind:value oninput={handleInput} rows={minRows ?? rows} {...props}></textarea>
+<textarea bind:this={element} bind:value oninput={handleInput} rows={min_rows ?? rows} {...props}></textarea>
 
 <style>
     textarea {

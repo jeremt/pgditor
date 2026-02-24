@@ -24,31 +24,31 @@
  * }
  * console.log(data); // data is the unwrapped promise result
  */
-export function catchError<T>(promise: Promise<T>): Promise<T | Error>;
-export function catchError<T>(fn: () => T): T | Error;
-export function catchError(input: unknown): unknown {
+export function catch_error<T>(promise: Promise<T>): Promise<T | Error>;
+export function catch_error<T>(fn: () => T): T | Error;
+export function catch_error(input: unknown): unknown {
     try {
         if (typeof input === "function") {
             const result = (input as () => unknown)();
 
             if (result instanceof Promise) {
-                return result.catch(errorWithFallback);
+                return result.catch(error_with_fallback);
             }
 
             return result;
         }
 
         if (input instanceof Promise) {
-            return input.catch(errorWithFallback);
+            return input.catch(error_with_fallback);
         }
 
         return input;
     } catch (err) {
-        return errorWithFallback(err);
+        return error_with_fallback(err);
     }
 }
 
-function errorWithFallback(err: unknown): Error {
+function error_with_fallback(err: unknown): Error {
     return err instanceof Error // is or extends Error
         ? err
         : err !== null && typeof err === "object" && "message" in err && typeof err.message === "string" // looks like an error

@@ -8,20 +8,20 @@
 
     import {filters_to_where, get_pg_context, type PgColumn, type PgRow} from "./pg_context.svelte";
     import TableUpsert from "./TableUpsert.svelte";
-    import {createContextMenu} from "./tableContextMenu.svelte";
+    import {create_context_menu} from "./table_context_menu.svelte";
     import ProgressCircle from "$lib/widgets/ProgressCircle.svelte";
     import TableValueUpdate from "./TableValueUpdate.svelte";
     import {writeText} from "@tauri-apps/plugin-clipboard-manager";
-    import {getToastContext} from "$lib/widgets/Toaster.svelte";
-    import {formatSpatialData, parseSpatialData} from "$lib/helpers/spatialData";
-    import {formatGeometryData, type GeoJSONGeometry} from "$lib/helpers/geometryData";
+    import {get_toast_context} from "$lib/widgets/Toaster.svelte";
+    import {formatSpatialData, parseSpatialData} from "$lib/helpers/spatial_data";
+    import {format_geometry_data, type GeoJSONGeometry} from "$lib/helpers/geometry_data";
 
     const pg = get_pg_context();
 
-    const {toast} = getToastContext();
-    const {oncontextmenu} = createContextMenu();
+    const {toast} = get_toast_context();
+    const {oncontextmenu} = create_context_menu();
     let cell = $state<{element: HTMLElement; row: PgRow; column: PgColumn}>();
-    let lastCheckedIndex: number | null = null;
+    let last_checked_index: number | null = null;
 </script>
 
 {#if pg.current_table === undefined}
@@ -31,7 +31,7 @@
     </div>
 {:else if pg.is_loading}
     <div class="w-full h-full flex flex-col gap-4 items-center justify-center text-fg-1">
-        <ProgressCircle infinite={true} showValue={false} />
+        <ProgressCircle infinite={true} show_value={false} />
     </div>
 {:else}
     <div class="flex flex-1 w-full h-full overflow-auto">
@@ -60,10 +60,10 @@
                             const isChecked = e.currentTarget.checked;
                             const isShiftPressed = e.shiftKey;
 
-                            if (isShiftPressed && lastCheckedIndex !== null) {
+                            if (isShiftPressed && last_checked_index !== null) {
                                 // Determine the range (works both top-to-bottom and bottom-to-top)
-                                const start = Math.min(lastCheckedIndex, i);
-                                const end = Math.max(lastCheckedIndex, i);
+                                const start = Math.min(last_checked_index, i);
+                                const end = Math.max(last_checked_index, i);
 
                                 for (let j = start; j <= end; j++) {
                                     const alreadySelected = pg.selected_rows.indexOf(j) !== -1;
@@ -85,7 +85,7 @@
                             }
 
                             // 2. Update the reference for the next shift-click
-                            lastCheckedIndex = i;
+                            last_checked_index = i;
                         }}
                     />
                 </div>
@@ -147,7 +147,7 @@
                                 title={column.data_type === "geography"
                                     ? formatSpatialData(parseSpatialData(value as string))
                                     : column.data_type === "geometry"
-                                      ? formatGeometryData(value as GeoJSONGeometry)
+                                      ? format_geometry_data(value as GeoJSONGeometry)
                                       : typeof value === "object"
                                         ? JSON.stringify(value)
                                         : value === null
@@ -172,7 +172,7 @@
                                 {#if value === null}
                                     null
                                 {:else if column.data_type === "geometry"}
-                                    {formatGeometryData(value as GeoJSONGeometry)}
+                                    {format_geometry_data(value as GeoJSONGeometry)}
                                 {:else if typeof value === "object"}
                                     {JSON.stringify(value).slice(0, 50)}
                                 {:else if column.data_type === "geography"}
@@ -228,7 +228,7 @@
 {#if pg.current_table && pg.row_to_update}
     <Dialog
         --padding="0"
-        isOpen={pg.is_update_open}
+        is_open={pg.is_update_open}
         onrequestclose={() => (pg.is_update_open = false)}
         position="right"
         animation="right"

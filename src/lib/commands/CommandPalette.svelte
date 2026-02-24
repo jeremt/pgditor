@@ -1,7 +1,7 @@
 <script lang="ts">
     import Dialog from "$lib/widgets/Dialog.svelte";
     import ItemSelect from "$lib/widgets/ItemSelect.svelte";
-    import {get_commands_context, type Command} from "./commandsContext.svelte";
+    import {get_commands_context, type Command} from "./commands_context.svelte";
 
     const commands = get_commands_context();
     const item_to_string = (item: Command) => item.title;
@@ -12,19 +12,19 @@
 </script>
 
 <Dialog
-    isOpen={commands.is_command_palette_open}
+    is_open={commands.is_command_palette_open}
     onrequestclose={() => (commands.is_command_palette_open = false)}
     --padding="1rem"
 >
     <ItemSelect
         items={commands.all}
-        itemToString={item_to_string}
+        {item_to_string}
         {onselect}
-        noItems="No commands loaded."
-        noResult="No matching commands."
+        no_items="No commands loaded."
+        no_result="No matching commands."
         placeholder="Filter commands"
     >
-        {#snippet renderItem(item, index, selectedIndex, highlights)}
+        {#snippet render_item(item, index, selectedIndex, highlights)}
             <div class="flex flex-col py-2 items-start">
                 {#if highlights}
                     <span class="search-result">{@html highlights}</span>

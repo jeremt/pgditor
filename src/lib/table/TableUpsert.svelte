@@ -4,10 +4,10 @@
     import KeyIcon from "$lib/icons/KeyIcon.svelte";
     import LinkIcon from "$lib/icons/LinkIcon.svelte";
     import CheckboxInput from "$lib/widgets/CheckboxInput.svelte";
-    import {defaultValues} from "./values";
+    import {default_values} from "./values";
     import {get_pg_context, type PgRow} from "./pg_context.svelte";
     import TableValueEditor from "./TableValueEditor.svelte";
-    import {catchError} from "$lib/helpers/catchError";
+    import {catch_error} from "$lib/helpers/catch_error";
     import ActionButton from "$lib/widgets/ActionButton.svelte";
     import TerminalIcon from "$lib/icons/TerminalIcon.svelte";
 
@@ -44,7 +44,7 @@
     });
 
     const insertOrUpdate = async () => {
-        const error = await catchError(hasPkValue === false ? pg.insert_row(localRow) : pg.upsert_row(localRow));
+        const error = await catch_error(hasPkValue === false ? pg.insert_row(localRow) : pg.upsert_row(localRow));
         if (error instanceof Error) {
             errorMessage = error.message;
         } else {
@@ -99,7 +99,7 @@
                                 if (localRow[column.column_name] !== null) {
                                     localRow[column.column_name] = null;
                                 } else {
-                                    localRow[column.column_name] = defaultValues[column.data_type];
+                                    localRow[column.column_name] = default_values[column.data_type];
                                 }
                             }}
                         />

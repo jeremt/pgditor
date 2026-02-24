@@ -65,8 +65,8 @@
                     <TableFilters
                         bind:isOpen={isFiltersOpen}
                         bind:filters={whereFilters}
-                        bind:whereSql
-                        {appliedFilters}
+                        bind:where_sql={whereSql}
+                        applied_filters={appliedFilters}
                         columns={data.columns}
                         onapply={async () => {
                             appliedFilters = whereFilters.length;
@@ -163,7 +163,7 @@
         />
         <button class="btn secondary" onclick={() => (isDialogOpen = true)}><SearchIcon --size="1rem" /></button>
     </div>
-    <Dialog isOpen={isDialogOpen} position="right" animation="right">
+    <Dialog is_open={isDialogOpen} position="right" animation="right">
         <div class="flex flex-col w-xl h-full">
             <header class="flex flex-col pt-4 px-4">
                 <div class="flex gap-2 items-center pb-4">

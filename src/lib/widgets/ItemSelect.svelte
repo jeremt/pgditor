@@ -1,71 +1,73 @@
 <script lang="ts" generics="ItemType">
-    import {fuzzySearchWithHighlights, renderHighlightedMatch} from "$lib/helpers/fuzzySearch";
+    import {fuzzy_search_with_highlights, render_highlighted_match} from "$lib/helpers/fuzzy_search";
     import type {Snippet} from "svelte";
 
     type Props = {
         items: ItemType[];
-        itemToString: (item: ItemType) => string;
+        item_to_string: (item: ItemType) => string;
         onselect: (item: ItemType) => void;
-        renderItem: Snippet<[item: ItemType, index: number, selectedIndex: number, highlights?: string]>;
-        renderAction?: Snippet;
+        render_item: Snippet<[item: ItemType, index: number, selectedIndex: number, highlights?: string]>;
+        render_action?: Snippet;
         placeholder?: string;
-        noResult?: string;
-        noItems?: string;
+        no_result?: string;
+        no_items?: string;
     };
 
     let {
         items,
-        itemToString,
+        item_to_string,
         onselect,
-        renderItem,
-        renderAction,
+        render_item,
+        render_action,
         placeholder = "Filter items",
-        noResult = "No result found",
-        noItems = "No items",
+        no_result = "No result found",
+        no_items = "No items",
     }: Props = $props();
 
-    let searchText = $state("");
-    let searchResult = $derived(
-        fuzzySearchWithHighlights(searchText, items.map(itemToString)).map(({item, ranges}) => ({
+    let search_text = $state("");
+    let search_result = $derived(
+        fuzzy_search_with_highlights(search_text, items.map(item_to_string)).map(({item, ranges}) => ({
             text: item,
-            html: renderHighlightedMatch(item, ranges),
+            html: render_highlighted_match(item, ranges),
         })),
     );
 
-    let selectedIndex = $state(0);
-    let buttonRefs = $state<HTMLButtonElement[]>([]);
+    let selected_index = $state(0);
+    let button_refs = $state<HTMLButtonElement[]>([]);
 
     $effect(() => {
-        if (buttonRefs[selectedIndex]) {
-            buttonRefs[selectedIndex].scrollIntoView({
+        if (button_refs[selected_index]) {
+            button_refs[selected_index].scrollIntoView({
                 behavior: "instant",
                 block: "nearest",
             });
         }
     });
 
-    const handleKeys = (event: KeyboardEvent) => {
+    const handle_keys = (event: KeyboardEvent) => {
         if (event.key === "Enter") {
             const selectedItem =
-                searchText === ""
-                    ? items[selectedIndex]
-                    : items.find((item) => itemToString(item) === searchResult[selectedIndex].text);
+                search_text === ""
+                    ? items[selected_index]
+                    : items.find((item) => item_to_string(item) === search_result[selected_index].text);
             if (selectedItem) {
                 onselect(selectedItem);
-                searchText = "";
+                search_text = "";
             }
         } else if (event.key === "ArrowUp") {
-            selectedIndex =
-                selectedIndex === 0 ? (searchText === "" ? items.length : searchResult.length) - 1 : selectedIndex - 1;
+            selected_index =
+                selected_index === 0
+                    ? (search_text === "" ? items.length : search_result.length) - 1
+                    : selected_index - 1;
             event.preventDefault();
         } else if (
             event.key === "ArrowDown" &&
-            selectedIndex + 1 < (searchText === "" ? items.length : searchResult.length)
+            selected_index + 1 < (search_text === "" ? items.length : search_result.length)
         ) {
-            selectedIndex += 1;
+            selected_index += 1;
             event.preventDefault();
         } else {
-            selectedIndex = 0;
+            selected_index = 0;
         }
     };
 </script>
@@ -75,49 +77,49 @@
         <input
             type="text"
             class="grow"
-            bind:value={searchText}
-            onkeydown={handleKeys}
+            bind:value={search_text}
+            onkeydown={handle_keys}
             autocorrect="off"
             {placeholder}
         />
-        {@render renderAction?.()}
+        {@render render_action?.()}
     </div>
     <div class="flex flex-col gap-2 overflow-auto h-80 py-2">
-        {#if searchText === ""}
+        {#if search_text === ""}
             {#each items as item, i}
                 <button
-                    bind:this={buttonRefs[i]}
+                    bind:this={button_refs[i]}
                     class="item-btn"
-                    class:selected-table={i === selectedIndex}
+                    class:selected-table={i === selected_index}
                     onclick={() => {
                         onselect(item);
                     }}
                 >
-                    {@render renderItem(item, i, selectedIndex)}
+                    {@render render_item(item, i, selected_index)}
                 </button>
             {:else}
-                <p class="text-sm text-center text-fg-2">{noItems}</p>
+                <p class="text-sm text-center text-fg-2">{no_items}</p>
             {/each}
         {:else}
-            {#each searchResult as { text, html }, i}
-                {@const item = items.find((item) => itemToString(item) === text)}
+            {#each search_result as { text, html }, i}
+                {@const item = items.find((item) => item_to_string(item) === text)}
                 {#if item}
                     <button
-                        bind:this={buttonRefs[i]}
+                        bind:this={button_refs[i]}
                         class="item-btn"
-                        class:selected-table={i === selectedIndex}
+                        class:selected-table={i === selected_index}
                         onclick={() => {
                             if (item) {
                                 onselect(item);
-                                searchText = "";
+                                search_text = "";
                             }
                         }}
                     >
-                        {@render renderItem(item, i, selectedIndex, html)}
+                        {@render render_item(item, i, selected_index, html)}
                     </button>
                 {/if}
             {:else}
-                <p class="text-sm text-center text-fg-2">{noResult}</p>
+                <p class="text-sm text-center text-fg-2">{no_result}</p>
             {/each}
         {/if}
     </div>

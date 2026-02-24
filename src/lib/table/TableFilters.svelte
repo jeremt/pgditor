@@ -16,28 +16,28 @@
     } from "./pg_context.svelte";
     import FloatValueEditor from "./valueEditors/FloatValueEditor.svelte";
     import IntegerValueEditor from "./valueEditors/IntegerValueEditor.svelte";
-    import {valueTypeIsFloat, valueTypeIsInteger} from "./values";
+    import {value_type_is_float, value_type_is_integer} from "./values";
 
     type Props = {
         isOpen: boolean;
         filters: WhereFilter[];
-        whereSql: string;
-        appliedFilters: number;
+        where_sql: string;
+        applied_filters: number;
         columns: PgColumn[];
         onapply: () => void;
     };
     let {
         isOpen = $bindable(),
         filters = $bindable(),
-        whereSql = $bindable(),
-        appliedFilters,
+        where_sql = $bindable(),
+        applied_filters,
         columns,
         onapply,
     }: Props = $props();
 
     let mode = $state<"visual" | "sql">("visual");
 
-    const getPlaceholderByOperator = (operator: WhereOperator) => {
+    const get_placeholder_by_operator = (operator: WhereOperator) => {
         if (operator === "like" || operator === "ilike" || operator === "not like") {
             return "%value%";
         }
@@ -48,15 +48,15 @@
     };
 
     $effect(() => {
-        whereSql = filters_to_where(filters).trim();
+        where_sql = filters_to_where(filters).trim();
     });
 </script>
 
-<Popover bind:isOpen offsetY={10} anchor="start" --padding="1rem">
+<Popover bind:is_open={isOpen} offset_y={10} anchor="start" --padding="1rem">
     {#snippet target()}
         <button class="btn ghost" onclick={() => (isOpen = !isOpen)}
             ><FunnelIcon --size="1.2rem" />
-            {#if appliedFilters > 0}<span class="badge">{appliedFilters}</span>{/if}
+            {#if applied_filters > 0}<span class="badge">{applied_filters}</span>{/if}
             <ChevronIcon --size="1rem" direction={isOpen ? "top" : "bottom"} />
         </button>
     {/snippet}
@@ -100,7 +100,7 @@
                                 <option>{enum_value}</option>
                             {/each}
                         </Select>
-                    {:else if column && valueTypeIsInteger(column.data_type)}
+                    {:else if column && value_type_is_integer(column.data_type)}
                         <IntegerValueEditor
                             bind:value={
                                 () => parseInt(filters[i].value, 10),
@@ -109,7 +109,7 @@
                             {column}
                             inlined={true}
                         />
-                    {:else if column && valueTypeIsFloat(column.data_type)}
+                    {:else if column && value_type_is_float(column.data_type)}
                         <FloatValueEditor
                             bind:value={
                                 () => parseFloat(filters[i].value),
@@ -126,7 +126,7 @@
                             autocapitalize="off"
                             autocomplete="off"
                             bind:value={() => filters[i].value, (newValue) => (filters[i].value = newValue)}
-                            placeholder={getPlaceholderByOperator(filter.operator)}
+                            placeholder={get_placeholder_by_operator(filter.operator)}
                         />
                     {/if}
                     <button
@@ -143,7 +143,7 @@
                 <p class="text-sx text-fg-1 text-center py-2">No filters applied, all rows will be listed.</p>
             {/each}
         {:else}
-            <MultilinesInput class="font-mono!" bind:value={whereSql} placeholder="WHERE id = ..." />
+            <MultilinesInput class="font-mono!" bind:value={where_sql} placeholder="WHERE id = ..." />
         {/if}
     </div>
     <div class="flex">

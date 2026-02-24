@@ -9,17 +9,17 @@
     import PlusIcon from "$lib/icons/PlusIcon.svelte";
     import Dialog from "$lib/widgets/Dialog.svelte";
     import RefreshIcon from "$lib/icons/RefreshIcon.svelte";
-    import {defaultValues, sqlToValue, valueToSql} from "$lib/table/values";
+    import {default_values, sql_to_value, value_to_sql} from "$lib/table/values";
     import ActionButton from "$lib/widgets/ActionButton.svelte";
     import DownloadIcon from "$lib/icons/DownloadIcon.svelte";
     import Popover from "$lib/widgets/Popover.svelte";
-    import {getToastContext} from "$lib/widgets/Toaster.svelte";
-    import {saveToFile} from "$lib/helpers/saveToFile";
+    import {get_toast_context} from "$lib/widgets/Toaster.svelte";
+    import {save_to_file} from "$lib/helpers/save_to_file";
     import TableColumns from "./TableColumns.svelte";
     import TablePagination from "./TablePagination.svelte";
 
     const pg = get_pg_context();
-    const {toast} = getToastContext();
+    const {toast} = get_toast_context();
 
     const rowToInsert = $derived<PgRow>(
         pg.current_table?.columns.reduce((result, column) => {
@@ -27,10 +27,10 @@
                 ...result,
                 [column.column_name]:
                     column.column_default && column.is_primary_key === "NO"
-                        ? sqlToValue(column, column.column_default)
+                        ? sql_to_value(column, column.column_default)
                         : column.is_nullable === "YES" || column.is_primary_key === "YES"
                           ? null
-                          : (defaultValues[column.data_type] ?? ""),
+                          : (default_values[column.data_type] ?? ""),
             };
         }, {}) ?? {},
     );
@@ -65,8 +65,8 @@
     <TableFilters
         bind:isOpen={pg.is_filters_open}
         bind:filters={pg.where_filters}
-        bind:whereSql={pg.where_sql}
-        appliedFilters={pg.applied_filters}
+        bind:where_sql={pg.where_sql}
+        applied_filters={pg.applied_filters}
         columns={pg.current_table.columns}
         onapply={() => {
             pg.applied_filters = pg.where_filters.length;
@@ -102,7 +102,7 @@
                 style:right="-0.6rem">{pg.selected_rows.length > 100 ? "99+" : pg.selected_rows.length}</span
             >{/if}
     </ActionButton>
-    <Popover bind:isOpen={isExportOpen} offsetY={10}>
+    <Popover bind:is_open={isExportOpen} offset_y={10}>
         {#snippet target()}
             <button class="btn ghost icon relative" title="Export" onclick={() => (isExportOpen = !isExportOpen)}
                 ><DownloadIcon --size="1.2rem" />
@@ -115,7 +115,7 @@
             <button
                 class="btn ghost"
                 onclick={async () => {
-                    if (await saveToFile(JSON.stringify(pg.selected_rows_json), ["json"])) {
+                    if (await save_to_file(JSON.stringify(pg.selected_rows_json), ["json"])) {
                         toast("Selected rows exported to JSON", {kind: "success"});
                     } else {
                         toast("Failed to export JSON", {kind: "error"});
@@ -126,7 +126,7 @@
             <button
                 class="btn ghost"
                 onclick={async () => {
-                    if (await saveToFile(pg.selected_rows_csv, ["csv"])) {
+                    if (await save_to_file(pg.selected_rows_csv, ["csv"])) {
                         toast("Selected rows exported to CSV", {kind: "success"});
                     } else {
                         toast("Failed to export CSV", {kind: "error"});
@@ -137,7 +137,7 @@
             <button
                 class="btn ghost"
                 onclick={async () => {
-                    if (await saveToFile(pg.selected_rows_sql, ["sql"])) {
+                    if (await save_to_file(pg.selected_rows_sql, ["sql"])) {
                         toast("Selected rows exported to SQL", {kind: "success"});
                     } else {
                         toast("Failed to export SQL", {kind: "error"});
@@ -158,7 +158,7 @@
 {#if pg.current_table}
     <Dialog
         --padding="0"
-        isOpen={isInsertOpen}
+        is_open={isInsertOpen}
         onrequestclose={() => (isInsertOpen = false)}
         position="right"
         animation="right"

@@ -2,7 +2,7 @@
     import Select from "$lib/widgets/Select.svelte";
     import JsonValueEditor from "./valueEditors/JsonValueEditor.svelte";
     import type {PgColumn, PgRow} from "./pg_context.svelte";
-    import {valueToSql, valueTypeIsFloat, valueTypeIsInteger} from "./values";
+    import {value_to_sql, value_type_is_float, value_type_is_integer} from "./values";
     import TextValueEditor from "./valueEditors/TextValueEditor.svelte";
     import EnumValueEditor from "./valueEditors/EnumValueEditor.svelte";
     import FKEditor from "./valueEditors/FKEditor.svelte";
@@ -50,7 +50,7 @@
     <Select
         class="font-mono font-normal! w-full"
         id={column.column_name}
-        bind:value={() => valueToSql(column, row[column.column_name]), (value) => (row[column.column_name] = value)}
+        bind:value={() => value_to_sql(column, row[column.column_name]), (value) => (row[column.column_name] = value)}
     >
         <option>true</option>
         <option>false</option>
@@ -66,7 +66,7 @@
         {column}
         {inlined}
     />
-{:else if valueTypeIsInteger(column.data_type)}
+{:else if value_type_is_integer(column.data_type)}
     <IntegerValueEditor
         bind:value={
             () => parseInt(row[column.column_name] as string, 10),
@@ -75,7 +75,7 @@
         {column}
         {inlined}
     />
-{:else if valueTypeIsFloat(column.data_type)}
+{:else if value_type_is_float(column.data_type)}
     <FloatValueEditor
         bind:value={
             () => parseFloat(row[column.column_name] as string),

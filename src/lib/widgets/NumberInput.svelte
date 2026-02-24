@@ -1,7 +1,7 @@
 <script lang="ts">
     import type {HTMLInputAttributes} from "svelte/elements";
 
-    import {safeIncrement} from "$lib/helpers/safeIncrement";
+    import {safe_increment} from "$lib/helpers/safe_increment";
 
     interface Props extends HTMLInputAttributes {
         value: number | null | undefined;
@@ -28,23 +28,23 @@
 
     const plus = (event: MouseEvent) => {
         event.preventDefault();
-        value = clampValue(safeIncrement(value ?? 0, step));
+        value = clampValue(safe_increment(value ?? 0, step));
         onchange?.(event);
     };
     const minus = (event: MouseEvent) => {
         event.preventDefault();
-        value = clampValue(safeIncrement(value ?? 0, -step));
+        value = clampValue(safe_increment(value ?? 0, -step));
         onchange?.(event);
     };
 
     const keys = (event: KeyboardEvent) => {
         switch (event.key) {
             case "ArrowUp": {
-                value = clampValue(safeIncrement(value ?? 0, step));
+                value = clampValue(safe_increment(value ?? 0, step));
                 break;
             }
             case "ArrowDown": {
-                value = clampValue(safeIncrement(value ?? 0, -step));
+                value = clampValue(safe_increment(value ?? 0, -step));
                 break;
             }
         }

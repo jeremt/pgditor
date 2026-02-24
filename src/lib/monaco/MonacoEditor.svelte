@@ -1,6 +1,6 @@
 <script lang="ts" module>
     import type monaco from "monaco-editor";
-    import {addPgAutocomplete} from "./pgAutocomplete";
+    import {add_pg_autocomplete} from "./pg_autocomplete";
     import EditorWorker from "monaco-editor/esm/vs/editor/editor.worker?worker";
     import JsonWorker from "monaco-editor/esm/vs/language/json/json.worker?worker";
     import SqlWorker from "monaco-sql-languages/esm/languages/pgsql/pgsql.worker?worker";
@@ -67,7 +67,7 @@
          * The currently selected file.
          * @example 'index.html'
          */
-        selectedFile: string;
+        selected_file: string;
 
         /**
          * The current code value. You can specify it if you want to editor to be controlled from outsite.
@@ -83,12 +83,12 @@
         /**
          * The code font size in pixels.
          */
-        fontFamily?: string;
+        font_family?: string;
 
         /**
          * The code font size in pixels.
          */
-        fontSize?: number;
+        font_size?: number;
 
         /**
          * The name of the color highlighting theme to use.
@@ -98,9 +98,9 @@
         /**
          * Show line numbers in the editor. Set to `false` to hide them.
          */
-        showLineNumbers?: boolean;
+        show_line_numbers?: boolean;
 
-        wordWrap?: boolean;
+        word_wrap?: boolean;
 
         /**
          * Called whenever a change from within the editor is detected.
@@ -129,15 +129,15 @@
 
     let {
         files = [],
-        selectedFile,
+        selected_file,
         value = $bindable(),
         selection = $bindable(""),
-        fontSize,
+        font_size,
         theme = "dark",
-        showLineNumbers = true,
-        wordWrap = false,
+        show_line_numbers = true,
+        word_wrap = false,
         /** Custom font family for the editor (CSS font-family string). */
-        fontFamily = undefined,
+        font_family = undefined,
         onchange,
         onrun,
         onsave,
@@ -158,12 +158,12 @@
         // generate monaco model for each file and create editor from selectedFile
         for (const file of files) {
             const [_, ext] = file.path.split(".");
-            const mapExtension: Record<string, string> = {
+            const map_extension: Record<string, string> = {
                 js: "typescript",
                 md: "markdown",
                 sql: "pgsql",
             };
-            const language = mapExtension[ext] ?? ext;
+            const language = map_extension[ext] ?? ext;
 
             const uri = Monaco.Uri.parse(`inmemory://model/${file.path}`);
             let model = Monaco.editor.getModel(uri);
@@ -190,14 +190,14 @@
                 model.setValue(text);
             }
 
-            if (file.path === selectedFile && divEl !== undefined) {
+            if (file.path === selected_file && divEl !== undefined) {
                 editor = Monaco.editor.create(divEl, {
                     model,
-                    fontSize,
+                    fontSize: font_size,
                     minimap: {enabled: false},
-                    wordWrap: wordWrap ? "on" : undefined,
-                    lineNumbers: showLineNumbers ? "on" : "off",
-                    fontFamily: fontFamily,
+                    wordWrap: word_wrap ? "on" : undefined,
+                    lineNumbers: show_line_numbers ? "on" : "off",
+                    fontFamily: font_family,
                 });
             }
         }
@@ -225,7 +225,7 @@
 
         // call onchange and apply debounce if specified
         editor.onDidChangeModelContent(() => {
-            onchange?.(editor?.getValue() ?? "", selectedFile);
+            onchange?.(editor?.getValue() ?? "", selected_file);
         });
 
         editor.onDidChangeCursorSelection((event) => {
@@ -246,7 +246,7 @@
 
     $effect(() => {
         if (Monaco) {
-            addPgAutocomplete(Monaco, pg.tables);
+            add_pg_autocomplete(Monaco, pg.tables);
         }
     });
 
@@ -259,24 +259,24 @@
     // reactively update line numbers visibility when prop changes
     $effect(() => {
         if (editor) {
-            editor.updateOptions({lineNumbers: showLineNumbers ? "on" : "off"});
+            editor.updateOptions({lineNumbers: show_line_numbers ? "on" : "off"});
         }
     });
 
     // reactively update font family when prop changes
     $effect(() => {
         if (editor) {
-            editor.updateOptions({fontFamily: fontFamily ?? undefined});
+            editor.updateOptions({fontFamily: font_family ?? undefined});
         }
     });
 
     // load model when selected file changes
     $effect(() => {
         if (editor) {
-            const uri = Monaco?.Uri.parse(`inmemory://model/${selectedFile}`);
+            const uri = Monaco?.Uri.parse(`inmemory://model/${selected_file}`);
             const model = uri ? Monaco?.editor.getModel(uri) : undefined;
             if (model === undefined) {
-                throw new Error(`file ${selectedFile} not found`);
+                throw new Error(`file ${selected_file} not found`);
             }
             editor.setModel(model as any);
 

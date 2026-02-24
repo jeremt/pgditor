@@ -4,7 +4,7 @@
     import EnterIcon from "$lib/icons/EnterIcon.svelte";
     import PlayIcon from "$lib/icons/PlayIcon.svelte";
     import Dialog from "$lib/widgets/Dialog.svelte";
-    import {getScriptsContext, type ScriptFile} from "./scriptsContext.svelte";
+    import {get_scripts_context, type ScriptFile} from "./scripts_context.svelte";
     import ItemSelect from "$lib/widgets/ItemSelect.svelte";
     import FileIcon from "$lib/icons/FileIcon.svelte";
     import {open} from "@tauri-apps/plugin-dialog";
@@ -12,26 +12,26 @@
     import TrashIcon from "$lib/icons/TrashIcon.svelte";
     import SaveIcon from "$lib/icons/SaveIcon.svelte";
     import SearchIcon from "$lib/icons/SearchIcon.svelte";
-    import {get_commands_context} from "$lib/commands/commandsContext.svelte";
+    import {get_commands_context} from "$lib/commands/commands_context.svelte";
     import ActionButton from "$lib/widgets/ActionButton.svelte";
 
-    const scripts = getScriptsContext();
+    const scripts = get_scripts_context();
     const pg = get_pg_context();
     const commands = get_commands_context();
 
-    let isFileSelectOpen = $state(false);
-    const itemToString = (item: ScriptFile) => item.path;
+    let is_file_select_open = $state(false);
+    const item_to_string = (item: ScriptFile) => item.path;
     const onselect = (item: ScriptFile) => {
-        scripts.selectFile(item);
-        isFileSelectOpen = false;
+        scripts.select_file(item);
+        is_file_select_open = false;
     };
 
-    const newScript = () => {
-        scripts.emptyFile();
-        isFileSelectOpen = false;
+    const new_script = () => {
+        scripts.empty_file();
+        is_file_select_open = false;
     };
 
-    const importScript = async () => {
+    const import_script = async () => {
         const scriptPath = await open({
             multiple: false,
             filters: [
@@ -42,44 +42,49 @@
             ],
         });
         if (scriptPath !== null) {
-            scripts.importFile(scriptPath);
+            scripts.import_file(scriptPath);
         }
     };
-    const lastSlash = (path: string) => {
-        let lastIndex = 0;
-        let inElement = false;
+    const last_slash = (path: string) => {
+        let last_index = 0;
+        let in_element = false;
         for (let i = 0; i < path.length; i++) {
             if (path[i] === "<") {
-                inElement = true;
+                in_element = true;
             }
             if (path[i] === ">") {
-                inElement = false;
+                in_element = false;
             }
-            if (!inElement && path[i] === "/") {
-                lastIndex = i;
+            if (!in_element && path[i] === "/") {
+                last_index = i;
             }
         }
-        return lastIndex;
+        return last_index;
     };
-    const filename = (path: string) => path.slice(lastSlash(path) + 1);
-    const folderpath = (path: string) => path.slice(0, lastSlash(path));
+    const filename = (path: string) => path.slice(last_slash(path) + 1);
+    const folderpath = (path: string) => path.slice(0, last_slash(path));
 </script>
 
-<button class="btn ghost" title="{commands.cmd_or_ctrl} F" onclick={() => (isFileSelectOpen = true)} disabled={false}>
-    {#if scripts.currentFile}
+<button
+    class="btn ghost"
+    title="{commands.cmd_or_ctrl} F"
+    onclick={() => (is_file_select_open = true)}
+    disabled={false}
+>
+    {#if scripts.current_file}
         <FileIcon --size="1.2rem" />
-        {filename(scripts.currentFile.path)}
+        {filename(scripts.current_file.path)}
     {:else}
         <SearchIcon --size="1.2rem" />
         Select file
     {/if}
 </button>
 
-<button class="btn ghost icon" title="Save {commands.cmd_or_ctrl}S" onclick={scripts.saveCurrentFile}>
+<button class="btn ghost icon" title="Save {commands.cmd_or_ctrl}S" onclick={scripts.save_current_file}>
     <SaveIcon --size="1.2rem" />
 </button>
 
-{#if scripts.currentFile}
+{#if scripts.current_file}
     <ActionButton
         class="btn ghost icon"
         title="Remove"
@@ -90,7 +95,7 @@
             description:
                 "This file will be removed from your tracked files for this database, but won't be deleted from your file system.\nYou can import it again if you want to add it back.",
         }}
-        onaction={() => scripts.removeCurrentFile()}
+        onaction={() => scripts.remove_current_file()}
     >
         <TrashIcon --size="1.2rem" />
     </ActionButton>
@@ -104,26 +109,26 @@
 
 <button
     class="btn ghost"
-    disabled={scripts.errorMessage === "" && scripts.lastResult === undefined}
+    disabled={scripts.error_message === "" && scripts.last_result === undefined}
     onclick={() => {
-        scripts.errorMessage = "";
-        scripts.lastResult = undefined;
+        scripts.error_message = "";
+        scripts.last_result = undefined;
     }}><ClearIcon --size="1.2rem" /> Clear output</button
 >
 <button class="btn" onclick={scripts.run} title="{commands.cmd_or_ctrl} ↵"
-    ><PlayIcon --size="1rem" /> Run{scripts.currentSelection ? " selection" : ""}</button
+    ><PlayIcon --size="1rem" /> Run{scripts.current_selection ? " selection" : ""}</button
 >
 
-<Dialog isOpen={isFileSelectOpen} onrequestclose={() => (isFileSelectOpen = false)} --padding="1rem">
-    <ItemSelect items={scripts.files} {itemToString} {onselect} noItems="No scripts imported yet for this database.">
-        {#snippet renderAction()}
-            {#if scripts.currentFile !== undefined}
-                <button class="btn secondary overflow-visible" onclick={newScript}>New</button>
+<Dialog is_open={is_file_select_open} onrequestclose={() => (is_file_select_open = false)} --padding="1rem">
+    <ItemSelect items={scripts.files} {item_to_string} {onselect} no_items="No scripts imported yet for this database.">
+        {#snippet render_action()}
+            {#if scripts.current_file !== undefined}
+                <button class="btn secondary overflow-visible" onclick={new_script}>New</button>
             {/if}
-            <button class="btn overflow-visible" onclick={importScript}>Import</button>
+            <button class="btn overflow-visible" onclick={import_script}>Import</button>
         {/snippet}
-        {#snippet renderItem(item, index, selectedIndex, highlights)}
-            {#if scripts.currentFile && itemToString(scripts.currentFile) === itemToString(item)}
+        {#snippet render_item(item, index, selectedIndex, highlights)}
+            {#if scripts.current_file && item_to_string(scripts.current_file) === item_to_string(item)}
                 <CheckIcon --size="1.2rem" />
             {:else}
                 <FileIcon --size="1.2rem" />

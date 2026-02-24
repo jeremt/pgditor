@@ -16,7 +16,7 @@
         class="font-mono!"
         autocomplete="off"
         autocapitalize="off"
-        minRows={1}
+        min_rows={1}
         bind:value
     />
 {:else}

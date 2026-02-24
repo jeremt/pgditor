@@ -1,108 +1,110 @@
 <script lang="ts">
     import {SvelteDate} from "svelte/reactivity";
 
-    import {getDaysInMonth} from "$lib/helpers/date";
+    import {get_days_in_month} from "$lib/helpers/date";
 
     type Props = {
-        selectMode?: "date" | "range";
-        startDate?: SvelteDate;
-        endDate?: SvelteDate;
+        select_mode?: "date" | "range";
+        start_date?: SvelteDate;
+        end_date?: SvelteDate;
         locale?: Intl.LocalesArgument;
-        minDate?: Date;
-        maxDate?: Date;
-        weekStart?: number;
+        min_date?: Date;
+        max_date?: Date;
+        week_start?: number;
     };
     let {
-        selectMode = "date",
-        startDate = $bindable(),
-        endDate = $bindable(),
+        select_mode = "date",
+        start_date = $bindable(),
+        end_date = $bindable(),
         locale = "en",
-        minDate,
-        maxDate,
-        weekStart = 1,
+        min_date,
+        max_date,
+        week_start = 1,
     }: Props = $props();
 
-    const monthFormatter = new Intl.DateTimeFormat(locale, {month: "short"});
-    const weekdayFormatter = new Intl.DateTimeFormat(locale, {weekday: "narrow"});
+    const month_formatter = new Intl.DateTimeFormat(locale, {month: "short"});
+    const weekday_formatter = new Intl.DateTimeFormat(locale, {weekday: "narrow"});
 
-    let currentMonth = $state(new SvelteDate());
+    let current_month = $state(new SvelteDate());
     $effect(() => {
-        currentMonth.setTime((startDate ?? new Date()).getTime());
+        current_month.setTime((start_date ?? new Date()).getTime());
     });
 
-    let firstDay = $derived(
-        (new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1).getDay() - weekStart + 7) % 7,
+    let first_day = $derived(
+        (new Date(current_month.getFullYear(), current_month.getMonth(), 1).getDay() - week_start + 7) % 7,
     );
     let weekdays = Array(7)
         .fill("")
-        .map((_, i) => weekdayFormatter.format(new Date(0, 0, i + weekStart)));
-    let daysInMonth = $derived(getDaysInMonth(currentMonth));
-    let canGoToNextMonth = $derived(
-        maxDate === undefined || new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1) <= maxDate,
+        .map((_, i) => weekday_formatter.format(new Date(0, 0, i + week_start)));
+    let days_in_month = $derived(get_days_in_month(current_month));
+    let can_go_to_next_month = $derived(
+        max_date === undefined || new Date(current_month.getFullYear(), current_month.getMonth() + 1) <= max_date,
     );
-    let canGoToPreviousMonth = $derived(
-        minDate === undefined || new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1) >= minDate,
+    let can_go_to_previous_month = $derived(
+        min_date === undefined || new Date(current_month.getFullYear(), current_month.getMonth() - 1) >= min_date,
     );
 
-    const isDayBetween = (index: number) => {
-        if (startDate === undefined || endDate === undefined) {
+    const is_day_between = (index: number) => {
+        if (start_date === undefined || end_date === undefined) {
             return false;
         }
-        const currentDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), index + 1);
-        return currentDate > startDate && currentDate < endDate;
+        const currentDate = new Date(current_month.getFullYear(), current_month.getMonth(), index + 1);
+        return currentDate > start_date && currentDate < end_date;
     };
-    const isDaySelected = (index: number) => {
+    const is_day_selected = (index: number) => {
         return (
-            (startDate?.getDate() === index + 1 &&
-                startDate.getMonth() === currentMonth.getMonth() &&
-                startDate.getFullYear() === currentMonth.getFullYear()) ||
-            (endDate?.getDate() === index + 1 &&
-                endDate.getMonth() === currentMonth.getMonth() &&
-                endDate.getFullYear() === currentMonth.getFullYear())
+            (start_date?.getDate() === index + 1 &&
+                start_date.getMonth() === current_month.getMonth() &&
+                start_date.getFullYear() === current_month.getFullYear()) ||
+            (end_date?.getDate() === index + 1 &&
+                end_date.getMonth() === current_month.getMonth() &&
+                end_date.getFullYear() === current_month.getFullYear())
         );
     };
-    const isDayOutOfRange = (index: number) => {
-        const currentDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), index + 1);
-        return (minDate !== undefined && currentDate < minDate) || (maxDate !== undefined && currentDate > maxDate);
+    const is_day_out_of_range = (index: number) => {
+        const current_date = new Date(current_month.getFullYear(), current_month.getMonth(), index + 1);
+        return (
+            (min_date !== undefined && current_date < min_date) || (max_date !== undefined && current_date > max_date)
+        );
     };
 
-    const selectDay = (index: number) => {
-        const newDate = new SvelteDate(currentMonth.getFullYear(), currentMonth.getMonth(), index + 1);
-        if (selectMode === "date") {
-            if (startDate !== undefined && startDate.toDateString() === newDate.toDateString()) {
-                startDate = undefined;
+    const select_day = (index: number) => {
+        const newDate = new SvelteDate(current_month.getFullYear(), current_month.getMonth(), index + 1);
+        if (select_mode === "date") {
+            if (start_date !== undefined && start_date.toDateString() === newDate.toDateString()) {
+                start_date = undefined;
             } else {
-                startDate = newDate;
+                start_date = newDate;
             }
-        } else if (startDate === undefined) {
-            startDate = newDate;
-        } else if (endDate === undefined) {
-            if (newDate < startDate) {
-                const tmp = startDate;
-                startDate = newDate;
-                endDate = tmp;
+        } else if (start_date === undefined) {
+            start_date = newDate;
+        } else if (end_date === undefined) {
+            if (newDate < start_date) {
+                const tmp = start_date;
+                start_date = newDate;
+                end_date = tmp;
             } else {
-                endDate = newDate;
+                end_date = newDate;
             }
-        } else if (newDate < startDate) {
-            startDate = newDate;
-        } else if (newDate > endDate) {
-            endDate = newDate;
+        } else if (newDate < start_date) {
+            start_date = newDate;
+        } else if (newDate > end_date) {
+            end_date = newDate;
         } else {
-            endDate = undefined;
-            startDate = newDate;
+            end_date = undefined;
+            start_date = newDate;
         }
     };
-    const gotoNextMonth = () => {
-        currentMonth.setMonth(currentMonth.getMonth() + 1);
+    const go_to_next_month = () => {
+        current_month.setMonth(current_month.getMonth() + 1);
     };
-    const gotoPreviousMonth = () => {
-        currentMonth.setMonth(currentMonth.getMonth() - 1);
+    const go_to_previous_month = () => {
+        current_month.setMonth(current_month.getMonth() - 1);
     };
 </script>
 
 <div class="header">
-    <button aria-label="Mois précédent" onclick={gotoPreviousMonth} disabled={!canGoToPreviousMonth}>
+    <button aria-label="Mois précédent" onclick={go_to_previous_month} disabled={!can_go_to_previous_month}>
         <svg
             stroke="currentColor"
             xmlns="http://www.w3.org/2000/svg"
@@ -114,10 +116,10 @@
         </svg>
     </button>
     <span>
-        {monthFormatter.format(currentMonth)}
-        {currentMonth.getFullYear()}
+        {month_formatter.format(current_month)}
+        {current_month.getFullYear()}
     </span>
-    <button aria-label="Mois suivant" onclick={gotoNextMonth} disabled={!canGoToNextMonth}>
+    <button aria-label="Mois suivant" onclick={go_to_next_month} disabled={!can_go_to_next_month}>
         <svg
             stroke="currentColor"
             xmlns="http://www.w3.org/2000/svg"
@@ -134,18 +136,18 @@
         <div class="weekday cell">{day}</div>
     {/each}
 
-    {#each Array(firstDay)}
+    {#each Array(first_day)}
         <div class="empty cell"></div>
     {/each}
 
-    {#each Array(daysInMonth) as _, i}
+    {#each Array(days_in_month) as _, i}
         <button
             class="day cell"
-            class:between={isDayBetween(i)}
-            class:selected={isDaySelected(i)}
-            disabled={isDayOutOfRange(i)}
+            class:between={is_day_between(i)}
+            class:selected={is_day_selected(i)}
+            disabled={is_day_out_of_range(i)}
             onclick={() => {
-                selectDay(i);
+                select_day(i);
             }}
         >
             {i + 1}

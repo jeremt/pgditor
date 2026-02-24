@@ -1,6 +1,6 @@
 <script lang="ts">
-    import {get_commands_context} from "$lib/commands/commandsContext.svelte";
-    import {catchError} from "$lib/helpers/catchError";
+    import {get_commands_context} from "$lib/commands/commands_context.svelte";
+    import {catch_error} from "$lib/helpers/catch_error";
     import CheckIcon from "$lib/icons/CheckIcon.svelte";
     import CopyIcon from "$lib/icons/CopyIcon.svelte";
     import CrossIcon from "$lib/icons/CrossIcon.svelte";
@@ -8,14 +8,14 @@
     import KeyIcon from "$lib/icons/KeyIcon.svelte";
     import LinkIcon from "$lib/icons/LinkIcon.svelte";
     import TerminalIcon from "$lib/icons/TerminalIcon.svelte";
-    import {getScriptsContext} from "$lib/scripts/scriptsContext.svelte";
+    import {get_scripts_context} from "$lib/scripts/scripts_context.svelte";
     import ActionButton from "$lib/widgets/ActionButton.svelte";
     import CheckboxInput from "$lib/widgets/CheckboxInput.svelte";
     import Dialog from "$lib/widgets/Dialog.svelte";
-    import {getToastContext} from "$lib/widgets/Toaster.svelte";
+    import {get_toast_context} from "$lib/widgets/Toaster.svelte";
     import {get_pg_context, type PgColumn, type PgRow} from "./pg_context.svelte";
     import TableValueEditor from "./TableValueEditor.svelte";
-    import {defaultValues, valueTypeIsBoolean, valueTypeIsNumber, valueToSql} from "./values";
+    import {default_values, value_type_is_boolean, value_type_is_number, value_to_sql} from "./values";
     import {writeText} from "@tauri-apps/plugin-clipboard-manager";
 
     type Props = {
@@ -25,8 +25,8 @@
 
     const pg = get_pg_context();
     const commands = get_commands_context();
-    const scripts = getScriptsContext();
-    const {toast} = getToastContext();
+    const scripts = get_scripts_context();
+    const {toast} = get_toast_context();
 
     let errorMessage = $state("");
     $effect(() => {
@@ -40,7 +40,7 @@
         if (target === undefined || pk === undefined) {
             return;
         }
-        const error = await catchError(
+        const error = await catch_error(
             pg.update_row({
                 [pk.column_name]: target.row[pk.column_name],
                 [target.column.column_name]: target.row[target.column.column_name],
@@ -57,7 +57,7 @@
         if (!target) {
             return;
         }
-        await writeText(valueToSql(target.column, target.row[target.column.column_name]));
+        await writeText(value_to_sql(target.column, target.row[target.column.column_name]));
         toast(`Copied value to clipboard`);
     };
 
@@ -87,8 +87,8 @@
         });
         if (sql) {
             target = undefined;
-            scripts.emptyFile();
-            scripts.currentValue = sql.trim();
+            scripts.empty_file();
+            scripts.current_value = sql.trim();
             commands.mode = "script";
         }
     };
@@ -103,8 +103,8 @@
             target.column.is_primary_key === "YES" ||
             noPk ||
             target.column.data_type === "uuid" ||
-            valueTypeIsNumber(target.column.data_type) ||
-            valueTypeIsBoolean(target.column.data_type) ||
+            value_type_is_number(target.column.data_type) ||
+            value_type_is_boolean(target.column.data_type) ||
             target.column.enum_values !== null
         );
     });
@@ -112,7 +112,7 @@
 
 <Dialog
     --padding="0"
-    isOpen={target !== undefined}
+    is_open={target !== undefined}
     onrequestclose={() => (target = undefined)}
     position={smallDialog ? "center" : "right"}
     animation={smallDialog ? "bottom" : "right"}
@@ -129,12 +129,12 @@
                         commands.mode = "script";
                         const row = Object.entries(target!.row).filter(([key]) => key !== "__index");
                         if (row.length > 0 && pg.current_table) {
-                            scripts.currentValue = `update ${pg.fullname} set
-    ${row[0][0]} = ${valueToSql(pg.current_table.columns.find((col) => col.column_name === row[0][0])!, row[0][1])}
+                            scripts.current_value = `update ${pg.fullname} set
+    ${row[0][0]} = ${value_to_sql(pg.current_table.columns.find((col) => col.column_name === row[0][0])!, row[0][1])}
 where ${row.reduce((result, [name, value], index) => {
                                 return (
                                     result +
-                                    `${name} = ${valueToSql(pg.current_table!.columns.find((col) => col.column_name === name)!, value)}` +
+                                    `${name} = ${value_to_sql(pg.current_table!.columns.find((col) => col.column_name === name)!, value)}` +
                                     (index < row.length - 1 ? `\nor ` : "")
                                 );
                             }, "")};`;
@@ -182,7 +182,7 @@ where ${row.reduce((result, [name, value], index) => {
                                             target!.row[target!.column.column_name] = null;
                                         } else {
                                             target!.row[target!.column.column_name] =
-                                                defaultValues[target!.column.data_type] ?? "";
+                                                default_values[target!.column.data_type] ?? "";
                                         }
                                     }}
                                 />

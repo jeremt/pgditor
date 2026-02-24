@@ -1,13 +1,13 @@
 import {listen} from "@tauri-apps/api/event";
 import {Menu} from "@tauri-apps/api/menu";
 import {writeText} from "@tauri-apps/plugin-clipboard-manager";
-import {saveToFile} from "$lib/helpers/saveToFile";
-import {getToastContext} from "$lib/widgets/Toaster.svelte";
+import {save_to_file} from "$lib/helpers/save_to_file";
+import {get_toast_context} from "$lib/widgets/Toaster.svelte";
 import {get_pg_context, type PgColumn, type PgRow} from "./pg_context.svelte";
 
-export const createContextMenu = () => {
+export const create_context_menu = () => {
     const pg = get_pg_context();
-    const {toast} = getToastContext();
+    const {toast} = get_toast_context();
     let lastMenuContext: {column?: PgColumn; row?: PgRow} = {};
 
     const oncontextmenu = async (event: MouseEvent, column: PgColumn, row: PgRow) => {
@@ -137,7 +137,7 @@ export const createContextMenu = () => {
                     break;
                 case "export_json":
                     if (pg.current_table) {
-                        if (await saveToFile(JSON.stringify(pg.selected_rows_json), ["json"])) {
+                        if (await save_to_file(JSON.stringify(pg.selected_rows_json), ["json"])) {
                             toast("Selected rows exported to JSON");
                         } else {
                             toast("Failed to export JSON", {kind: "error"});
@@ -145,14 +145,14 @@ export const createContextMenu = () => {
                     }
                     break;
                 case "export_csv":
-                    if (await saveToFile(pg.selected_rows_csv, ["csv"])) {
+                    if (await save_to_file(pg.selected_rows_csv, ["csv"])) {
                         toast("Selected rows exported to CSV");
                     } else {
                         toast("Failed to export CSV", {kind: "error"});
                     }
                     break;
                 case "export_sql":
-                    if (await saveToFile(pg.selected_rows_sql, ["sql"])) {
+                    if (await save_to_file(pg.selected_rows_sql, ["sql"])) {
                         toast("Selected rows exported to SQL");
                     } else {
                         toast("Failed to export SQL", {kind: "error"});

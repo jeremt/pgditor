@@ -2,14 +2,14 @@
     import type {Snippet} from "svelte";
 
     type Props = {
-        isOpen: boolean;
+        is_open: boolean;
         target: Snippet;
-        offsetY?: number;
+        offset_y?: number;
         anchor?: "start" | "center" | "end";
         children: Snippet;
     };
 
-    let {isOpen = $bindable(), target, children, offsetY = 0, anchor = "center"}: Props = $props();
+    let {is_open = $bindable(), target, children, offset_y = 0, anchor = "center"}: Props = $props();
     let cardElement: HTMLDivElement;
     let el: HTMLDivElement;
     let position = $state({x: 0, y: 0});
@@ -17,16 +17,16 @@
     let maxWidth = $state<`${number}px`>();
 
     const clickOut = (event: MouseEvent) => {
-        if (isOpen && !el.contains(event.target as Node) && !event.defaultPrevented) {
-            isOpen = false;
+        if (is_open && !el.contains(event.target as Node) && !event.defaultPrevented) {
+            is_open = false;
         }
     };
     const closeOnEsc = (event: KeyboardEvent) => {
         if (event.key === "Escape") {
-            if (isOpen) {
+            if (is_open) {
                 event.preventDefault();
             }
-            isOpen = false;
+            is_open = false;
         }
     };
 
@@ -49,8 +49,8 @@
         const spaceBelow = window.innerHeight - targetBounds.bottom;
         const expectedY =
             spaceBelow >= childrenBounds.height
-                ? targetBounds.bottom + offsetY
-                : targetBounds.top - childrenBounds.height - offsetY;
+                ? targetBounds.bottom + offset_y
+                : targetBounds.top - childrenBounds.height - offset_y;
 
         // apply positions (never negative)
         position.x = Math.max(expectedX, 0);
@@ -71,8 +71,8 @@
     };
 
     const handleFocusIn = (event: FocusEvent) => {
-        if (!isOpen) {
-            isOpen = true;
+        if (!is_open) {
+            is_open = true;
         }
     };
 
@@ -81,7 +81,7 @@
     };
 
     $effect(() => {
-        if (isOpen) {
+        if (is_open) {
             restrictContainerPosition();
         }
     });
@@ -95,7 +95,7 @@
     <div
         bind:this={cardElement}
         class="popoverCard card"
-        class:open={isOpen}
+        class:open={is_open}
         style:top={`${position.y}px`}
         style:left={`${position.x}px`}
         style:max-height={maxHeight}

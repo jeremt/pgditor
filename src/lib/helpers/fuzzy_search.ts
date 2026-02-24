@@ -1,41 +1,41 @@
-const fuzzyMatchWithHighlights = (pattern: string, str: string) => {
-    const lowerPattern = pattern.toLowerCase();
-    const lowerStr = str.toLowerCase();
+const fuzzy_match_with_highlights = (pattern: string, str: string) => {
+    const lower_pattern = pattern.toLowerCase();
+    const lower_str = str.toLowerCase();
 
-    let patternIdx = 0;
-    let strIdx = 0;
+    let pattern_idx = 0;
+    let str_idx = 0;
     let score = 0;
     let consecutive = 0;
-    let firstMatch = -1;
+    let first_match = -1;
     const indexes: number[] = [];
 
-    while (strIdx < lowerStr.length) {
-        if (patternIdx < lowerPattern.length && lowerStr[strIdx] === lowerPattern[patternIdx]) {
-            if (firstMatch === -1) firstMatch = strIdx;
+    while (str_idx < lower_str.length) {
+        if (pattern_idx < lower_pattern.length && lower_str[str_idx] === lower_pattern[pattern_idx]) {
+            if (first_match === -1) first_match = str_idx;
 
             score += 10 + consecutive * 5;
             consecutive++;
-            indexes.push(strIdx);
-            patternIdx++;
+            indexes.push(str_idx);
+            pattern_idx++;
         } else {
             consecutive = 0;
         }
-        strIdx++;
+        str_idx++;
     }
 
-    if (patternIdx !== lowerPattern.length) {
+    if (pattern_idx !== lower_pattern.length) {
         return {matched: false, score: 0, indexes: []};
     }
 
-    score -= firstMatch;
+    score -= first_match;
 
-    const lengthPenalty = (lowerStr.length - lowerPattern.length) * 2;
-    score -= lengthPenalty;
+    const length_penalty = (lower_str.length - lower_pattern.length) * 2;
+    score -= length_penalty;
 
     return {matched: true, score, indexes};
 };
 
-const mergeHighlightIndexes = (indexes: number[]) => {
+const merge_highlight_indexes = (indexes: number[]) => {
     if (indexes.length === 0) return [];
 
     indexes.sort((a, b) => a - b);
@@ -83,15 +83,15 @@ const mergeHighlightIndexes = (indexes: number[]) => {
  * The function ignores case and returns results sorted by descending score.
  * An empty search string returns an empty array.
  */
-export const fuzzySearchWithHighlights = (needle: string, haystack: string[]) => {
+export const fuzzy_search_with_highlights = (needle: string, haystack: string[]) => {
     if (!needle) return [];
 
     const results = [];
 
     for (const item of haystack) {
-        const match = fuzzyMatchWithHighlights(needle, item);
+        const match = fuzzy_match_with_highlights(needle, item);
         if (match.matched) {
-            const ranges = mergeHighlightIndexes(match.indexes);
+            const ranges = merge_highlight_indexes(match.indexes);
             results.push({
                 item,
                 score: match.score,
@@ -113,26 +113,26 @@ export const fuzzySearchWithHighlights = (needle: string, haystack: string[]) =>
  * @returns The string with matched parts wrapped.
  *
  * @example
- * renderHighlightedMatch("AppController", [[0, 2], [4, 5]], { start: "<b>", end: "</b>" });
+ * render_highlighted_match("AppController", [[0, 2], [4, 5]], { start: "<b>", end: "</b>" });
  * // => "<b>Ap</b>p<b>C</b>ontroller"
  */
-export const renderHighlightedMatch = (
+export const render_highlighted_match = (
     str: string,
     ranges: readonly (readonly [number, number])[],
     wrapper = {start: "<b>", end: "</b>"},
 ) => {
     let result = "";
-    let lastIndex = 0;
+    let last_index = 0;
 
     for (const [start, end] of ranges) {
-        if (start > lastIndex) {
-            result += str.slice(lastIndex, start);
+        if (start > last_index) {
+            result += str.slice(last_index, start);
         }
         result += wrapper.start + str.slice(start, end) + wrapper.end;
-        lastIndex = end;
+        last_index = end;
     }
-    if (lastIndex < str.length) {
-        result += str.slice(lastIndex);
+    if (last_index < str.length) {
+        result += str.slice(last_index);
     }
     return result;
 };

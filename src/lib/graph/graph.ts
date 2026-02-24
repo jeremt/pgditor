@@ -51,10 +51,10 @@ export const build_edges = (tables: PgTableForGraph[]) =>
 
 export const build_layout = (nodes: Node[], edges: Edge[], direction = "LR") => {
     // Sort nodes deterministically by ID to ensure consistent ordering
-    const sortedNodes = [...nodes].sort((a, b) => a.id.localeCompare(b.id));
+    const sorted_nodes = [...nodes].sort((a, b) => a.id.localeCompare(b.id));
 
     // First, find all connected components
-    const components = find_connected_components(sortedNodes, edges);
+    const components = find_connected_components(sorted_nodes, edges);
 
     // Sort components deterministically (by first node ID, then by size)
     components.sort((a, b) => {
@@ -63,16 +63,16 @@ export const build_layout = (nodes: Node[], edges: Edge[], direction = "LR") => 
         return firstIdA.localeCompare(firstIdB);
     });
 
-    const isHorizontal = direction === "LR";
-    const allLayoutedNodes: Node[] = [];
-    const componentBounds: {width: number; height: number; nodes: Node[]}[] = [];
+    const is_horizontal = direction === "LR";
+    const all_layouted_nodes: Node[] = [];
+    const component_bounds: {width: number; height: number; nodes: Node[]}[] = [];
 
     // Layout each component separately
-    for (const componentNodes of components) {
-        const dagreGraph = new dagre.graphlib.Graph();
-        dagreGraph.setDefaultEdgeLabel(() => ({}));
+    for (const component_nodes of components) {
+        const dagre_graph = new dagre.graphlib.Graph();
+        dagre_graph.setDefaultEdgeLabel(() => ({}));
 
-        dagreGraph.setGraph({
+        dagre_graph.setGraph({
             rankdir: direction,
             nodesep: 50,
             edgesep: 10,
@@ -83,113 +83,113 @@ export const build_layout = (nodes: Node[], edges: Edge[], direction = "LR") => 
         });
 
         // Add nodes in sorted order
-        for (const node of componentNodes) {
-            const nodeSize = node.measured;
-            if (nodeSize === undefined || nodeSize.width === undefined || nodeSize.height === undefined) {
+        for (const node of component_nodes) {
+            const node_size = node.measured;
+            if (node_size === undefined || node_size.width === undefined || node_size.height === undefined) {
                 return new Error(`Cannot layout if the node isn't rendered yet.`);
             }
-            dagreGraph.setNode(node.id, {
-                width: nodeSize.width,
-                height: nodeSize.height,
+            dagre_graph.setNode(node.id, {
+                width: node_size.width,
+                height: node_size.height,
             });
         }
 
         // Add edges in sorted order
-        const componentNodeIds = new Set(componentNodes.map((n) => n.id));
-        const relevantEdges = edges
-            .filter((e) => componentNodeIds.has(e.source) && componentNodeIds.has(e.target))
+        const component_node_ids = new Set(component_nodes.map((n) => n.id));
+        const relevant_edges = edges
+            .filter((e) => component_node_ids.has(e.source) && component_node_ids.has(e.target))
             .sort((a, b) => {
                 const cmp = a.source.localeCompare(b.source);
                 return cmp !== 0 ? cmp : a.target.localeCompare(b.target);
             });
 
-        for (const edge of relevantEdges) {
-            dagreGraph.setEdge(edge.source, edge.target);
+        for (const edge of relevant_edges) {
+            dagre_graph.setEdge(edge.source, edge.target);
         }
 
-        dagre.layout(dagreGraph);
+        dagre.layout(dagre_graph);
 
         // Get the bounds of this component
-        let minX = Infinity,
-            minY = Infinity,
-            maxX = -Infinity,
-            maxY = -Infinity;
-        const componentLayouted: Node[] = [];
+        let min_x = Infinity,
+            min_y = Infinity,
+            max_x = -Infinity,
+            max_y = -Infinity;
+        const component_layouted: Node[] = [];
 
-        for (const node of componentNodes) {
-            const nodeSize = node.measured;
-            if (nodeSize === undefined || nodeSize.width === undefined || nodeSize.height === undefined) {
+        for (const node of component_nodes) {
+            const node_size = node.measured;
+            if (node_size === undefined || node_size.width === undefined || node_size.height === undefined) {
                 return new Error(`Cannot layout if the node isn't rendered yet.`);
             }
-            const nodeWithPosition = dagreGraph.node(node.id);
-            const x = nodeWithPosition.x - nodeSize.width / 2;
-            const y = nodeWithPosition.y - nodeSize.height / 2;
+            const node_with_position = dagre_graph.node(node.id);
+            const x = node_with_position.x - node_size.width / 2;
+            const y = node_with_position.y - node_size.height / 2;
 
-            minX = Math.min(minX, x);
-            minY = Math.min(minY, y);
-            maxX = Math.max(maxX, x + nodeSize.width);
-            maxY = Math.max(maxY, y + nodeSize.height);
+            min_x = Math.min(min_x, x);
+            min_y = Math.min(min_y, y);
+            max_x = Math.max(max_x, x + node_size.width);
+            max_y = Math.max(max_y, y + node_size.height);
 
-            componentLayouted.push({
+            component_layouted.push({
                 ...node,
-                targetPosition: isHorizontal ? Position.Left : Position.Top,
-                sourcePosition: isHorizontal ? Position.Right : Position.Bottom,
+                targetPosition: is_horizontal ? Position.Left : Position.Top,
+                sourcePosition: is_horizontal ? Position.Right : Position.Bottom,
                 position: {x, y},
             });
         }
 
-        componentBounds.push({
-            width: maxX - minX,
-            height: maxY - minY,
-            nodes: componentLayouted,
+        component_bounds.push({
+            width: max_x - min_x,
+            height: max_y - min_y,
+            nodes: component_layouted,
         });
     }
 
     // Arrange components in a grid
     const spacing = 100;
-    const componentsPerRow = Math.ceil(Math.sqrt(components.length));
+    const components_per_row = Math.ceil(Math.sqrt(components.length));
 
-    let currentX = 0;
-    let currentY = 0;
-    let rowHeight = 0;
-    let colIndex = 0;
+    let current_x = 0;
+    let current_y = 0;
+    let row_height = 0;
+    let col_index = 0;
 
-    for (const component of componentBounds) {
+    for (const component of component_bounds) {
         // Normalize positions to start at (0, 0) for this component
-        const minX = Math.min(...component.nodes.map((n) => n.position.x));
-        const minY = Math.min(...component.nodes.map((n) => n.position.y));
+        const min_x = Math.min(...component.nodes.map((n) => n.position.x));
+        const min_y = Math.min(...component.nodes.map((n) => n.position.y));
 
         for (const node of component.nodes) {
-            allLayoutedNodes.push({
+            all_layouted_nodes.push({
                 ...node,
                 position: {
-                    x: node.position.x - minX + currentX,
-                    y: node.position.y - minY + currentY,
+                    x: node.position.x - min_x + current_x,
+                    y: node.position.y - min_y + current_y,
                 },
             });
         }
 
-        rowHeight = Math.max(rowHeight, component.height);
-        colIndex++;
+        row_height = Math.max(row_height, component.height);
+        col_index++;
 
-        if (colIndex >= componentsPerRow) {
+        if (col_index >= components_per_row) {
             // Move to next row
-            currentX = 0;
-            currentY += rowHeight + spacing;
-            rowHeight = 0;
-            colIndex = 0;
+            current_x = 0;
+            current_y += row_height + spacing;
+            row_height = 0;
+            col_index = 0;
         } else {
             // Move to next column
-            currentX += component.width + spacing;
+            current_x += component.width + spacing;
         }
     }
 
-    return allLayoutedNodes;
+    return all_layouted_nodes;
 };
 
 // Helper function to find connected components
 function find_connected_components(nodes: Node[], edges: Edge[]): Node[][] {
-    const nodeMap = new Map(nodes.map((n) => [n.id, n]));
+    const node_map = new Map(nodes.map((n) => [n.id, n]));
     const adjacency = new Map<string, Set<string>>();
 
     // Build adjacency list (undirected)
@@ -215,7 +215,7 @@ function find_connected_components(nodes: Node[], edges: Edge[]): Node[][] {
                 if (visited.has(current)) continue;
 
                 visited.add(current);
-                component.push(nodeMap.get(current)!);
+                component.push(node_map.get(current)!);
 
                 // Sort neighbors for consistency
                 const neighbors = Array.from(adjacency.get(current) || []).sort();

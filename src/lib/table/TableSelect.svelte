@@ -1,23 +1,23 @@
 <script lang="ts">
     import EyeIcon from "$lib/icons/EyeIcon.svelte";
     import TableIcon from "$lib/icons/TableIcon.svelte";
-    import {fuzzySearchWithHighlights, renderHighlightedMatch} from "$lib/helpers/fuzzySearch";
+    import {fuzzy_search_with_highlights, render_highlighted_match} from "$lib/helpers/fuzzy_search";
 
     import {get_pg_context} from "./pg_context.svelte";
     import Dialog from "$lib/widgets/Dialog.svelte";
     import EnterIcon from "$lib/icons/EnterIcon.svelte";
     import CheckIcon from "$lib/icons/CheckIcon.svelte";
-    import {get_commands_context} from "$lib/commands/commandsContext.svelte";
+    import {get_commands_context} from "$lib/commands/commands_context.svelte";
 
     const pg = get_pg_context();
     const commands = get_commands_context();
 
     let searchText = $state("");
     let searchResult = $derived(
-        fuzzySearchWithHighlights(
+        fuzzy_search_with_highlights(
             searchText,
             pg.tables.map((item) => `${item.schema}.${item.name}`),
-        ).map(({item, ranges}) => ({text: item, html: renderHighlightedMatch(item, ranges)})),
+        ).map(({item, ranges}) => ({text: item, html: render_highlighted_match(item, ranges)})),
     );
 
     let selectedIndex = $state(0);
@@ -82,7 +82,7 @@
     {/if}
 </button>
 
-<Dialog isOpen={commands.is_tables_open} onrequestclose={() => (commands.is_tables_open = false)} --padding="1rem">
+<Dialog is_open={commands.is_tables_open} onrequestclose={() => (commands.is_tables_open = false)} --padding="1rem">
     <div class="flex flex-col gap-2 w-2xl overflow-hidden">
         <input
             type="text"

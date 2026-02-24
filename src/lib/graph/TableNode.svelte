@@ -1,5 +1,5 @@
 <script lang="ts">
-    import {get_commands_context} from "$lib/commands/commandsContext.svelte";
+    import {get_commands_context} from "$lib/commands/commands_context.svelte";
     import ArrowIcon from "$lib/icons/ArrowIcon.svelte";
     import EyeIcon from "$lib/icons/EyeIcon.svelte";
     import KeyIcon from "$lib/icons/KeyIcon.svelte";

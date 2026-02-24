@@ -3,7 +3,7 @@
     import TrashIcon from "$lib/icons/TrashIcon.svelte";
     import PasswordInput from "$lib/widgets/PasswordInput.svelte";
 
-    import {get_connections_context, type Connection} from "./connectionsContext.svelte";
+    import {get_connections_context, type Connection} from "./connections_context.svelte";
 
     type Props = {
         connection: Connection;

@@ -1,11 +1,11 @@
 import {expect, test} from "vitest";
-import {catchError} from "./catchError";
+import {catch_error} from "./catch_error";
 
 test("Promise examples", async () => {
     const throw_error = async () => {
         throw new Error("simple error");
     };
-    const result = await catchError(throw_error());
+    const result = await catch_error(throw_error());
     expect(result).toBeInstanceOf(Error);
     if (result instanceof Error) {
         expect(result.message).toBe("simple error");
@@ -17,9 +17,9 @@ test("Promise examples", async () => {
         }
         return "ok";
     };
-    const is_adult = await catchError(check_age(25));
+    const is_adult = await catch_error(check_age(25));
     expect(is_adult).toBe("ok");
-    const is_child = await catchError(check_age(16));
+    const is_child = await catch_error(check_age(16));
     expect(is_child).toBeInstanceOf(Error);
     if (is_child instanceof Error) {
         expect(is_child.message).toBe("🔞");
@@ -41,7 +41,7 @@ test("Custom error", async () => {
         throw new SystemError("unrecoverable", `file ${file_path} not found`);
     };
 
-    const error = await catchError(load_file("data.csv"));
+    const error = await catch_error(load_file("data.csv"));
     expect(error).toBeInstanceOf(Error);
     expect(error).toBeInstanceOf(SystemError);
     expect(error.name).toBe("SystemError");
@@ -52,7 +52,7 @@ test("Custom error", async () => {
 
 test("Sync value examples", () => {
     const get_number = () => 42;
-    const result = catchError(get_number);
+    const result = catch_error(get_number);
 
     expect(result).toBe(42);
 });
@@ -62,7 +62,7 @@ test("Sync error thrown", () => {
         throw new Error("boom");
     };
 
-    const result = catchError(throw_error);
+    const result = catch_error(throw_error);
 
     expect(result).toBeInstanceOf(Error);
     if (result instanceof Error) {
@@ -75,7 +75,7 @@ test("Sync non-error thrown value", () => {
         throw "oops";
     };
 
-    const result = catchError(throw_string);
+    const result = catch_error(throw_string);
 
     expect(result).toBeInstanceOf(Error);
     if (result instanceof Error) {
@@ -86,7 +86,7 @@ test("Sync non-error thrown value", () => {
 test("Function returning a promise", async () => {
     const async_fn = async () => "ok";
 
-    const result = await catchError(() => async_fn());
+    const result = await catch_error(() => async_fn());
 
     expect(result).toBe("ok");
 });
@@ -96,7 +96,7 @@ test("Function returning a rejected promise", async () => {
         throw new Error("fail");
     };
 
-    const result = await catchError(async () => await async_fn());
+    const result = await catch_error(async () => await async_fn());
 
     expect(result).toBeInstanceOf(Error);
     if (result instanceof Error) {
@@ -110,7 +110,7 @@ test("System JS error (ReferenceError)", () => {
         return not_defined_variable;
     };
 
-    const result = catchError(access_undefined);
+    const result = catch_error(access_undefined);
 
     expect(result).toBeInstanceOf(Error);
     expect(result).toBeInstanceOf(ReferenceError);

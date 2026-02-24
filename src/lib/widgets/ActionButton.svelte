@@ -11,14 +11,14 @@
             buttonText?: string;
             buttonClass?: string;
         };
-        loadingText?: string;
-        loadingDelay?: number;
+        loading_text?: string;
+        loading_delay?: number;
     } & Omit<HTMLButtonAttributes, "onclick">;
 
     let {
         confirm,
-        loadingText = "Loading…",
-        loadingDelay = 100,
+        loading_text = "Loading…",
+        loading_delay = 100,
         onaction,
         children,
         class: btnClass,
@@ -28,10 +28,10 @@
     let isLoading = $state(false);
     let isConfirmOpen = $state(false);
 
-    const runAction = async () => {
+    const run_action = async () => {
         const t = setTimeout(() => {
             isLoading = true;
-        }, loadingDelay);
+        }, loading_delay);
         await onaction();
         clearTimeout(t);
         isLoading = false;
@@ -46,20 +46,20 @@
         if (confirm) {
             isConfirmOpen = true;
         } else {
-            runAction();
+            run_action();
         }
     }}
     >{#if isLoading && isConfirmOpen === false}<ProgressCircle
             --size="1.2rem"
             thickness={0.07}
             infinite={true}
-            showValue={false}
-        />{loadingText}
+            show_value={false}
+        />{loading_text}
     {:else}{@render children?.()}{/if}</button
 >
 
 {#if confirm}
-    <Dialog isOpen={isConfirmOpen} onrequestclose={() => (isConfirmOpen = false)}>
+    <Dialog is_open={isConfirmOpen} onrequestclose={() => (isConfirmOpen = false)}>
         <h2 class="text-2xl pb-2">{confirm.title}</h2>
         <p class="whitespace-pre-line max-w-md">{confirm.description}</p>
         <footer class="flex justify-between pt-2">
@@ -69,11 +69,11 @@
                 class={confirm.buttonClass ?? btnClass}
                 disabled={isLoading}
                 onclick={async () => {
-                    await runAction();
+                    await run_action();
                     isConfirmOpen = false;
                 }}
-                >{#if isLoading}<ProgressCircle --size="1.5rem" thickness={0.05} infinite={true} showValue={false} />
-                    {loadingText}{:else}{confirm.buttonText ?? "Confirmer"}{/if}</button
+                >{#if isLoading}<ProgressCircle --size="1.5rem" thickness={0.05} infinite={true} show_value={false} />
+                    {loading_text}{:else}{confirm.buttonText ?? "Confirmer"}{/if}</button
             >
         </footer>
     </Dialog>

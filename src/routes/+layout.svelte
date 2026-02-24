@@ -6,22 +6,22 @@
 
     import {onMount, onDestroy} from "svelte";
 
-    import {set_connections_context} from "$lib/connection/connectionsContext.svelte";
+    import {set_connections_context} from "$lib/connection/connections_context.svelte";
     import {set_pg_context} from "$lib/table/pg_context.svelte";
-    import Toaster, {setToastContext} from "$lib/widgets/Toaster.svelte";
-    import {setScriptsContext} from "$lib/scripts/scriptsContext.svelte";
-    import {set_commands_context} from "$lib/commands/commandsContext.svelte";
-    import {setSettingsContext} from "$lib/settings/settingsContext.svelte";
-    import {set_graph_context} from "$lib/graph/graphContext.svelte";
+    import Toaster, {set_toast_context} from "$lib/widgets/Toaster.svelte";
+    import {set_scripts_context} from "$lib/scripts/scripts_context.svelte";
+    import {set_commands_context} from "$lib/commands/commands_context.svelte";
+    import {set_settings_context} from "$lib/settings/settings_context.svelte";
+    import {set_graph_context} from "$lib/graph/graph_context.svelte";
 
     let {children} = $props();
 
-    setToastContext();
+    set_toast_context();
 
     const connections = set_connections_context();
     const pg = set_pg_context();
-    setScriptsContext();
-    setSettingsContext();
+    set_scripts_context();
+    set_settings_context();
     set_graph_context();
     const commands = set_commands_context();
 

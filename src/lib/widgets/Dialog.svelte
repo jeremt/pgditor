@@ -3,13 +3,13 @@
     import type {HTMLDialogAttributes} from "svelte/elements";
 
     interface Props extends HTMLDialogAttributes {
-        isOpen: boolean;
+        is_open: boolean;
         children?: Snippet;
         disableBodyScrolling?: boolean;
         /**
          * Disable click outside the modal or cancel to close.
          */
-        disableCancel?: boolean;
+        disable_cancel?: boolean;
         type?: "card" | "fullscreen";
         /**
          * The position of the dialog.
@@ -29,14 +29,14 @@
         onclosed?: () => void;
     }
     let {
-        isOpen,
+        is_open,
         animation = "bottom",
         type = "card",
         position = "center",
         onrequestclose,
         onclosed,
         children,
-        disableCancel = false,
+        disable_cancel: disableCancel = false,
         disableBodyScrolling = true,
         ...props
     }: Props = $props();
@@ -72,7 +72,7 @@
     };
 
     const handleAnimationEnd = () => {
-        if (!isOpen) {
+        if (!is_open) {
             dialog.close();
             onclosed?.();
         }
@@ -112,7 +112,7 @@
     };
 
     $effect(() => {
-        if (isOpen) {
+        if (is_open) {
             dialog.showModal();
         }
     });
@@ -126,9 +126,9 @@
                 document.documentElement.setAttribute("data-scroll", currentValue);
             }
         };
-        if (isOpen && disableBodyScrolling) {
+        if (is_open && disableBodyScrolling) {
             document.documentElement.setAttribute("data-scroll", "false");
-        } else if (!isOpen && disableBodyScrolling) {
+        } else if (!is_open && disableBodyScrolling) {
             resetValue();
         }
 
@@ -138,7 +138,7 @@
 
 <dialog
     bind:this={dialog}
-    class:closing={!isOpen}
+    class:closing={!is_open}
     class:fullscreen={type === "fullscreen"}
     onclose={handleClose}
     onclick={handleClick}

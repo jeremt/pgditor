@@ -7,21 +7,24 @@
     import {get_pg_context} from "./pg_context.svelte";
 
     const pg = get_pg_context();
-    let isColumnsOpen = $state(false);
-    const applyColumns = () => {
-        pg.selected_columns = selectedColums;
+    let is_columns_open = $state(false);
+    const apply_columns = () => {
+        pg.selected_columns = selected_colums;
         pg.refresh_data();
-        isColumnsOpen = false;
+        is_columns_open = false;
     };
-    let selectedColums = $derived.by(() => {
+    let selected_colums = $derived.by(() => {
         const copy = $state(new SvelteSet(pg.selected_columns));
         return copy;
     });
 </script>
 
-<Popover bind:isOpen={isColumnsOpen} offsetY={10}>
+<Popover bind:is_open={is_columns_open} offset_y={10}>
     {#snippet target()}
-        <button class="btn ghost icon relative" title="Select columns" onclick={() => (isColumnsOpen = !isColumnsOpen)}
+        <button
+            class="btn ghost icon relative"
+            title="Select columns"
+            onclick={() => (is_columns_open = !is_columns_open)}
             ><ColumnsIcon --size="1.2rem" />
         </button>
     {/snippet}
@@ -30,19 +33,19 @@
             {#if pg.current_table !== undefined}
                 <label class="flex gap-2 font-bold text-sm items-center">
                     <CheckboxInput
-                        checked={selectedColums.size === pg.current_table.columns.length &&
+                        checked={selected_colums.size === pg.current_table.columns.length &&
                             pg.current_table.columns.length > 0}
                         disabled={pg.current_table.columns.length === 0}
-                        indeterminate={selectedColums.size > 0 &&
-                            selectedColums.size !== pg.current_table.columns.length}
+                        indeterminate={selected_colums.size > 0 &&
+                            selected_colums.size !== pg.current_table.columns.length}
                         onchange={() => {
                             if (pg.current_table === undefined) {
                                 return;
                             }
-                            if (selectedColums.size === pg.current_table.columns.length) {
-                                selectedColums.clear();
+                            if (selected_colums.size === pg.current_table.columns.length) {
+                                selected_colums.clear();
                             } else {
-                                selectedColums = new SvelteSet(pg.current_table.columns.map((col) => col.column_name));
+                                selected_colums = new SvelteSet(pg.current_table.columns.map((col) => col.column_name));
                             }
                         }}
                     />
@@ -52,12 +55,12 @@
                     <label class="flex gap-2 font-bold text-sm items-center">
                         <CheckboxInput
                             bind:checked={
-                                () => selectedColums.has(column.column_name),
-                                (isChecked) => {
-                                    if (isChecked) {
-                                        selectedColums.add(column.column_name);
+                                () => selected_colums.has(column.column_name),
+                                (is_checked) => {
+                                    if (is_checked) {
+                                        selected_colums.add(column.column_name);
                                     } else {
-                                        selectedColums.delete(column.column_name);
+                                        selected_colums.delete(column.column_name);
                                     }
                                 }
                             }
@@ -66,6 +69,6 @@
                 {/each}
             {/if}
         </div>
-        <button class="btn" onclick={applyColumns}><CheckIcon --size="1rem" /> Apply</button>
+        <button class="btn" onclick={apply_columns}><CheckIcon --size="1rem" /> Apply</button>
     </div>
 </Popover>

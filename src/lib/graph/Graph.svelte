@@ -3,7 +3,7 @@
     import TableNode from "./TableNode.svelte";
 
     import "@xyflow/svelte/dist/style.css";
-    import {get_graph_context} from "./graphContext.svelte";
+    import {get_graph_context} from "./graph_context.svelte";
 
     const graph = get_graph_context();
     const {fitView} = useSvelteFlow();

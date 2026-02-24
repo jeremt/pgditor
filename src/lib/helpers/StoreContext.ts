@@ -1,5 +1,8 @@
 import {load, type Store} from "@tauri-apps/plugin-store";
 
+/**
+ * Abstract class to augment svelte context with tauri store.
+ */
 export class StoreContext {
     private store?: Store;
 
@@ -8,7 +11,7 @@ export class StoreContext {
     /**
      * Returns the value for the given key or undefined if the key does not exist.
      */
-    getFromStore = async <T>(key: string) => {
+    get_from_store = async <T>(key: string) => {
         if (!this.store) {
             this.store = await load(this.storePath);
         }
@@ -18,7 +21,7 @@ export class StoreContext {
     /**
      * Inserts a key-value pair into the store.
      */
-    setToStore = async <T>(key: string, value: T) => {
+    set_to_store = async <T>(key: string, value: T) => {
         if (!this.store) {
             this.store = await load(this.storePath);
         }
@@ -28,7 +31,7 @@ export class StoreContext {
     /**
      * Saves the store to disk at the store's path.
      */
-    saveToStore = async () => {
+    save_store = async () => {
         if (!this.store) {
             this.store = await load(this.storePath);
         }

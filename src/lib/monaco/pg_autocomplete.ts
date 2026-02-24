@@ -136,7 +136,7 @@ const keywords = [
     "restrict",
 ];
 
-const pgFunctions = [
+const pg_functions = [
     {
         category: "aggregate function",
         functions: [
@@ -309,10 +309,10 @@ const pgFunctions = [
 ];
 
 // Store the disposable so we can clean it up
-let currentDisposable: monaco.IDisposable | null = null;
+let current_disposable: monaco.IDisposable | null = null;
 
 // Helper function to get context from the current line and previous text
-function analyzeContext(model: monaco.editor.ITextModel, position: monaco.Position) {
+function analyze_context(model: monaco.editor.ITextModel, position: monaco.Position) {
     const lineContent = model
         .getLineContent(position.lineNumber)
         .slice(0, position.column - 1)
@@ -344,7 +344,7 @@ function analyzeContext(model: monaco.editor.ITextModel, position: monaco.Positi
 }
 
 // Helper to extract table references from the query
-function getReferencedTables(text: string, tables: PgTable[]): PgTable[] {
+function get_referenced_tables(text: string, tables: PgTable[]): PgTable[] {
     const referencedTables: PgTable[] = [];
     const lowerText = text.toLowerCase();
 
@@ -363,14 +363,14 @@ function getReferencedTables(text: string, tables: PgTable[]): PgTable[] {
     return referencedTables;
 }
 
-export const addPgAutocomplete = (Monaco: typeof monaco, tables: PgTable[]) => {
+export const add_pg_autocomplete = (Monaco: typeof monaco, tables: PgTable[]) => {
     // Dispose of the previous provider if it exists
-    if (currentDisposable) {
-        currentDisposable.dispose();
+    if (current_disposable) {
+        current_disposable.dispose();
     }
 
     // Register the new provider and store its disposable
-    currentDisposable = Monaco.languages.registerCompletionItemProvider("pgsql", {
+    current_disposable = Monaco.languages.registerCompletionItemProvider("pgsql", {
         provideCompletionItems: (
             model: monaco.editor.ITextModel,
             position: monaco.Position,
@@ -384,14 +384,14 @@ export const addPgAutocomplete = (Monaco: typeof monaco, tables: PgTable[]) => {
                 wordInfo.endColumn,
             );
 
-            const context = analyzeContext(model, position);
+            const context = analyze_context(model, position);
             const textBeforeCursor = model.getValueInRange({
                 startLineNumber: 1,
                 startColumn: 1,
                 endLineNumber: position.lineNumber,
                 endColumn: position.column,
             });
-            const referencedTables = getReferencedTables(textBeforeCursor, tables);
+            const referencedTables = get_referenced_tables(textBeforeCursor, tables);
 
             // Add keywords based on context
             for (const keyword of keywords) {
@@ -490,7 +490,7 @@ export const addPgAutocomplete = (Monaco: typeof monaco, tables: PgTable[]) => {
             // Add functions (prioritize aggregate functions in SELECT after GROUP BY)
             const showAggregateFunctions = context.inSelectClause;
 
-            for (const {category, functions} of pgFunctions) {
+            for (const {category, functions} of pg_functions) {
                 const sortPrefix = showAggregateFunctions && category === "aggregate function" ? "2" : "4";
 
                 for (const func of functions) {
@@ -510,5 +510,5 @@ export const addPgAutocomplete = (Monaco: typeof monaco, tables: PgTable[]) => {
         },
     });
 
-    return currentDisposable;
+    return current_disposable;
 };

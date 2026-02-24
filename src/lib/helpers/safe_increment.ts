@@ -7,9 +7,9 @@
  * @param step The step value to add.
  * @returns The incremented number without floating-point inaccuracies.
  */
-export const safeIncrement = (value: number, step: number): number => {
-    const nDecimalPlaces = (value.toString().split(".")[1] || "").length;
-    const stepDecimalPlaces = (step.toString().split(".")[1] || "").length;
-    const multiplier = Math.pow(10, Math.max(nDecimalPlaces, stepDecimalPlaces));
+export const safe_increment = (value: number, step: number): number => {
+    const n_decimal_places = (value.toString().split(".")[1] || "").length;
+    const step_decimal_places = (step.toString().split(".")[1] || "").length;
+    const multiplier = Math.pow(10, Math.max(n_decimal_places, step_decimal_places));
     return (Math.round(value * multiplier) + Math.round(step * multiplier)) / multiplier;
 };

@@ -1,9 +1,9 @@
 import {get_pg_context} from "$lib/table/pg_context.svelte";
-import {globalShortcuts} from "$lib/tauri/globalShortcuts";
+import {globalShortcuts} from "$lib/tauri/global_shortcuts";
 import type {ShortcutEvent} from "@tauri-apps/plugin-global-shortcut";
 import {getContext, setContext} from "svelte";
 import {platform} from "@tauri-apps/plugin-os";
-import {getSettingsContext} from "$lib/settings/settingsContext.svelte";
+import {get_settings_context} from "$lib/settings/settings_context.svelte";
 
 export type Command = {
     keys: string;
@@ -21,7 +21,7 @@ class CommandsContext {
     is_tables_open = $state(false);
 
     #pg = get_pg_context();
-    #settings = getSettingsContext();
+    #settings = get_settings_context();
 
     #all = $state<Command[]>([]);
     get all() {

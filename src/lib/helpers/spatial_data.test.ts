@@ -1,5 +1,5 @@
 import {test, expect} from "vitest";
-import {formatSpatialData, parseSpatialData, spatialDataToHex} from "./spatialData";
+import {formatSpatialData, parseSpatialData, spatialDataToHex} from "./spatial_data";
 
 // Test formatSpatialData
 test("formatSpatialData formats Point geometry", () => {

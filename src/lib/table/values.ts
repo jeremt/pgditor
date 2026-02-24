@@ -1,6 +1,6 @@
 import type {PgColumn} from "./pg_context.svelte";
 
-export const defaultValues = {
+export const default_values = {
     smallint: 0,
     integer: 0,
     bigint: 0n, // BigInt for 64-bit integers
@@ -69,13 +69,13 @@ export const defaultValues = {
     vector: [0.0, 0.0, 0.0],
 } as const;
 
-export type PgType = keyof typeof defaultValues;
+export type PgType = keyof typeof default_values;
 
-export const sqlToValue = (column: Pick<PgColumn, "data_type">, sql: string): unknown => {
+export const sql_to_value = (column: Pick<PgColumn, "data_type">, sql: string): unknown => {
     // strip explicit type casts
     if (sql.startsWith("'") && sql.endsWith(`'::${column.data_type}`)) {
         const result = sql.slice(1, sql.length - `'::${column.data_type}`.length);
-        return sqlToValue(column, result);
+        return sql_to_value(column, result);
     }
     if (column.data_type === "json" || column.data_type === "jsonb") {
         return JSON.parse(sql);
@@ -83,7 +83,7 @@ export const sqlToValue = (column: Pick<PgColumn, "data_type">, sql: string): un
     return sql;
 };
 
-export const valueTypeIsInteger = (data_type: PgType) => {
+export const value_type_is_integer = (data_type: PgType) => {
     return (
         data_type === "smallint" ||
         data_type === "integer" ||
@@ -97,19 +97,19 @@ export const valueTypeIsInteger = (data_type: PgType) => {
     );
 };
 
-export const valueTypeIsFloat = (data_type: PgType) => {
+export const value_type_is_float = (data_type: PgType) => {
     return data_type === "float4" || data_type === "float8";
 };
 
-export const valueTypeIsNumber = (data_type: PgType) => {
-    return valueTypeIsFloat(data_type) || valueTypeIsInteger(data_type);
+export const value_type_is_number = (data_type: PgType) => {
+    return value_type_is_float(data_type) || value_type_is_integer(data_type);
 };
 
-export const valueTypeIsBoolean = (data_type: PgType) => {
+export const value_type_is_boolean = (data_type: PgType) => {
     return data_type === "bool" || data_type === "boolean";
 };
 
-export const valueTypeIsDate = (data_type: PgType) => {
+export const value_type_is_date = (data_type: PgType) => {
     return (
         data_type === "date" ||
         data_type === "time" ||
@@ -119,7 +119,7 @@ export const valueTypeIsDate = (data_type: PgType) => {
     );
 };
 
-export const valueToSql = (column: Pick<PgColumn, "data_type">, value: any): string => {
+export const value_to_sql = (column: Pick<PgColumn, "data_type">, value: any): string => {
     // Handle NULL values
     if (value === null || value === undefined) {
         return "null";
@@ -142,7 +142,7 @@ export const valueToSql = (column: Pick<PgColumn, "data_type">, value: any): str
     }
 
     // Date/Time types Convert ISO 8601 format to PostgreSQL format (replace T with space)
-    if (valueTypeIsDate(type)) {
+    if (value_type_is_date(type)) {
         const pgFormat = String(value).replace("T", " ");
         const escaped = pgFormat.replace(/'/g, "''");
         return `'${escaped}'`;
@@ -194,12 +194,12 @@ export const valueToSql = (column: Pick<PgColumn, "data_type">, value: any): str
     }
 
     // ✅ Boolean
-    if (valueTypeIsBoolean(type)) {
+    if (value_type_is_boolean(type)) {
         return value === true ? "true" : value === false ? "false" : value;
     }
 
     // Numeric types (no quoting needed)
-    if (valueTypeIsNumber(type)) {
+    if (value_type_is_number(type)) {
         return String(value);
     }
 

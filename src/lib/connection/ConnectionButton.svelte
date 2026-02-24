@@ -1,15 +1,14 @@
 <script lang="ts">
-    import {get_commands_context} from "$lib/commands/commandsContext.svelte";
+    import {get_commands_context} from "$lib/commands/commands_context.svelte";
     import CheckIcon from "$lib/icons/CheckIcon.svelte";
     import ChevronIcon from "$lib/icons/ChevronIcon.svelte";
     import PenIcon from "$lib/icons/PenIcon.svelte";
-    import PlugIcon from "$lib/icons/PlugIcon.svelte";
     import PlusIcon from "$lib/icons/PlusIcon.svelte";
     import Dialog from "$lib/widgets/Dialog.svelte";
     import Popover from "$lib/widgets/Popover.svelte";
 
     import ConnectionDialog from "./ConnectionDialog.svelte";
-    import {get_connections_context, type Connection} from "./connectionsContext.svelte";
+    import {get_connections_context, type Connection} from "./connections_context.svelte";
 
     const connections = get_connections_context();
     const commands = get_commands_context();
@@ -17,7 +16,7 @@
     let is_dialog_open = $state(false);
 </script>
 
-<Popover bind:isOpen={commands.is_connections_open} offsetY={10}>
+<Popover bind:is_open={commands.is_connections_open} offset_y={10}>
     {#snippet target()}
         <button class="btn secondary" onclick={() => (commands.is_connections_open = !commands.is_connections_open)}>
             {connections.current ? connections.current.name : "Add connection"}
@@ -61,6 +60,6 @@
     </div>
 </Popover>
 
-<Dialog isOpen={is_dialog_open} onrequestclose={() => (is_dialog_open = false)}>
+<Dialog is_open={is_dialog_open} onrequestclose={() => (is_dialog_open = false)}>
     <ConnectionDialog bind:connection={connection_to_edit} onclose={() => (is_dialog_open = false)} />
 </Dialog>

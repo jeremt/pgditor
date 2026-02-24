@@ -66,7 +66,7 @@ type MultiPolygon = {
 
 export type GeoJSONGeometry = Point | LineString | Polygon | MultiPoint | MultiLineString | MultiPolygon;
 
-export const formatGeometryData = (geom: GeoJSONGeometry): string => {
+export const format_geometry_data = (geom: GeoJSONGeometry): string => {
     const formatCoordinate = (coord: [number, number]): string => {
         return coord.join(" ");
     };

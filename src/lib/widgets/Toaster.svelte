@@ -25,14 +25,14 @@
         /**
          * Add an image to the toast.
          */
-        thumbnailSrc?: string;
+        thumbnail_src?: string;
     };
     type ToastMessage = {
         index: number;
         message: string;
         options: ToastOptions;
     };
-    export const createToastContext = () => {
+    export const create_toast_context = () => {
         const messages = $state<ToastMessage[]>([]);
 
         const remove = (item: ToastMessage) => {
@@ -67,8 +67,8 @@
     };
 
     const key = Symbol("toastContext");
-    export const getToastContext = () => getContext<ReturnType<typeof createToastContext>>(key);
-    export const setToastContext = () => setContext(key, createToastContext());
+    export const get_toast_context = () => getContext<ReturnType<typeof create_toast_context>>(key);
+    export const set_toast_context = () => setContext(key, create_toast_context());
 </script>
 
 <script lang="ts">
@@ -76,8 +76,8 @@
     import Cross from "$lib/icons/CrossIcon.svelte";
     import Error from "$lib/icons/ErrorIcon.svelte";
 
-    const toastContext = getToastContext();
-    const kindToColor = {
+    const toast_context = get_toast_context();
+    const kind_to_color = {
         error: "var(--color-error)",
         success: "var(--color-success)",
         message: "var(--color-fg)",
@@ -85,15 +85,15 @@
 </script>
 
 <div class="toasts">
-    {#each toastContext.messages as item}
-        <div class="toast" style:color={kindToColor[item.options.kind!]}>
+    {#each toast_context.messages as item}
+        <div class="toast" style:color={kind_to_color[item.options.kind!]}>
             {#if item.options.kind === "error"}
                 <div class="circle"><Error /></div>
             {:else if item.options.kind === "success"}
                 <div class="circle"><Check --size="1.2rem" /></div>
             {/if}
-            {#if item.options.thumbnailSrc}
-                <img src={item.options.thumbnailSrc} alt="" role="presentation" />
+            {#if item.options.thumbnail_src}
+                <img src={item.options.thumbnail_src} alt="" role="presentation" />
             {/if}
             {#if item.options.details}
                 <div>
@@ -108,11 +108,11 @@
                     class="btn"
                     onclick={() => {
                         item.options.action?.callback();
-                        toastContext.remove(item);
+                        toast_context.remove(item);
                     }}>{item.options.action.label}</button
                 >
             {/if}
-            <button class="btn ghost icon" onclick={() => toastContext.remove(item)}><Cross /></button>
+            <button class="btn ghost icon" onclick={() => toast_context.remove(item)}><Cross /></button>
         </div>
     {/each}
 </div>

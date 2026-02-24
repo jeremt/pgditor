@@ -1,4 +1,4 @@
-import {catchError} from "$lib/helpers/catchError";
+import {catch_error} from "$lib/helpers/catch_error";
 import {StoreContext} from "$lib/helpers/StoreContext";
 import type {PgTable} from "$lib/table/pg_context.svelte";
 import {invoke} from "@tauri-apps/api/core";
@@ -20,9 +20,9 @@ class ConnectionsContext extends StoreContext {
      * Load all saved connections from _connections.json_.
      */
     load = async () => {
-        this.list = (await this.getFromStore<Connection[]>("connections")) ?? [];
+        this.list = (await this.get_from_store<Connection[]>("connections")) ?? [];
         if (this.list.length) {
-            const selectedId = await this.getFromStore<string>("selected_connection_id");
+            const selectedId = await this.get_from_store<string>("selected_connection_id");
             this.current_id =
                 selectedId && this.list.find((c) => c.id === selectedId) !== undefined ? selectedId : this.list[0].id;
         }
@@ -37,15 +37,15 @@ class ConnectionsContext extends StoreContext {
             throw new Error(`Connection ${id} not found`);
         }
         this.current_id = id;
-        await this.setToStore("selected_connection_id", id);
-        await this.saveToStore();
+        await this.set_to_store("selected_connection_id", id);
+        await this.save_store();
     };
 
     /**
      * Get the lastly selected table to restore it when the app starts.
      */
     get_selected_table = async () => {
-        return this.getFromStore<string>("selected_table");
+        return this.get_from_store<string>("selected_table");
     };
 
     /**
@@ -53,8 +53,8 @@ class ConnectionsContext extends StoreContext {
      * @param table
      */
     save_selected_table = (table: PgTable | undefined) => {
-        this.setToStore("selected_table", table === undefined ? undefined : `${table.schema}.${table.name}`);
-        this.saveToStore();
+        this.set_to_store("selected_table", table === undefined ? undefined : `${table.schema}.${table.name}`);
+        this.save_store();
     };
 
     /**
@@ -70,8 +70,8 @@ class ConnectionsContext extends StoreContext {
      */
     remove = async (id: string) => {
         this.list = this.list.filter((connection) => connection.id !== id);
-        await this.setToStore("connections", this.list);
-        await this.saveToStore();
+        await this.set_to_store("connections", this.list);
+        await this.save_store();
         if (this.list.length === 0) {
             this.current_id = undefined;
         } else {
@@ -91,8 +91,8 @@ class ConnectionsContext extends StoreContext {
             return errorMessage;
         }
         this.list.unshift(connection);
-        await this.setToStore("connections", this.list);
-        await this.saveToStore();
+        await this.set_to_store("connections", this.list);
+        await this.save_store();
         this.connect(connection.id);
     };
 
@@ -112,8 +112,8 @@ class ConnectionsContext extends StoreContext {
         }
         this.list[i].name = name;
         this.list[i].connectionString = connectionString;
-        await this.setToStore("connections", this.list);
-        await this.saveToStore();
+        await this.set_to_store("connections", this.list);
+        await this.save_store();
         this.connect(this.list[i].id);
     };
 
@@ -133,7 +133,7 @@ class ConnectionsContext extends StoreContext {
         if (connectionString === "") {
             return "Connection string is required";
         }
-        const ok = await catchError(invoke<boolean>("test_connection", {connectionString}));
+        const ok = await catch_error(invoke<boolean>("test_connection", {connectionString}));
         if (ok instanceof Error || !ok) {
             return "Connection string is invalid";
         }
