@@ -6,15 +6,14 @@
     import CheckboxInput from "$lib/widgets/CheckboxInput.svelte";
     import Dialog from "$lib/widgets/Dialog.svelte";
 
-    import {filters_to_where, get_pg_context, type PgColumn, type PgRow} from "./pg_context.svelte";
+    import {get_pg_context, type PgColumn, type PgRow} from "./pg_context.svelte";
     import TableUpsert from "./TableUpsert.svelte";
     import {create_context_menu} from "./table_context_menu.svelte";
     import ProgressCircle from "$lib/widgets/ProgressCircle.svelte";
     import TableValueUpdate from "./TableValueUpdate.svelte";
     import {writeText} from "@tauri-apps/plugin-clipboard-manager";
     import {get_toast_context} from "$lib/widgets/Toaster.svelte";
-    import {formatSpatialData, parseSpatialData} from "$lib/helpers/spatial_data";
-    import {format_geometry_data, type GeoJSONGeometry} from "$lib/helpers/geometry_data";
+    import TableCell from "./TableCell.svelte";
 
     const pg = get_pg_context();
 
@@ -142,22 +141,16 @@
                     <tr>
                         {#each pg.get_selected_columns() as column (column.column_name)}
                             {@const value = row[column.column_name]}
-                            <td
-                                class:text-fg-2={value === null}
-                                title={column.data_type === "geography"
-                                    ? formatSpatialData(parseSpatialData(value as string))
-                                    : column.data_type === "geometry"
-                                      ? format_geometry_data(value as GeoJSONGeometry)
-                                      : typeof value === "object"
-                                        ? JSON.stringify(value)
-                                        : value === null
-                                          ? "null"
-                                          : value.toString()}
-                                onclick={async (e) => {
+                            <TableCell
+                                {value}
+                                {column}
+                                {row}
+                                {oncontextmenu}
+                                onclick={async (event) => {
                                     if (pg.current_table?.type === "BASE TABLE") {
-                                        if (e.currentTarget instanceof HTMLElement) {
+                                        if (event.currentTarget instanceof HTMLElement) {
                                             cell = {
-                                                element: e.currentTarget,
+                                                element: event.currentTarget,
                                                 column,
                                                 row: JSON.parse(JSON.stringify(row)),
                                             };
@@ -167,49 +160,7 @@
                                         toast("Value copied to clipboard");
                                     }
                                 }}
-                                oncontextmenu={(e) => oncontextmenu(e, column, $state.snapshot(row))}
-                            >
-                                {#if value === null}
-                                    null
-                                {:else if column.data_type === "geometry"}
-                                    {format_geometry_data(value as GeoJSONGeometry)}
-                                {:else if typeof value === "object"}
-                                    {JSON.stringify(value).slice(0, 50)}
-                                {:else if column.data_type === "geography"}
-                                    {formatSpatialData(parseSpatialData(value as string))}
-                                {:else}
-                                    <div class="flex gap-2 items-center">
-                                        <span class="grow"
-                                            >{typeof value === "string" ? value.slice(0, 50) : value}</span
-                                        >
-                                        {#if column.foreign_table_schema && column.foreign_table_name && column.foreign_column_name}
-                                            <button
-                                                class="my-auto cursor-pointer"
-                                                onclick={async (event) => {
-                                                    event.stopPropagation();
-                                                    await pg.select_table({
-                                                        schema: column.foreign_table_schema!,
-                                                        name: column.foreign_table_name!,
-                                                    });
-                                                    pg.where_filters = [
-                                                        {
-                                                            column: column.foreign_column_name!,
-                                                            column_type: column.data_type,
-                                                            operator: "=",
-                                                            value: `${value}`,
-                                                        },
-                                                    ];
-                                                    pg.where_sql = filters_to_where(pg.where_filters).trim();
-                                                    pg.applied_filters = pg.where_filters.length;
-                                                    await pg.refresh_data();
-                                                }}
-                                                title="{column.foreign_table_schema}.{column.foreign_table_name}.{column.foreign_column_name}"
-                                                ><ArrowIcon direction="right" --size="1rem" /></button
-                                            >
-                                        {/if}
-                                    </div>
-                                {/if}
-                            </td>
+                            />
                         {/each}
                     </tr>
                 {/each}
@@ -236,14 +187,5 @@
         <TableUpsert row={pg.row_to_update} onclose={() => (pg.is_update_open = false)} />
     </Dialog>
 {/if}
-<TableValueUpdate bind:target={cell} />
 
-<style>
-    table > tbody > tr > td {
-        cursor: pointer;
-        transition: 0.1s all;
-        &:hover {
-            background-color: var(--color-bg-1);
-        }
-    }
-</style>
+<TableValueUpdate bind:target={cell} />

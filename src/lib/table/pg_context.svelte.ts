@@ -27,8 +27,8 @@ export type PgColumn = {
 };
 
 export type PgTableForGraph = Omit<PgTable, "column_names"> & {columns: PgColumn[]};
-
-export type PgRow = Record<string, object | string | bigint | number | boolean | null>;
+export type PgValue = object | string | bigint | number | boolean | null;
+export type PgRow = Record<string, PgValue>;
 
 export const whereOperators = [
     "=",

@@ -11,7 +11,7 @@ type ParsedGeometry =
     | {type: "MultiLineString"; coordinates: Coordinate[][]}
     | {type: "MultiPolygon"; coordinates: Coordinate[][][]};
 
-export function parseSpatialData(hexString: string): ParsedGeometry {
+export function parse_spatial_data(hexString: string): ParsedGeometry {
     const cleanHex = hexString.replace(/\s/g, "");
     const bytes = hexToBytes(cleanHex);
 
@@ -142,7 +142,7 @@ export function parseSpatialData(hexString: string): ParsedGeometry {
     }
 }
 
-export function formatSpatialData(geometry: ParsedGeometry): string {
+export function format_spatial_data(geometry: ParsedGeometry): string {
     return `${geometry.type}(${formatCoordinates(geometry.coordinates, geometry.type)})`;
 }
 

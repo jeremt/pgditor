@@ -30,7 +30,7 @@
         bind:value
         theme={settings.colorScheme}
         selected_file="{pg.current_table!.name}-{column}.json"
-        files={[{path: `${pg.current_table!.name}-${column}.json`, value: ""}]}
+        files={[{path: `${pg.current_table!.name}-${column}.json`, value}]}
         font_family="Space Mono"
         font_size={12}
         show_line_numbers={true}
