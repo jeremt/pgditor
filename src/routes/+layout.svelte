@@ -4,7 +4,7 @@
     import "@fontsource/space-mono/400.css";
     import "@fontsource/space-mono/700.css";
 
-    import {onMount, onDestroy} from "svelte";
+    import {onMount} from "svelte";
 
     import {set_connections_context} from "$lib/connection/connections_context.svelte";
     import {set_pg_context} from "$lib/table/pg_context.svelte";
@@ -23,15 +23,10 @@
     set_scripts_context();
     set_settings_context();
     set_graph_context();
-    const commands = set_commands_context();
+    set_commands_context();
 
     onMount(async () => {
         await connections.load();
-        await commands.mount_shortcuts();
-    });
-
-    onDestroy(() => {
-        commands.unmount_shortcuts();
     });
 
     $effect(() => {

@@ -1,6 +1,4 @@
 import {get_pg_context} from "$lib/table/pg_context.svelte";
-import {globalShortcuts} from "$lib/tauri/global_shortcuts";
-import type {ShortcutEvent} from "@tauri-apps/plugin-global-shortcut";
 import {getContext, setContext} from "svelte";
 import {platform} from "@tauri-apps/plugin-os";
 import {get_settings_context} from "$lib/settings/settings_context.svelte";
@@ -10,7 +8,18 @@ export type Command = {
     pretty_keys: string;
     title: string;
     description: string;
-    action: (event: ShortcutEvent) => void;
+    action: () => void;
+};
+
+const match_shortcut = (shortcut: string, event: KeyboardEvent) => {
+    if (shortcut === "") {
+        return false;
+    }
+    if (shortcut.startsWith("CommandOrControl+") && !event.ctrlKey && !event.metaKey) {
+        return false;
+    }
+    const key = shortcut.startsWith("CommandOrControl+") ? shortcut.slice("CommandOrControl+".length) : shortcut;
+    return key.toLowerCase() === event.key.toLowerCase();
 };
 
 class CommandsContext {
@@ -28,10 +37,8 @@ class CommandsContext {
         return this.#all.slice(1);
     }
 
-    #shortcuts: ReturnType<typeof globalShortcuts> | undefined = undefined;
-
     get cmd_or_ctrl() {
-        return platform() === "macos" ? "⌘" : "Ctrl";
+        return platform() === "macos" ? "⌘" : "^";
     }
 
     constructor() {
@@ -41,10 +48,8 @@ class CommandsContext {
                 pretty_keys: `${this.cmd_or_ctrl} P`,
                 title: "Open command palette",
                 description: "Allows you to search through all available commands and execute them",
-                action: (event: ShortcutEvent) => {
-                    if (event.state === "Pressed") {
-                        this.is_command_palette_open = true;
-                    }
+                action: () => {
+                    this.is_command_palette_open = true;
                 },
             },
             {
@@ -52,10 +57,8 @@ class CommandsContext {
                 pretty_keys: `${this.cmd_or_ctrl} 0`,
                 title: "Switch database connection",
                 description: "Open the popover to change the currently selected database connection",
-                action: (event: ShortcutEvent) => {
-                    if (event.state === "Pressed") {
-                        this.is_connections_open = true;
-                    }
+                action: () => {
+                    this.is_connections_open = true;
                 },
             },
             {
@@ -63,10 +66,8 @@ class CommandsContext {
                 pretty_keys: `${this.cmd_or_ctrl} 1`,
                 title: "Open tables mode",
                 description: "Visualize and edit tables of the currently selected database",
-                action: (event: ShortcutEvent) => {
-                    if (event.state === "Pressed") {
-                        this.mode = "tables";
-                    }
+                action: () => {
+                    this.mode = "tables";
                 },
             },
             {
@@ -74,10 +75,8 @@ class CommandsContext {
                 pretty_keys: `${this.cmd_or_ctrl} 2`,
                 title: "Open script mode",
                 description: "Perform raw queries on the currently selected database connection",
-                action: (event: ShortcutEvent) => {
-                    if (event.state === "Pressed") {
-                        this.mode = "script";
-                    }
+                action: () => {
+                    this.mode = "script";
                 },
             },
             {
@@ -85,10 +84,8 @@ class CommandsContext {
                 pretty_keys: `${this.cmd_or_ctrl} T`,
                 title: "Select tables and views",
                 description: "Open the dialog to search a table or view within any schema",
-                action: (event) => {
-                    if (event.state === "Pressed") {
-                        this.is_tables_open = true;
-                    }
+                action: () => {
+                    this.is_tables_open = true;
                 },
             },
             // {
@@ -108,10 +105,8 @@ class CommandsContext {
                 title: "Refresh data",
                 description: "Refresh the data of the currently selected table",
 
-                action: (event) => {
-                    if (event.state === "Pressed") {
-                        this.#pg.load_tables();
-                    }
+                action: () => {
+                    this.#pg.load_tables();
                 },
             },
             {
@@ -120,8 +115,8 @@ class CommandsContext {
                 title: "Previous data page",
                 description: "Load the previous page of data with the current LIMIT value with an OFFSET of LIMIT",
 
-                action: (event) => {
-                    if (event.state === "Pressed" && this.#pg.offset > 0) {
+                action: () => {
+                    if (this.#pg.offset > 0) {
                         this.#pg.offset = Math.max(0, this.#pg.offset - this.#pg.limit);
                         this.#pg.refresh_data();
                     }
@@ -133,12 +128,8 @@ class CommandsContext {
                 title: "Next data page",
                 description: "Load the next page of data with the current LIMIT value with an OFFSET of LIMIT",
 
-                action: (event) => {
-                    if (
-                        event.state === "Pressed" &&
-                        this.#pg.current_table &&
-                        this.#pg.offset + this.#pg.limit < this.#pg.current_table.count
-                    ) {
+                action: () => {
+                    if (this.#pg.current_table && this.#pg.offset + this.#pg.limit < this.#pg.current_table.count) {
                         this.#pg.offset = Math.min(this.#pg.current_table.count, this.#pg.offset + this.#pg.limit);
                         this.#pg.refresh_data();
                     }
@@ -150,14 +141,19 @@ class CommandsContext {
                 title: "Toggle between Light/Dark ColorScheme",
                 description: "Override the default system color scheme.",
 
-                action: (event) => {
-                    if (event.state === "Pressed") {
-                        this.#settings.toggleColorScheme();
-                    }
+                action: () => {
+                    this.#settings.toggleColorScheme();
                 },
             },
         ];
-        this.#shortcuts = globalShortcuts(this.#all.filter((cmd) => cmd.keys !== "" && cmd.pretty_keys !== ""));
+        document.addEventListener("keydown", (event) => {
+            for (const command of this.#all) {
+                if (match_shortcut(command.keys, event)) {
+                    event.preventDefault();
+                    command.action();
+                }
+            }
+        });
     }
 
     execute = (title: string) => {
@@ -166,15 +162,7 @@ class CommandsContext {
             console.warn(`Command ${title} not found`);
             return;
         }
-        command.action({state: "Pressed"} as ShortcutEvent);
-    };
-
-    mount_shortcuts = async () => {
-        await this.#shortcuts?.mount();
-    };
-
-    unmount_shortcuts = () => {
-        this.#shortcuts?.unmount();
+        command.action();
     };
 }
 
