@@ -33,7 +33,7 @@
                 {/if}
                 <span class="font-normal text-xs text-fg-1">{item.description}</span>
             </div>
-            <span class="ms-auto font-normal font-mono text-fg-1">{item.pretty_keys}</span>
+            <span class="ms-auto font-normal font-mono text-fg-1">{item.shortcut}</span>
         {/snippet}
     </ItemSelect>
 </Dialog>

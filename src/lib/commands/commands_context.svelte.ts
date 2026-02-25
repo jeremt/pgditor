@@ -4,22 +4,10 @@ import {platform} from "@tauri-apps/plugin-os";
 import {get_settings_context} from "$lib/settings/settings_context.svelte";
 
 export type Command = {
-    keys: string;
-    pretty_keys: string;
+    shortcut: string;
     title: string;
     description: string;
     action: () => void;
-};
-
-const match_shortcut = (shortcut: string, event: KeyboardEvent) => {
-    if (shortcut === "") {
-        return false;
-    }
-    if (shortcut.startsWith("CommandOrControl+") && !event.ctrlKey && !event.metaKey) {
-        return false;
-    }
-    const key = shortcut.startsWith("CommandOrControl+") ? shortcut.slice("CommandOrControl+".length) : shortcut;
-    return key.toLowerCase() === event.key.toLowerCase();
 };
 
 class CommandsContext {
@@ -28,6 +16,7 @@ class CommandsContext {
     mode = $state<"tables" | "script" | "graph">("tables");
     is_connections_open = $state(false);
     is_tables_open = $state(false);
+    is_files_open = $state(false);
 
     #pg = get_pg_context();
     #settings = get_settings_context();
@@ -41,11 +30,29 @@ class CommandsContext {
         return platform() === "macos" ? "⌘" : "^";
     }
 
+    match_shortcut = (shortcut: string, event: KeyboardEvent) => {
+        if (shortcut === "") {
+            return false;
+        }
+        if (shortcut[0] === this.cmd_or_ctrl && !event.ctrlKey && !event.metaKey) {
+            return false;
+        }
+        if (shortcut[1] === "⇧" && !event.shiftKey) {
+            return false;
+        }
+        const key = shortcut
+            .slice(shortcut.indexOf(" ") + 1)
+            .replace("←", "ArrowLeft")
+            .replace("→", "ArrowRight")
+            .replace("↑", "ArrowUp")
+            .replace("↓", "ArrowDown");
+        return key.toLowerCase() === event.key.toLowerCase();
+    };
+
     constructor() {
         this.#all = [
             {
-                keys: "CommandOrControl+P",
-                pretty_keys: `${this.cmd_or_ctrl} P`,
+                shortcut: `${this.cmd_or_ctrl} P`,
                 title: "Open command palette",
                 description: "Allows you to search through all available commands and execute them",
                 action: () => {
@@ -53,8 +60,7 @@ class CommandsContext {
                 },
             },
             {
-                keys: "CommandOrControl+0",
-                pretty_keys: `${this.cmd_or_ctrl} 0`,
+                shortcut: `${this.cmd_or_ctrl} 0`,
                 title: "Switch database connection",
                 description: "Open the popover to change the currently selected database connection",
                 action: () => {
@@ -62,8 +68,7 @@ class CommandsContext {
                 },
             },
             {
-                keys: "CommandOrControl+1",
-                pretty_keys: `${this.cmd_or_ctrl} 1`,
+                shortcut: `${this.cmd_or_ctrl} 1`,
                 title: "Open tables mode",
                 description: "Visualize and edit tables of the currently selected database",
                 action: () => {
@@ -71,8 +76,7 @@ class CommandsContext {
                 },
             },
             {
-                keys: "CommandOrControl+2",
-                pretty_keys: `${this.cmd_or_ctrl} 2`,
+                shortcut: `${this.cmd_or_ctrl} 2`,
                 title: "Open script mode",
                 description: "Perform raw queries on the currently selected database connection",
                 action: () => {
@@ -80,28 +84,23 @@ class CommandsContext {
                 },
             },
             {
-                keys: "CommandOrControl+T",
-                pretty_keys: `${this.cmd_or_ctrl} T`,
+                shortcut: `${this.cmd_or_ctrl} T`,
                 title: "Select tables and views",
                 description: "Open the dialog to search a table or view within any schema",
                 action: () => {
                     this.is_tables_open = true;
                 },
             },
-            // {
-            //     keys: "CommandOrControl+F",
-            //     prettyKeys: `${this.cmdOrCtrl} F`,
-            //     title: "Apply filters",
-            //     description: "Open the popover to apply some quick filter to the currently selected table",
-            //     action: (event) => {
-            //         if (event.state === "Pressed") {
-            //             this.#pg.isFilterPopover = true;
-            //         }
-            //     },
-            // },
             {
-                keys: "CommandOrControl+R",
-                pretty_keys: `${this.cmd_or_ctrl} R`,
+                shortcut: `${this.cmd_or_ctrl}⇧ F`,
+                title: "Select file",
+                description: "Filter and select sql files synced with the current database",
+                action: () => {
+                    this.is_files_open = true;
+                },
+            },
+            {
+                shortcut: `${this.cmd_or_ctrl} R`,
                 title: "Refresh data",
                 description: "Refresh the data of the currently selected table",
 
@@ -110,8 +109,7 @@ class CommandsContext {
                 },
             },
             {
-                keys: "CommandOrControl+ArrowLeft",
-                pretty_keys: `${this.cmd_or_ctrl} ←`,
+                shortcut: `${this.cmd_or_ctrl} ←`,
                 title: "Previous data page",
                 description: "Load the previous page of data with the current LIMIT value with an OFFSET of LIMIT",
 
@@ -123,8 +121,7 @@ class CommandsContext {
                 },
             },
             {
-                keys: "CommandOrControl+ArrowRight",
-                pretty_keys: `${this.cmd_or_ctrl} →`,
+                shortcut: `${this.cmd_or_ctrl} →`,
                 title: "Next data page",
                 description: "Load the next page of data with the current LIMIT value with an OFFSET of LIMIT",
 
@@ -136,8 +133,7 @@ class CommandsContext {
                 },
             },
             {
-                keys: "",
-                pretty_keys: ``,
+                shortcut: ``,
                 title: "Toggle between Light/Dark ColorScheme",
                 description: "Override the default system color scheme.",
 
@@ -148,7 +144,7 @@ class CommandsContext {
         ];
         document.addEventListener("keydown", (event) => {
             for (const command of this.#all) {
-                if (match_shortcut(command.keys, event)) {
+                if (this.match_shortcut(command.shortcut, event)) {
                     event.preventDefault();
                     command.action();
                 }

@@ -19,16 +19,15 @@
     const pg = get_pg_context();
     const commands = get_commands_context();
 
-    let is_file_select_open = $state(false);
     const item_to_string = (item: ScriptFile) => item.path;
     const onselect = (item: ScriptFile) => {
         scripts.select_file(item);
-        is_file_select_open = false;
+        commands.is_files_open = false;
     };
 
     const new_script = () => {
         scripts.empty_file();
-        is_file_select_open = false;
+        commands.is_files_open = false;
     };
 
     const import_script = async () => {
@@ -67,8 +66,8 @@
 
 <button
     class="btn ghost"
-    title="{commands.cmd_or_ctrl} F"
-    onclick={() => (is_file_select_open = true)}
+    title="{commands.cmd_or_ctrl}⇧ F"
+    onclick={() => (commands.is_files_open = true)}
     disabled={false}
 >
     {#if scripts.current_file}
@@ -119,7 +118,7 @@
     ><PlayIcon --size="1rem" /> Run{scripts.current_selection ? " selection" : ""}</button
 >
 
-<Dialog is_open={is_file_select_open} onrequestclose={() => (is_file_select_open = false)} --padding="1rem">
+<Dialog is_open={commands.is_files_open} onrequestclose={() => (commands.is_files_open = false)} --padding="1rem">
     <ItemSelect items={scripts.files} {item_to_string} {onselect} no_items="No scripts imported yet for this database.">
         {#snippet render_action()}
             {#if scripts.current_file !== undefined}
