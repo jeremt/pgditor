@@ -35,7 +35,6 @@
                     lat: coords[1],
                 } as const;
             }
-            console.log(value);
             return value.type !== "Point"
                 ? ({
                       kind: "point",
@@ -51,10 +50,7 @@
                   } as const);
         },
         set value(newValue) {
-            value = {
-                type: "Point",
-                coordinates: [newValue.lon, newValue.lat],
-            } satisfies GeoJSONGeometry;
+            value = `Point(${newValue.lon} ${newValue.lat})`;
         },
     };
 
