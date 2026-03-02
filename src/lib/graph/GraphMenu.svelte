@@ -1,9 +1,11 @@
 <script lang="ts">
+    import {get_commands_context} from "$lib/commands/commands_context.svelte";
     import CleanBrushIcon from "$lib/icons/CleanBrushIcon.svelte";
     import FitViewIcon from "$lib/icons/FitViewIcon.svelte";
     import RefreshIcon from "$lib/icons/RefreshIcon.svelte";
     import {get_graph_context} from "./graph_context.svelte";
 
+    const commands = get_commands_context();
     const graph = get_graph_context();
 
     let refreshing = $state(false);
@@ -16,7 +18,7 @@
     };
 </script>
 
-<button class="btn icon ghost" onclick={graph.apply_layout} title="Re-layout">
+<button class="btn icon ghost" onclick={graph.apply_layout} title="Re-layout {commands.shortcut('Re-layout')}">
     <CleanBrushIcon --size="1.2rem" />
 </button>
 

@@ -2,33 +2,192 @@ import {get_pg_context} from "$lib/table/pg_context.svelte";
 import {getContext, setContext} from "svelte";
 import {platform} from "@tauri-apps/plugin-os";
 import {get_settings_context} from "$lib/settings/settings_context.svelte";
+import {get_scripts_context} from "$lib/scripts/scripts_context.svelte";
+import {get_graph_context} from "$lib/graph/graph_context.svelte";
+
+type Mode = "tables" | "script" | "graph";
 
 export type Command = {
-    shortcut: string;
+    mode?: Mode; // if defined, the command will only be enabled in this mode
     title: string;
+    shortcut?: string; // if undefined, there is no shortcut for this
     description: string;
     action: () => void;
 };
 
+const make_commands = (ctx: CommandsContext) =>
+    [
+        {
+            mode: undefined,
+            title: "Open command palette",
+            shortcut: `${ctx.cmd_or_ctrl} P`,
+            description: "Allows you to search through all available commands and execute them",
+            action: () => {
+                ctx.is_command_palette_open = true;
+            },
+        },
+        {
+            mode: undefined,
+            title: "Switch database connection",
+            shortcut: `${ctx.cmd_or_ctrl} 0`,
+            description: "Open the popover to change the currently selected database connection",
+            action: () => {
+                ctx.is_connections_open = true;
+            },
+        },
+        {
+            mode: undefined,
+            title: "Open tables mode",
+            shortcut: `${ctx.cmd_or_ctrl} 1`,
+            description: "Visualize and edit tables of the currently selected database",
+            action: () => {
+                ctx.mode = "tables";
+            },
+        },
+        {
+            mode: undefined,
+            title: "Open script mode",
+            shortcut: `${ctx.cmd_or_ctrl} 2`,
+            description: "Perform raw queries on the currently selected database connection",
+            action: () => {
+                ctx.mode = "script";
+            },
+        },
+        {
+            mode: undefined,
+            title: "Open graph mode",
+            shortcut: `${ctx.cmd_or_ctrl} 3`,
+            description: "Visualize tables as a graph",
+            action: () => {
+                ctx.mode = "graph";
+            },
+        },
+        {
+            mode: undefined,
+            title: "Select tables and views",
+            shortcut: `${ctx.cmd_or_ctrl} T`,
+            description: "Open the dialog to search a table or view within any schema",
+            action: () => {
+                ctx.is_tables_open = true;
+            },
+        },
+        {
+            mode: undefined,
+            title: "Refresh data",
+            shortcut: `${ctx.cmd_or_ctrl} R`,
+            description: "Refresh the data of the currently selected table",
+            action: () => {
+                console.log("IN");
+                if (ctx.mode === "graph") {
+                    ctx.graph.load_db();
+                } else {
+                    ctx.pg.load_tables();
+                }
+            },
+        },
+        {
+            mode: "tables",
+            title: "Previous data page",
+            shortcut: `${ctx.cmd_or_ctrl} ←`,
+            description: "Load the previous page of data with the current LIMIT value with an OFFSET of LIMIT",
+            action: () => {
+                if (ctx.pg.offset > 0) {
+                    ctx.pg.offset = Math.max(0, ctx.pg.offset - ctx.pg.limit);
+                    ctx.pg.refresh_data();
+                }
+            },
+        },
+        {
+            mode: "tables",
+            title: "Next data page",
+            shortcut: `${ctx.cmd_or_ctrl} →`,
+            description: "Load the next page of data with the current LIMIT value with an OFFSET of LIMIT",
+            action: () => {
+                if (ctx.pg.current_table && ctx.pg.offset + ctx.pg.limit < ctx.pg.current_table.count) {
+                    ctx.pg.offset = Math.min(ctx.pg.current_table.count, ctx.pg.offset + ctx.pg.limit);
+                    ctx.pg.refresh_data();
+                }
+            },
+        },
+        {
+            mode: "tables",
+            title: "Insert row",
+            shortcut: `${ctx.cmd_or_ctrl} I`,
+            description: "Insert a new row in the currently selected table",
+            action: () => {
+                ctx.is_insert_open = true;
+            },
+        },
+        {
+            mode: "script",
+            title: "Select file",
+            shortcut: `${ctx.cmd_or_ctrl}⇧ F`,
+            description: "Filter and select sql files synced with the current database",
+            action: () => {
+                ctx.is_files_open = true;
+            },
+        },
+        {
+            mode: "script",
+            title: "Save current script",
+            shortcut: `${ctx.cmd_or_ctrl} S`,
+            description: "Save the current script to the file system",
+            action: () => {
+                ctx.scripts.save_current_file();
+            },
+        },
+        {
+            mode: "graph",
+            title: "Re-layout",
+            shortcut: `${ctx.cmd_or_ctrl} K`,
+            description: `Clean up the nodes layout.`,
+            action: () => {
+                ctx.graph.apply_layout();
+            },
+        },
+        {
+            mode: undefined,
+            title: "Toggle between Light/Dark ColorScheme",
+            shortcut: undefined,
+            description: "Override the default system color scheme.",
+            action: () => {
+                ctx.settings.toggleColorScheme();
+            },
+        },
+    ] as const;
+
+export type CommandTitle = ReturnType<typeof make_commands>[number]["title"];
+
 class CommandsContext {
     is_command_palette_open = $state(false);
 
-    mode = $state<"tables" | "script" | "graph">("tables");
+    mode = $state<Mode>("tables");
     is_connections_open = $state(false);
     is_tables_open = $state(false);
     is_files_open = $state(false);
+    is_insert_open = $state(false);
 
-    #pg = get_pg_context();
-    #settings = get_settings_context();
+    pg = get_pg_context();
+    settings = get_settings_context();
+    scripts = get_scripts_context();
+    graph = get_graph_context();
 
-    #all = $state<Command[]>([]);
-    get all() {
-        return this.#all.slice(1);
+    get #all() {
+        return make_commands(this);
+    }
+
+    get list() {
+        return this.#all.slice(1).filter((command) => command.mode === undefined || command.mode === this.mode);
     }
 
     get cmd_or_ctrl() {
         return platform() === "macos" ? "⌘" : "^";
     }
+
+    shortcut = (title: CommandTitle) => {
+        const command = this.#all.find((command) => command.title === title);
+        return command?.shortcut ?? "";
+    };
 
     match_shortcut = (shortcut: string, event: KeyboardEvent) => {
         if (shortcut === "") {
@@ -45,106 +204,19 @@ class CommandsContext {
             .replace("←", "ArrowLeft")
             .replace("→", "ArrowRight")
             .replace("↑", "ArrowUp")
-            .replace("↓", "ArrowDown");
+            .replace("↓", "ArrowDown")
+            .replace("⌫", "Backspace");
         return key.toLowerCase() === event.key.toLowerCase();
     };
 
     constructor() {
-        this.#all = [
-            {
-                shortcut: `${this.cmd_or_ctrl} P`,
-                title: "Open command palette",
-                description: "Allows you to search through all available commands and execute them",
-                action: () => {
-                    this.is_command_palette_open = true;
-                },
-            },
-            {
-                shortcut: `${this.cmd_or_ctrl} 0`,
-                title: "Switch database connection",
-                description: "Open the popover to change the currently selected database connection",
-                action: () => {
-                    this.is_connections_open = true;
-                },
-            },
-            {
-                shortcut: `${this.cmd_or_ctrl} 1`,
-                title: "Open tables mode",
-                description: "Visualize and edit tables of the currently selected database",
-                action: () => {
-                    this.mode = "tables";
-                },
-            },
-            {
-                shortcut: `${this.cmd_or_ctrl} 2`,
-                title: "Open script mode",
-                description: "Perform raw queries on the currently selected database connection",
-                action: () => {
-                    this.mode = "script";
-                },
-            },
-            {
-                shortcut: `${this.cmd_or_ctrl} T`,
-                title: "Select tables and views",
-                description: "Open the dialog to search a table or view within any schema",
-                action: () => {
-                    this.is_tables_open = true;
-                },
-            },
-            {
-                shortcut: `${this.cmd_or_ctrl}⇧ F`,
-                title: "Select file",
-                description: "Filter and select sql files synced with the current database",
-                action: () => {
-                    this.is_files_open = true;
-                },
-            },
-            {
-                shortcut: `${this.cmd_or_ctrl} R`,
-                title: "Refresh data",
-                description: "Refresh the data of the currently selected table",
-
-                action: () => {
-                    this.#pg.load_tables();
-                },
-            },
-            {
-                shortcut: `${this.cmd_or_ctrl} ←`,
-                title: "Previous data page",
-                description: "Load the previous page of data with the current LIMIT value with an OFFSET of LIMIT",
-
-                action: () => {
-                    if (this.#pg.offset > 0) {
-                        this.#pg.offset = Math.max(0, this.#pg.offset - this.#pg.limit);
-                        this.#pg.refresh_data();
-                    }
-                },
-            },
-            {
-                shortcut: `${this.cmd_or_ctrl} →`,
-                title: "Next data page",
-                description: "Load the next page of data with the current LIMIT value with an OFFSET of LIMIT",
-
-                action: () => {
-                    if (this.#pg.current_table && this.#pg.offset + this.#pg.limit < this.#pg.current_table.count) {
-                        this.#pg.offset = Math.min(this.#pg.current_table.count, this.#pg.offset + this.#pg.limit);
-                        this.#pg.refresh_data();
-                    }
-                },
-            },
-            {
-                shortcut: ``,
-                title: "Toggle between Light/Dark ColorScheme",
-                description: "Override the default system color scheme.",
-
-                action: () => {
-                    this.#settings.toggleColorScheme();
-                },
-            },
-        ];
         document.addEventListener("keydown", (event) => {
             for (const command of this.#all) {
-                if (this.match_shortcut(command.shortcut, event)) {
+                if (
+                    command.shortcut !== undefined &&
+                    (command.mode === this.mode || command.mode === undefined) &&
+                    this.match_shortcut(command.shortcut, event)
+                ) {
                     event.preventDefault();
                     command.action();
                 }
@@ -152,7 +224,7 @@ class CommandsContext {
         });
     }
 
-    execute = (title: string) => {
+    execute = (title: CommandTitle) => {
         const command = this.#all.find((cmd) => cmd.title === title);
         if (!command) {
             console.warn(`Command ${title} not found`);

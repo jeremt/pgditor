@@ -27,12 +27,12 @@
     <ConnectionButton />
     <button
         class="btn ghost icon"
-        title="Command palette {commands.cmd_or_ctrl}P"
+        title="Command palette {commands.shortcut('Open command palette')}"
         onclick={() => commands.execute("Open command palette")}><SearchIcon --size="1.2rem" /></button
     >
     <button
         class="btn ghost icon"
-        title="Visualize tables {commands.cmd_or_ctrl}1"
+        title="Visualize tables {commands.shortcut('Open tables mode')}"
         disabled={commands.mode === "tables"}
         onclick={() => (commands.mode = "tables")}
     >
@@ -40,7 +40,7 @@
     </button>
     <button
         class="btn ghost icon"
-        title="Run raw sql queries {commands.cmd_or_ctrl}2"
+        title="Run raw sql queries {commands.shortcut('Open script mode')}"
         disabled={commands.mode === "script"}
         onclick={() => (commands.mode = "script")}
     >
@@ -48,7 +48,7 @@
     </button>
     <button
         class="btn ghost icon"
-        title="Visualize your db as a graph {commands.cmd_or_ctrl}3"
+        title="Visualize your db as a graph {commands.shortcut('Open graph mode')}"
         disabled={commands.mode === "graph"}
         onclick={() => (commands.mode = "graph")}
     >

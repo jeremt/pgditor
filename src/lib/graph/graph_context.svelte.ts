@@ -2,6 +2,7 @@ import {get_pg_context, type PgTableForGraph} from "$lib/table/pg_context.svelte
 import {type Node, type Edge, useNodesInitialized} from "@xyflow/svelte";
 import {getContext, setContext} from "svelte";
 import {build_edges, build_layout, build_nodes} from "./graph";
+import {get_toast_context} from "$lib/widgets/Toaster.svelte";
 
 class GraphContext {
     nodes = $state.raw<Node[]>([]);
@@ -11,6 +12,7 @@ class GraphContext {
     fit_view = () => {};
 
     #pg = get_pg_context();
+    #toast = get_toast_context();
     #tables = $state<PgTableForGraph[]>([]);
 
     #initialized = false;
@@ -33,6 +35,7 @@ class GraphContext {
             this.#initialized = false;
             this.nodes = build_nodes(this.#tables);
             this.edges = build_edges(this.#tables);
+            this.#toast.toast(`Tables loaded successfully`, {kind: "success"});
         }
     };
 

@@ -1,12 +1,12 @@
 <script lang="ts">
     import Dialog from "$lib/widgets/Dialog.svelte";
     import ItemSelect from "$lib/widgets/ItemSelect.svelte";
-    import {get_commands_context, type Command} from "./commands_context.svelte";
+    import {get_commands_context, type Command, type CommandTitle} from "./commands_context.svelte";
 
     const commands = get_commands_context();
     const item_to_string = (item: Command) => item.title;
     const onselect = (item: Command) => {
-        commands.execute(item.title);
+        commands.execute(item.title as CommandTitle);
         commands.is_command_palette_open = false;
     };
 </script>
@@ -17,7 +17,7 @@
     --padding="1rem"
 >
     <ItemSelect
-        items={commands.all}
+        items={commands.list}
         {item_to_string}
         {onselect}
         no_items="No commands loaded."
@@ -33,7 +33,7 @@
                 {/if}
                 <span class="font-normal text-xs text-fg-1">{item.description}</span>
             </div>
-            <span class="ms-auto font-normal font-mono text-fg-1">{item.shortcut}</span>
+            <span class="ms-auto font-normal text-fg-1">{item.shortcut}</span>
         {/snippet}
     </ItemSelect>
 </Dialog>

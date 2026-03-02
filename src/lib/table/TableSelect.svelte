@@ -71,7 +71,7 @@
 
 <button
     class="btn ghost"
-    title="{commands.cmd_or_ctrl} T"
+    title="Select table and views {commands.shortcut('Select tables and views')}"
     onclick={() => (commands.is_tables_open = true)}
     disabled={!pg.current_table}
 >

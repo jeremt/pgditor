@@ -17,11 +17,13 @@
     import {save_to_file} from "$lib/helpers/save_to_file";
     import TableColumns from "./TableColumns.svelte";
     import TablePagination from "./TablePagination.svelte";
+    import {get_commands_context} from "$lib/commands/commands_context.svelte";
 
     const pg = get_pg_context();
     const {toast} = get_toast_context();
+    const commands = get_commands_context();
 
-    const rowToInsert = $derived<PgRow>(
+    const row_to_insert = $derived<PgRow>(
         pg.current_table?.columns.reduce((result, column) => {
             return {
                 ...result,
@@ -35,9 +37,7 @@
         }, {}) ?? {},
     );
 
-    let isInsertOpen = $state(false);
-
-    const deleteRows = async () => {
+    const delete_rows = async () => {
         if (pg.selected_rows.length > 0 && pg.current_table?.type === "BASE TABLE") {
             pg.delete_selection();
         } else {
@@ -45,7 +45,7 @@
         }
     };
 
-    let isExportOpen = $state(false);
+    let is_export_open = $state(false);
 
     // for refresh
     let refreshing = $state(false);
@@ -83,7 +83,7 @@
     />
     <ActionButton
         class="btn ghost icon relative"
-        onaction={deleteRows}
+        onaction={delete_rows}
         title="Delete"
         disabled={pg.current_table.type !== "BASE TABLE"}
         confirm={{
@@ -102,9 +102,9 @@
                 style:right="-0.6rem">{pg.selected_rows.length > 100 ? "99+" : pg.selected_rows.length}</span
             >{/if}
     </ActionButton>
-    <Popover bind:is_open={isExportOpen} offset_y={10}>
+    <Popover bind:is_open={is_export_open} offset_y={10}>
         {#snippet target()}
-            <button class="btn ghost icon relative" title="Export" onclick={() => (isExportOpen = !isExportOpen)}
+            <button class="btn ghost icon relative" title="Export" onclick={() => (is_export_open = !is_export_open)}
                 ><DownloadIcon --size="1.2rem" />
                 {#if pg.selected_rows.length}<span class="badge absolute top-0" style:right="-0.6rem"
                         >{pg.selected_rows.length > 100 ? "99+" : pg.selected_rows.length}</span
@@ -120,7 +120,7 @@
                     } else {
                         toast("Failed to export JSON", {kind: "error"});
                     }
-                    isExportOpen = false;
+                    is_export_open = false;
                 }}>Export {pg.selected_rows.length > 0 ? `${pg.selected_rows.length} rows` : "all rows"} to JSON</button
             >
             <button
@@ -131,7 +131,7 @@
                     } else {
                         toast("Failed to export CSV", {kind: "error"});
                     }
-                    isExportOpen = false;
+                    is_export_open = false;
                 }}>Export {pg.selected_rows.length > 0 ? `${pg.selected_rows.length} rows` : "all rows"} to CSV</button
             >
             <button
@@ -142,7 +142,7 @@
                     } else {
                         toast("Failed to export SQL", {kind: "error"});
                     }
-                    isExportOpen = false;
+                    is_export_open = false;
                 }}>Export {pg.selected_rows.length > 0 ? `${pg.selected_rows.length} rows` : "all rows"} to SQL</button
             >
         </div>
@@ -150,19 +150,22 @@
     <button class="btn icon ghost" onclick={refresh} title="Refresh">
         <RefreshIcon --size="1.2rem" spinning={refreshing} />
     </button>
-    <button class="btn" disabled={pg.current_table.type !== "BASE TABLE"} onclick={() => (isInsertOpen = true)}
-        ><PlusIcon --size="1.2rem" /> Insert</button
+    <button
+        class="btn"
+        title="Insert row {commands.shortcut('Insert row')}"
+        disabled={pg.current_table.type !== "BASE TABLE"}
+        onclick={() => (commands.is_insert_open = true)}><PlusIcon --size="1.2rem" /> Insert</button
     >
 {/if}
 
 {#if pg.current_table}
     <Dialog
         --padding="0"
-        is_open={isInsertOpen}
-        onrequestclose={() => (isInsertOpen = false)}
+        is_open={commands.is_insert_open}
+        onrequestclose={() => (commands.is_insert_open = false)}
         position="right"
         animation="right"
     >
-        <TableUpsert row={rowToInsert} onclose={() => (isInsertOpen = false)} />
+        <TableUpsert row={row_to_insert} onclose={() => (commands.is_insert_open = false)} />
     </Dialog>
 {/if}

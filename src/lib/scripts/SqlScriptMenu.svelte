@@ -66,7 +66,7 @@
 
 <button
     class="btn ghost"
-    title="{commands.cmd_or_ctrl}⇧ F"
+    title="Select a script {commands.shortcut('Select file')}"
     onclick={() => (commands.is_files_open = true)}
     disabled={false}
 >
@@ -79,7 +79,11 @@
     {/if}
 </button>
 
-<button class="btn ghost icon" title="Save {commands.cmd_or_ctrl}S" onclick={scripts.save_current_file}>
+<button
+    class="btn ghost icon"
+    title="Save {commands.shortcut('Save current script')}"
+    onclick={scripts.save_current_file}
+>
     <SaveIcon --size="1.2rem" />
 </button>
 
