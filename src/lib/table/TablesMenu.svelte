@@ -1,10 +1,8 @@
 <script lang="ts">
-    import ChevronIcon from "$lib/icons/ChevronIcon.svelte";
     import TrashIcon from "$lib/icons/TrashIcon.svelte";
     import TableSelect from "$lib/table/TableSelect.svelte";
     import {get_pg_context, type PgRow} from "$lib/table/pg_context.svelte";
     import TableFilters from "$lib/table/TableFilters.svelte";
-    import NumberInput from "$lib/widgets/NumberInput.svelte";
     import TableUpsert from "$lib/table/TableUpsert.svelte";
     import PlusIcon from "$lib/icons/PlusIcon.svelte";
     import Dialog from "$lib/widgets/Dialog.svelte";
@@ -44,8 +42,6 @@
             pg.truncate_table();
         }
     };
-
-    let is_export_open = $state(false);
 
     // for refresh
     let refreshing = $state(false);
@@ -102,9 +98,12 @@
                 style:right="-0.6rem">{pg.selected_rows.length > 100 ? "99+" : pg.selected_rows.length}</span
             >{/if}
     </ActionButton>
-    <Popover bind:is_open={is_export_open} offset_y={10}>
+    <Popover bind:is_open={commands.is_export_open} offset_y={10}>
         {#snippet target()}
-            <button class="btn ghost icon relative" title="Export" onclick={() => (is_export_open = !is_export_open)}
+            <button
+                class="btn ghost icon relative"
+                title="Export"
+                onclick={() => (commands.is_export_open = !commands.is_export_open)}
                 ><DownloadIcon --size="1.2rem" />
                 {#if pg.selected_rows.length}<span class="badge absolute top-0" style:right="-0.6rem"
                         >{pg.selected_rows.length > 100 ? "99+" : pg.selected_rows.length}</span
@@ -120,7 +119,7 @@
                     } else {
                         toast("Failed to export JSON", {kind: "error"});
                     }
-                    is_export_open = false;
+                    commands.is_export_open = false;
                 }}>Export {pg.selected_rows.length > 0 ? `${pg.selected_rows.length} rows` : "all rows"} to JSON</button
             >
             <button
@@ -131,7 +130,7 @@
                     } else {
                         toast("Failed to export CSV", {kind: "error"});
                     }
-                    is_export_open = false;
+                    commands.is_export_open = false;
                 }}>Export {pg.selected_rows.length > 0 ? `${pg.selected_rows.length} rows` : "all rows"} to CSV</button
             >
             <button
@@ -142,12 +141,12 @@
                     } else {
                         toast("Failed to export SQL", {kind: "error"});
                     }
-                    is_export_open = false;
+                    commands.is_export_open = false;
                 }}>Export {pg.selected_rows.length > 0 ? `${pg.selected_rows.length} rows` : "all rows"} to SQL</button
             >
         </div>
     </Popover>
-    <button class="btn icon ghost" onclick={refresh} title="Refresh">
+    <button class="btn icon ghost" onclick={refresh} title="Refresh {commands.shortcut('Refresh data')}">
         <RefreshIcon --size="1.2rem" spinning={refreshing} />
     </button>
     <button

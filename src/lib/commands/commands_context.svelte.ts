@@ -64,15 +64,6 @@ const make_commands = (ctx: CommandsContext) =>
         },
         {
             mode: undefined,
-            title: "Select tables and views",
-            shortcut: `${ctx.cmd_or_ctrl} T`,
-            description: "Open the dialog to search a table or view within any schema",
-            action: () => {
-                ctx.is_tables_open = true;
-            },
-        },
-        {
-            mode: undefined,
             title: "Refresh data",
             shortcut: `${ctx.cmd_or_ctrl} R`,
             description: "Refresh the data of the currently selected table",
@@ -83,6 +74,24 @@ const make_commands = (ctx: CommandsContext) =>
                 } else {
                     ctx.pg.load_tables();
                 }
+            },
+        },
+        {
+            mode: "tables",
+            title: "Select tables and views",
+            shortcut: `${ctx.cmd_or_ctrl} T`,
+            description: "Open the dialog to search a table or view within any schema",
+            action: () => {
+                ctx.is_tables_open = true;
+            },
+        },
+        {
+            mode: "tables",
+            title: "Show visual filters",
+            shortcut: `${ctx.cmd_or_ctrl} F`,
+            description: "Open the popover to apply visual filters to the currently selected table.",
+            action: () => {
+                ctx.pg.is_filters_open = true;
             },
         },
         {
@@ -107,6 +116,15 @@ const make_commands = (ctx: CommandsContext) =>
                     ctx.pg.offset = Math.min(ctx.pg.current_table.count, ctx.pg.offset + ctx.pg.limit);
                     ctx.pg.refresh_data();
                 }
+            },
+        },
+        {
+            mode: "tables",
+            title: "Export data",
+            shortcut: `${ctx.cmd_or_ctrl} E`,
+            description: "Open the popover to export table data or selection.",
+            action: () => {
+                ctx.is_export_open = true;
             },
         },
         {
@@ -154,7 +172,7 @@ const make_commands = (ctx: CommandsContext) =>
                 ctx.settings.toggleColorScheme();
             },
         },
-    ] as const;
+    ] as const satisfies Command[];
 
 export type CommandTitle = ReturnType<typeof make_commands>[number]["title"];
 
@@ -163,9 +181,14 @@ class CommandsContext {
 
     mode = $state<Mode>("tables");
     is_connections_open = $state(false);
+
+    // tables mode
     is_tables_open = $state(false);
-    is_files_open = $state(false);
     is_insert_open = $state(false);
+    is_export_open = $state(false);
+
+    // script mode
+    is_files_open = $state(false);
 
     pg = get_pg_context();
     settings = get_settings_context();

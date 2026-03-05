@@ -18,7 +18,11 @@
 
 <Popover bind:is_open={commands.is_connections_open} offset_y={10}>
     {#snippet target()}
-        <button class="btn secondary" onclick={() => (commands.is_connections_open = !commands.is_connections_open)}>
+        <button
+            class="btn secondary"
+            onclick={() => (commands.is_connections_open = !commands.is_connections_open)}
+            title="Switch connection {commands.shortcut('Switch database connection')}"
+        >
             {connections.current ? connections.current.name : "Add connection"}
             <ChevronIcon --size="1rem" direction={commands.is_connections_open ? "top" : "bottom"} />
         </button>

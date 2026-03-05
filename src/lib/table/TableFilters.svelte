@@ -1,4 +1,5 @@
 <script lang="ts">
+    import {get_commands_context} from "$lib/commands/commands_context.svelte";
     import CheckIcon from "$lib/icons/CheckIcon.svelte";
     import ChevronIcon from "$lib/icons/ChevronIcon.svelte";
     import CrossIcon from "$lib/icons/CrossIcon.svelte";
@@ -35,6 +36,8 @@
         onapply,
     }: Props = $props();
 
+    const commands = get_commands_context();
+
     let mode = $state<"visual" | "sql">("visual");
 
     const get_placeholder_by_operator = (operator: WhereOperator) => {
@@ -54,7 +57,10 @@
 
 <Popover bind:is_open={isOpen} offset_y={10} anchor="start" --padding="1rem">
     {#snippet target()}
-        <button class="btn ghost" onclick={() => (isOpen = !isOpen)}
+        <button
+            class="btn ghost"
+            title="Visual filters {commands.shortcut('Show visual filters')}"
+            onclick={() => (isOpen = !isOpen)}
             ><FunnelIcon --size="1.2rem" />
             {#if applied_filters > 0}<span class="badge">{applied_filters}</span>{/if}
             <ChevronIcon --size="1rem" direction={isOpen ? "top" : "bottom"} />
