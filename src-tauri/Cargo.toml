@@ -35,6 +35,8 @@ postgres-native-tls = "0.5"
 tauri-plugin-clipboard-manager = "2"
 tauri-plugin-os = "2"
 tauri-plugin-persisted-scope = "2"
+futures = "0.3"
+reqwest = { version = "0.12", features = ["json", "stream"] }
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-global-shortcut = "2"

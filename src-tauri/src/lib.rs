@@ -28,7 +28,8 @@ pub fn run() {
             commands::get_table_data::get_table_data,
             commands::raw_query::raw_query,
             commands::show_main_window::show_main_window,
-            commands::list_tables_for_graph::list_tables_for_graph
+            commands::list_tables_for_graph::list_tables_for_graph,
+            commands::generate_query::generate_query,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

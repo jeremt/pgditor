@@ -14,6 +14,7 @@
     import SearchIcon from "$lib/icons/SearchIcon.svelte";
     import {get_commands_context} from "$lib/commands/commands_context.svelte";
     import ActionButton from "$lib/widgets/ActionButton.svelte";
+    import GenerateQuery from "./GenerateQuery.svelte";
 
     const scripts = get_scripts_context();
     const pg = get_pg_context();
@@ -109,6 +110,8 @@
 {#if pg.last_query_time !== undefined}
     <div class="ml-auto text-xs text-fg-1">{pg.last_query_time.toFixed(0)} ms</div>
 {/if}
+
+<GenerateQuery />
 
 <button
     class="btn ghost"
