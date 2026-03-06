@@ -169,7 +169,7 @@ const make_commands = (ctx: CommandsContext) =>
             shortcut: undefined,
             description: "Override the default system color scheme.",
             action: () => {
-                ctx.settings.toggleColorScheme();
+                ctx.settings.toggle_color_scheme();
             },
         },
     ] as const satisfies Command[];

@@ -5,46 +5,47 @@ import {get_toast_context} from "$lib/widgets/Toaster.svelte";
 import {getContext, setContext} from "svelte";
 
 class SettingsContext extends StoreContext {
-    #colorScheme = $state<"light" | "dark">("dark");
-    #matchLightColorScheme = matchMedia("(prefers-color-scheme: light)");
+    #color_scheme = $state<"light" | "dark">("dark");
+    #match_light_color_scheme = matchMedia("(prefers-color-scheme: light)");
 
-    #toastContext = get_toast_context();
+    #toast_context = get_toast_context();
 
-    constructor(storePath: string) {
-        super(storePath);
+    constructor(store_path: string) {
+        super(store_path);
         (async () => {
             if (browser) {
-                const systemColorScheme = this.#matchLightColorScheme.matches ? "light" : "dark";
-                this.#colorScheme = (await this.get_from_store<"light" | "dark">("colorScheme")) ?? systemColorScheme;
-                document.documentElement.setAttribute("color-scheme", this.#colorScheme);
+                const system_color_scheme = this.#match_light_color_scheme.matches ? "light" : "dark";
+                this.#color_scheme =
+                    (await this.get_from_store<"light" | "dark">("colorScheme")) ?? system_color_scheme;
+                document.documentElement.setAttribute("color-scheme", this.#color_scheme);
             }
         })();
-        this.#matchLightColorScheme.addEventListener("change", ({matches}) => {
-            this.colorScheme = matches ? "light" : "dark";
+        this.#match_light_color_scheme.addEventListener("change", ({matches}) => {
+            this.color_scheme = matches ? "light" : "dark";
         });
     }
 
-    get colorScheme() {
-        return this.#colorScheme;
+    get color_scheme() {
+        return this.#color_scheme;
     }
 
-    set colorScheme(newValue: "light" | "dark") {
-        this.#colorScheme = newValue;
-        document.documentElement.setAttribute("color-scheme", this.#colorScheme);
+    set color_scheme(newValue: "light" | "dark") {
+        this.#color_scheme = newValue;
+        document.documentElement.setAttribute("color-scheme", this.#color_scheme);
         (async () => {
-            const setError = await catch_error(this.set_to_store("colorScheme", this.#colorScheme));
+            const setError = await catch_error(this.set_to_store("colorScheme", this.#color_scheme));
             if (setError instanceof Error) {
-                this.#toastContext.toast("Failed to save color scheme", {kind: "error"});
+                this.#toast_context.toast("Failed to save color scheme", {kind: "error"});
             }
             const saveError = await catch_error(this.save_store());
             if (saveError instanceof Error) {
-                this.#toastContext.toast("Failed to save color scheme", {kind: "error"});
+                this.#toast_context.toast("Failed to save color scheme", {kind: "error"});
             }
         })();
     }
 
-    toggleColorScheme = () => {
-        this.colorScheme = this.colorScheme === "light" ? "dark" : "light";
+    toggle_color_scheme = () => {
+        this.color_scheme = this.color_scheme === "light" ? "dark" : "light";
     };
 }
 

@@ -53,7 +53,7 @@
 
         map = new mapboxgl.Map({
             container: mapContainer,
-            style: styles[settings.colorScheme],
+            style: styles[settings.color_scheme],
             center: [spot.lon, spot.lat],
             zoom: 6,
             attributionControl: false,
@@ -81,7 +81,7 @@
     });
 
     $effect(() => {
-        const style = styles[settings.colorScheme];
+        const style = styles[settings.color_scheme];
         if (!map) return;
 
         map.setStyle(style);
