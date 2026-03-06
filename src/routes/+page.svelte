@@ -52,7 +52,7 @@
         disabled={commands.mode === "graph"}
         onclick={() => (commands.mode = "graph")}
     >
-        <GraphIcon --size="1.2rem" />
+        <GraphIcon --size="1.1rem" />
     </button>
     <div class="rounded-e-full h-10/12 bg-bg-1" style:width="2px"></div>
     {#if commands.mode === "tables"}

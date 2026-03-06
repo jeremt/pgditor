@@ -20,6 +20,7 @@
 
 <style>
     svg {
+        margin-left: -0.2rem;
         width: var(--size);
         height: var(--size);
     }

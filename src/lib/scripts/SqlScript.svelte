@@ -7,15 +7,19 @@
     import {get_pg_context} from "$lib/table/pg_context.svelte";
     import ProgressCircle from "$lib/widgets/ProgressCircle.svelte";
     import {get_settings_context} from "$lib/settings/settings_context.svelte";
+    import {get_query_generator_context} from "./query_generator_context.svelte";
+    import {editor} from "monaco-editor";
+    import GenerateQuery from "./GenerateQuery.svelte";
 
     const scripts = get_scripts_context();
     const {toast} = get_toast_context();
     const pg = get_pg_context();
 
-    let settings = get_settings_context();
+    const settings = get_settings_context();
+    const query_generator = get_query_generator_context();
 </script>
 
-<div class="grow overflow-hidden">
+{#snippet main()}
     <SplitPane type="rows" id="main" min="100px" max="-100px" pos="50%">
         {#snippet a()}
             <MonacoEditor
@@ -43,7 +47,7 @@
         {#snippet b()}
             <div class="flex border-t border-bg-1 w-full min-h-0 overflow-auto">
                 {#if scripts.error_message !== ""}
-                    <div class="text-error m-auto">
+                    <div class="text-error m-auto p-4 text-center">
                         SQL Error: {scripts.error_message}
                     </div>
                 {:else if pg.is_loading}
@@ -51,11 +55,11 @@
                         <ProgressCircle infinite={true} show_value={false} />
                     </div>
                 {:else if scripts.last_result === undefined}
-                    <div class="text-fg-1 m-auto">
+                    <div class="text-fg-1 m-auto p-4 text-center">
                         No results yet, press <strong>Run</strong> to execute your query and show results
                     </div>
                 {:else if scripts.last_result.length === 0}
-                    <div class="text-fg-1 m-auto">No result, succesfully executed.</div>
+                    <div class="text-fg-1 m-auto p-4 text-center">No result, succesfully executed.</div>
                 {:else}
                     {@const columns = Object.keys(scripts.last_result[0])}
                     <div class="overflow-auto">
@@ -88,6 +92,21 @@
             </div>
         {/snippet}
     </SplitPane>
+{/snippet}
+
+<div class="grow overflow-hidden">
+    {#if query_generator.is_open}
+        <SplitPane type="columns" id="main" min="400px" max="-300px" pos="70%">
+            {#snippet a()}
+                {@render main()}
+            {/snippet}
+            {#snippet b()}
+                <div class="border-s border-t border-bg-1"><GenerateQuery /></div>
+            {/snippet}
+        </SplitPane>
+    {:else}
+        {@render main()}
+    {/if}
 </div>
 
 <style>

@@ -14,11 +14,13 @@
     import SearchIcon from "$lib/icons/SearchIcon.svelte";
     import {get_commands_context} from "$lib/commands/commands_context.svelte";
     import ActionButton from "$lib/widgets/ActionButton.svelte";
-    import GenerateQuery from "./GenerateQuery.svelte";
+    import AIChatIcon from "$lib/icons/AIChatIcon.svelte";
+    import {get_query_generator_context} from "./query_generator_context.svelte";
 
     const scripts = get_scripts_context();
     const pg = get_pg_context();
     const commands = get_commands_context();
+    const query_generator = get_query_generator_context();
 
     const item_to_string = (item: ScriptFile) => item.path;
     const onselect = (item: ScriptFile) => {
@@ -111,7 +113,7 @@
     <div class="ml-auto text-xs text-fg-1">{pg.last_query_time.toFixed(0)} ms</div>
 {/if}
 
-<GenerateQuery />
+<!-- <GenerateQuery /> -->
 
 <button
     class="btn ghost"
@@ -124,6 +126,14 @@
 <button class="btn" onclick={scripts.run} title="{commands.cmd_or_ctrl} ↵"
     ><PlayIcon --size="1rem" /> Run{scripts.current_selection ? " selection" : ""}</button
 >
+
+<button
+    aria-current={query_generator.is_open}
+    class="btn ghost icon"
+    onclick={() => (query_generator.is_open = !query_generator.is_open)}
+>
+    <AIChatIcon --size="1rem" />
+</button>
 
 <Dialog is_open={commands.is_files_open} onrequestclose={() => (commands.is_files_open = false)} --padding="1rem">
     <ItemSelect items={scripts.files} {item_to_string} {onselect} no_items="No scripts imported yet for this database.">
@@ -168,5 +178,11 @@
         :global(b) {
             color: var(--color-fg);
         }
+    }
+    :global([data-orientation="rows"] > svelte-split-pane-divider) {
+        cursor: row-resize !important; /* override because ns-resize doesnt work on mac */
+    }
+    :global([data-orientation="columns"] > svelte-split-pane-divider) {
+        cursor: col-resize !important; /* override because ns-resize doesnt work on mac */
     }
 </style>

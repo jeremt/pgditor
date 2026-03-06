@@ -53,6 +53,10 @@ button.btn {
         &:focus-visible {
             border: 1px solid var(--color-gold);
         }
+        &[aria-current="true"] {
+            color: var(--color-bg);
+            background-color: var(--color-primary);
+        }
     }
     &.secondary {
         color: var(--color-fg);

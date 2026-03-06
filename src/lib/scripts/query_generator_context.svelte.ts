@@ -21,6 +21,9 @@ type Model = (typeof models)[number];
 class QueryGeneratorContext extends StoreContext {
     api_key = $state<string>();
     model = $state<Model>("gpt-5-mini");
+
+    is_open = $state(false);
+
     query_prompt = $state("");
     is_generating = $state(false);
     tool_log = $state<ToolEntry[]>([]);
