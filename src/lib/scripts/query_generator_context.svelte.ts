@@ -3,6 +3,7 @@ import {StoreContext} from "$lib/helpers/StoreContext";
 import {listen, type UnlistenFn} from "@tauri-apps/api/event";
 import {invoke} from "@tauri-apps/api/core";
 import {catch_error} from "$lib/helpers/catch_error";
+import {get_connections_context} from "$lib/connection/connections_context.svelte";
 
 const store_path = "ai.json";
 
@@ -30,7 +31,8 @@ class QueryGeneratorContext extends StoreContext {
     response = $state("");
     error = $state<string | null>(null);
 
-    unlisten: UnlistenFn | null = null;
+    #connections = get_connections_context();
+    #unlisten: UnlistenFn | null = null;
 
     constructor(store_path: string) {
         super(store_path);
@@ -59,8 +61,13 @@ class QueryGeneratorContext extends StoreContext {
         this.error = null;
         this.is_generating = true;
 
-        this.unlisten?.();
-        this.unlisten = await listen<AiEvent>("ai-event", ({payload}) => {
+        const connectionString = this.#connections.current?.connectionString;
+        if (connectionString === undefined) {
+            return;
+        }
+
+        this.#unlisten?.();
+        this.#unlisten = await listen<AiEvent>("ai-event", ({payload}) => {
             switch (payload.type) {
                 case "tool_call":
                     this.tool_log = [...this.tool_log, {kind: "call", name: payload.name}];
@@ -73,23 +80,28 @@ class QueryGeneratorContext extends StoreContext {
                     break;
                 case "done":
                     this.is_generating = false;
-                    this.unlisten?.();
+                    this.#unlisten?.();
                     break;
                 case "error":
                     this.error = payload.message;
                     this.is_generating = false;
                     this.query_prompt = "";
-                    this.unlisten?.();
+                    this.#unlisten?.();
                     break;
             }
         });
         const error = await catch_error(() =>
-            invoke("generate_query", {apiKey: this.api_key, model: "gpt-5-mini", prompt: this.query_prompt}),
+            invoke("generate_query", {
+                apiKey: this.api_key,
+                connectionString,
+                model: "gpt-5-mini",
+                prompt: this.query_prompt,
+            }),
         );
         if (error instanceof Error) {
             this.error = error.message;
             this.is_generating = false;
-            this.unlisten?.();
+            this.#unlisten?.();
         }
     };
 }

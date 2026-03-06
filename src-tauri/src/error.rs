@@ -84,3 +84,9 @@ impl From<native_tls::Error> for PgError {
         }
     }
 }
+
+impl std::fmt::Display for PgError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.message)
+    }
+}

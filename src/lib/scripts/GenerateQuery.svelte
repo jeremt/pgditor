@@ -46,7 +46,9 @@
 
             <!-- Error -->
             {#if query_generator.error}
-                <div class="text-error text-sm">Error: {query_generator.error}</div>
+                <div class="text-error text-sm border border-error p-4 m-4 rounded-2xl">
+                    Error: {query_generator.error}
+                </div>
             {/if}
         </div>
         <div class="flex flex-col gap-4 px-4 pb-4 w-full">

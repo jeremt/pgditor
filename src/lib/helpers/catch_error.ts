@@ -49,9 +49,18 @@ export function catch_error(input: unknown): unknown {
 }
 
 function error_with_fallback(err: unknown): Error {
-    return err instanceof Error // is or extends Error
-        ? err
-        : err !== null && typeof err === "object" && "message" in err && typeof err.message === "string" // looks like an error
-          ? new Error(err.message)
-          : new Error(`Thrown value of type ${typeof err} that doesn't extends Error: ${err}`);
+    if (err instanceof Error) {
+        // is already and error
+        return err;
+    }
+    if (err !== null && typeof err === "object" && "message" in err && typeof err.message === "string") {
+        // is an object that looks like an error but doesnt extends Error
+        return new Error(err.message);
+    }
+    if (typeof err === "string") {
+        // is directly a string
+        return new Error(err.startsWith("Error: ") ? err.slice("Error: ".length) : err);
+    }
+    // final fallback with explicit message
+    return new Error(`Thrown value of type ${typeof err} that doesn't extends Error: ${err}`);
 }
