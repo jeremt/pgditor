@@ -17,9 +17,7 @@ type GenerateQueryEvent =
 type HistoryItem =
     | {type: "user"; text: string}
     | {type: "tool_call"; name: string; args: Record<string, string>; result?: string} // Might need to change non-string values at some point
-    | {type: "message"; text: string};
-
-type ToolEntry = {kind: "call"; name: string} | {kind: "result"; name: string; result: string};
+    | {type: "message"; is_query: boolean; text: string};
 
 const models = ["gpt-5", "gpt-5-mini"] as const;
 type Model = (typeof models)[number];
@@ -32,14 +30,13 @@ class QueryGeneratorContext extends StoreContext {
 
     query_prompt = $state("");
     is_generating = $state(false);
-    tool_log = $state<ToolEntry[]>([]);
 
     history = $state<HistoryItem[]>([]);
 
-    response = $state("");
     error = $state<string | null>(null);
 
     #connections = get_connections_context();
+
     #unlisten: UnlistenFn | null = null;
 
     constructor(store_path: string) {
@@ -65,8 +62,6 @@ class QueryGeneratorContext extends StoreContext {
     generate = async () => {
         // Reset state
         this.history = [];
-        this.tool_log = [];
-        this.response = "";
         this.error = null;
         this.is_generating = true;
         this.history.push({type: "user", text: this.query_prompt});
@@ -88,17 +83,20 @@ class QueryGeneratorContext extends StoreContext {
                     if (last_item?.type === "tool_call") {
                         last_item.result = payload.result;
                     }
-                    this.tool_log = [...this.tool_log, {kind: "result", name: payload.name, result: payload.result}];
                     break;
                 }
                 case "delta": {
                     const last_item = this.history[this.history.length - 1];
                     if (last_item?.type === "message") {
                         last_item.text += payload.text;
+                        last_item.is_query = last_item.text.startsWith("SQL_QUERY");
                     } else {
-                        this.history.push({type: "message", text: payload.text});
+                        this.history.push({
+                            type: "message",
+                            is_query: payload.text.startsWith("SQL_QUERY: "),
+                            text: payload.text,
+                        });
                     }
-                    this.response += payload.text;
                     break;
                 }
                 case "done":

@@ -2,15 +2,19 @@
     import CogIcon from "$lib/icons/CogIcon.svelte";
     import CrossIcon from "$lib/icons/CrossIcon.svelte";
     import SparklesIcon from "$lib/icons/SparklesIcon.svelte";
+    import TerminalIcon from "$lib/icons/TerminalIcon.svelte";
     import TrashIcon from "$lib/icons/TrashIcon.svelte";
     import MultilinesInput from "$lib/widgets/MultilinesInput.svelte";
     import PasswordInput from "$lib/widgets/PasswordInput.svelte";
     import ProgressCircle from "$lib/widgets/ProgressCircle.svelte";
     import Select from "$lib/widgets/Select.svelte";
     import {get_query_generator_context} from "./query_generator_context.svelte";
+    import {get_scripts_context} from "./scripts_context.svelte";
     import ToolCall from "./ToolCall.svelte";
 
     const query_generator = get_query_generator_context();
+    const scripts = get_scripts_context();
+
     let api_key = $state("");
     let mode = $state<"chat" | "settings">("chat");
 </script>
@@ -69,30 +73,26 @@
         </div>
     {:else if mode === "chat"}
         <div class="flex flex-col w-full overflow-auto grow">
-            <!-- Tool call log -->
-            <!-- {#if query_generator.tool_log.length > 0}
-                <div class="flex flex-col gap-1 text-sm">
-                    {#each query_generator.tool_log as entry}
-                        {#if entry.kind === "call"}
-                            <div>⚙️ Calling <code>{entry.name}</code>...</div>
-                        {:else}
-                            <div class="text-success">✅ <code>{entry.name}</code>: {entry.result}</div>
-                        {/if}
-                    {/each}
-                </div>
-            {/if} -->
-
-            <!-- Streaming response -->
-            <!-- {#if query_generator.response}
-                <div class="rounded border p-3 text-sm whitespace-pre-wrap">{query_generator.response}</div>
-            {/if} -->
             {#each query_generator.history as item, i (i)}
                 {#if item.type === "user"}
                     <div class="text-sm p-4 self-end rounded-lg bg-bg-1 mt-4 mx-4">{item.text}</div>
                 {:else if item.type === "tool_call"}
                     <ToolCall name={item.name} args={item.args} result={item.result} />
                 {:else if item.type === "message"}
-                    <div class="text-sm whitespace-pre-wrap p-4">{item.text}</div>
+                    {#if item.is_query}
+                        <div class="p-2 border border-bg-1 rounded-2xl m-4">
+                            <div class="text-xs whitespace-pre-wrap p-2 font-mono text-fg-1">
+                                {item.text.slice("SQL_QUERY: ".length)}
+                            </div>
+                            <button
+                                class="btn ghost text-sm! self-start"
+                                onclick={() => (scripts.current_value += item.text.slice("SQL_QUERY: ".length))}
+                                ><TerminalIcon --size="0.8rem" /> Use query</button
+                            >
+                        </div>
+                    {:else}
+                        <div class="text-sm whitespace-pre-wrap p-4">{item.text}</div>
+                    {/if}
                 {/if}
             {/each}
             {#if query_generator.is_generating}
@@ -114,6 +114,12 @@
                 class="mt-auto"
                 bind:value={query_generator.query_prompt}
                 placeholder="Describe your SQL query…"
+                onkeydown={(e) => {
+                    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+                        e.preventDefault();
+                        query_generator.generate();
+                    }
+                }}
             />
             <div class="flex gap-2 w-full">
                 <button class="btn ghost icon" aria-label="Settings" onclick={() => (mode = "settings")}
@@ -124,7 +130,12 @@
                     <option>gpt-5-mini</option>
                     <option>gpt-4.1-nano</option>
                 </Select>
-                <button class="btn ms-auto" onclick={query_generator.generate} disabled={query_generator.is_generating}>
+                <button
+                    class="btn ms-auto"
+                    title="Trigger with ⌘ ⏎"
+                    onclick={query_generator.generate}
+                    disabled={query_generator.is_generating}
+                >
                     <SparklesIcon --size="1rem" />
                     {query_generator.is_generating ? "Generating..." : "Generate"}
                 </button>
