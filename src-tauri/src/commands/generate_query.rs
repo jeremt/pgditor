@@ -7,6 +7,8 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 use tokio_postgres::Client as PgClient;
 
+use crate::pg::pg_connect::pg_connect;
+
 const SYSTEM_PROMPT: &str = r#"
 You generate PostgreSQL queries.
 
@@ -528,12 +530,10 @@ pub async fn generate_query(
 ) -> Result<(), String> {
     let http_client = Client::new();
 
-    let (pg_client, connection) = tokio_postgres::connect(&connection_string, tokio_postgres::NoTls)
-        .await
-        .map_err(|e| e.to_string())?;
+    let (pg_client, connection) = pg_connect(&connection_string).await?;
 
     tokio::spawn(async move {
-        if let Err(e) = connection.await {
+        if let Err(e) = connection.await_connection().await {
             eprintln!("DB connection error: {e}");
         }
     });
