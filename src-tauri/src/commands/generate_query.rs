@@ -4,23 +4,106 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use tauri::{AppHandle, Emitter};
 use std::sync::Arc;
-use tokio::sync::Mutex;  // ← tokio's Mutex, not std's
-use tokio_postgres::Client as PgClient;  // ← async postgres client
+use tokio::sync::Mutex;
+use tokio_postgres::Client as PgClient;
+
+const SYSTEM_PROMPT: &str = r#"
+You are a PostgreSQL query assistant.
+
+Your job is to generate valid PostgreSQL queries using the database schema.
+
+You do NOT know the schema ahead of time. You MUST discover it using tools.
+
+AVAILABLE TOOLS
+- search_tables: search for tables
+- get_table_schema: retrieve schema for a table
+
+STRICT WORKFLOW (MANDATORY)
+
+You MUST follow this process:
+
+1. If the user request references a table or data (example: "list users", "orders last week"):
+   - FIRST call `search_tables` to find relevant tables.
+
+2. Once a table is identified:
+   - You MUST call `get_table_schema` for that table.
+
+3. ONLY AFTER you have the schema:
+   - Generate the SQL query.
+
+4. NEVER generate SQL before inspecting schema with `get_table_schema`.
+
+PROHIBITED
+- guessing table names
+- guessing column names
+- generating SQL without calling schema tools first
+- conversational responses when tools are applicable
+
+QUERY STYLE
+- always use full table names (public.users not users)
+- avoid aliases
+- lowercase SQL only
+
+OUTPUT RULES
+
+If schema has been retrieved and query can be generated:
+Return ONLY the SQL query.
+
+Example:
+select * from public.users;
+
+If schema has not been retrieved yet:
+Call the appropriate tool.
+
+If a valid query cannot be created:
+Return a short explanation.
+"#;
 
 // ── Shared DB connection type ─────────────────────────────────────────────────
 
-pub type SharedDb = Arc<Mutex<PgClient>>;  // ← now holds tokio_postgres::Client
+pub type SharedDb = Arc<Mutex<PgClient>>;
 
 // ── Events emitted to frontend ────────────────────────────────────────────────
 
 #[derive(Serialize, Clone)]
-#[serde(tag = "type", rename_all = "snake_case")]
-pub enum AiEvent {
-    ToolCall   { name: String, args: Value },
-    ToolResult { name: String, result: String },
-    Delta      { text: String },
-    Done,
-    Error      { message: String },
+#[serde(rename_all = "snake_case")]
+pub struct ToolCallPayload {
+    #[serde(rename = "type")]
+    pub kind: &'static str,
+    pub name: String,
+    pub args: Value,
+}
+
+#[derive(Serialize, Clone)]
+#[serde(rename_all = "snake_case")]
+pub struct ToolResultPayload {
+    #[serde(rename = "type")]
+    pub kind: &'static str,
+    pub name: String,
+    pub result: String,
+}
+
+#[derive(Serialize, Clone)]
+#[serde(rename_all = "snake_case")]
+pub struct DeltaPayload {
+    #[serde(rename = "type")]
+    pub kind: &'static str,
+    pub text: String,
+}
+
+#[derive(Serialize, Clone)]
+#[serde(rename_all = "snake_case")]
+pub struct DonePayload {
+    #[serde(rename = "type")]
+    pub kind: &'static str,
+}
+
+#[derive(Serialize, Clone)]
+#[serde(rename_all = "snake_case")]
+pub struct ErrorPayload {
+    #[serde(rename = "type")]
+    pub kind: &'static str,
+    pub message: String,
 }
 
 // ── OpenAI types ──────────────────────────────────────────────────────────────
@@ -110,10 +193,7 @@ async fn execute_tool(
     name: &str,
     args: &Value,
 ) -> String {
-    app.emit("ai-event", AiEvent::ToolCall {
-        name: name.to_string(),
-        args: args.clone(),
-    }).ok();
+    app.emit("generate-query", ToolCallPayload { kind: "tool_call", name: name.to_string(), args: args.clone() }).ok();
 
     let result = match name {
         "get_table_schema" => {
@@ -178,7 +258,6 @@ async fn execute_tool(
 
             match client.query(query, &[&schema, &table]).await {
                 Ok(rows) => {
-                    // Collect enum types that need lookup (release the lock first)
                     let columns: Vec<Value> = rows.iter().map(|row| {
                         let type_category: i8 = row.get("type_category");
                         let data_type: &str   = row.get("data_type");
@@ -197,7 +276,6 @@ async fn execute_tool(
                         })
                     }).collect();
 
-                    // Second pass: resolve enum values (still holding the lock)
                     let mut enriched = Vec::with_capacity(columns.len());
                     for col in columns {
                         let mut col = col;
@@ -234,7 +312,7 @@ async fn execute_tool(
                 None         => ("%".to_string(), pattern.to_string()),
             };
 
-            let client = db.lock().await;  // ← .await instead of .unwrap()
+            let client = db.lock().await;
             let query_result = client.query(
                 "SELECT table_schema, table_name \
                  FROM information_schema.tables \
@@ -242,7 +320,7 @@ async fn execute_tool(
                    AND table_name   ILIKE $2 \
                  ORDER BY table_schema, table_name",
                 &[&schema_pattern, &table_pattern],
-            ).await;  // ← .await the query
+            ).await;
 
             match query_result {
                 Ok(rows) => {
@@ -258,12 +336,7 @@ async fn execute_tool(
         }
         unknown => format!("Unknown tool: {unknown}"),
     };
-
-    app.emit("ai-event", AiEvent::ToolResult {
-        name: name.to_string(),
-        result: result.clone(),
-    }).ok();
-
+    app.emit("generate-query", ToolResultPayload { kind: "tool_result", name: name.to_string(), result: result.clone() }).ok();
     result
 }
 
@@ -283,6 +356,8 @@ async fn stream_completion(
         "messages": messages,
     });
 
+
+
     let response = client
         .post("https://api.openai.com/v1/chat/completions")
         .bearer_auth(api_key)
@@ -291,12 +366,11 @@ async fn stream_completion(
         .await
         .map_err(|e| e.to_string())?;
 
-    // Catch HTTP errors (401, 429, etc.) before streaming
     if !response.status().is_success() {
         let status = response.status();
         let body = response.text().await.unwrap_or_default();
         let msg = format!("OpenAI error {status}: {body}");
-        app.emit("ai-event", AiEvent::Error { message: msg.clone() }).ok();
+        app.emit("generate-query", ErrorPayload { kind: "error", message: msg.clone() }).ok();
         return Err(msg);
     }
 
@@ -343,18 +417,15 @@ async fn stream_completion(
 
             if let Some(ref content) = choice.delta.content {
                 if !content.is_empty() {
-                    app.emit("ai-event", AiEvent::Delta { text: content.clone() }).ok();
+                    app.emit("generate-query", DeltaPayload { kind: "delta", text: content.clone() }).ok();
                 }
             }
         }
     }
 
-    // In stream_completion, replace the final tool_calls assembly:
-
     if finish_reason == "tool_calls" && !tool_call_accum.is_empty() {
         let tool_calls: Vec<Value> = tool_call_accum.iter()
             .filter(|tc| {
-                // Skip entries with no name or no id — these are phantom chunks
                 tc.id.is_some() &&
                 tc.function.as_ref()
                     .and_then(|f| f.name.as_deref())
@@ -391,12 +462,10 @@ pub async fn generate_query(
 ) -> Result<(), String> {
     let http_client = Client::new();
 
-    // Connect using tokio_postgres (fully async, no block_on internally)
     let (pg_client, connection) = tokio_postgres::connect(&connection_string, tokio_postgres::NoTls)
         .await
         .map_err(|e| e.to_string())?;
 
-    // Spawn the connection driver — must run concurrently
     tokio::spawn(async move {
         if let Err(e) = connection.await {
             eprintln!("DB connection error: {e}");
@@ -406,7 +475,7 @@ pub async fn generate_query(
     let db: SharedDb = Arc::new(Mutex::new(pg_client));
 
     let mut messages: Vec<Value> = vec![
-        json!({ "role": "system", "content": "You are a helpful PostgreSQL data assistant." }),
+        json!({ "role": "system", "content": SYSTEM_PROMPT }),
         json!({ "role": "user",   "content": prompt }),
     ];
 
@@ -435,7 +504,7 @@ pub async fn generate_query(
             }
 
             None => {
-                app.emit("ai-event", AiEvent::Done).ok();
+               app.emit("generate-query", DonePayload { kind: "done" }).ok();
                 break;
             }
         }

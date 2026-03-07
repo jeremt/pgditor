@@ -5,8 +5,10 @@
     import TrashIcon from "$lib/icons/TrashIcon.svelte";
     import MultilinesInput from "$lib/widgets/MultilinesInput.svelte";
     import PasswordInput from "$lib/widgets/PasswordInput.svelte";
+    import ProgressCircle from "$lib/widgets/ProgressCircle.svelte";
     import Select from "$lib/widgets/Select.svelte";
     import {get_query_generator_context} from "./query_generator_context.svelte";
+    import ToolCall from "./ToolCall.svelte";
 
     const query_generator = get_query_generator_context();
     let api_key = $state("");
@@ -66,9 +68,9 @@
             </div>
         </div>
     {:else if mode === "chat"}
-        <div class="w-full overflow-auto grow">
+        <div class="flex flex-col w-full overflow-auto grow">
             <!-- Tool call log -->
-            {#if query_generator.tool_log.length > 0}
+            <!-- {#if query_generator.tool_log.length > 0}
                 <div class="flex flex-col gap-1 text-sm">
                     {#each query_generator.tool_log as entry}
                         {#if entry.kind === "call"}
@@ -78,11 +80,26 @@
                         {/if}
                     {/each}
                 </div>
-            {/if}
+            {/if} -->
 
             <!-- Streaming response -->
-            {#if query_generator.response}
+            <!-- {#if query_generator.response}
                 <div class="rounded border p-3 text-sm whitespace-pre-wrap">{query_generator.response}</div>
+            {/if} -->
+            {#each query_generator.history as item, i (i)}
+                {#if item.type === "user"}
+                    <div class="text-sm p-4 self-end rounded-lg bg-bg-1 mt-4 mx-4">{item.text}</div>
+                {:else if item.type === "tool_call"}
+                    <ToolCall name={item.name} args={item.args} result={item.result} />
+                {:else if item.type === "message"}
+                    <div class="text-sm whitespace-pre-wrap p-4">{item.text}</div>
+                {/if}
+            {/each}
+            {#if query_generator.is_generating}
+                <div class="flex items-center gap-2 text-sm p-4">
+                    <ProgressCircle --size="1rem" infinite={true} show_value={false} />
+                    Thinking…
+                </div>
             {/if}
 
             <!-- Error -->
@@ -103,8 +120,9 @@
                     ><CogIcon --size="1rem" /></button
                 >
                 <Select bind:value={query_generator.model} onchange={() => query_generator.save_model()}>
-                    <option value="gpt-5">gpt-5 </option>
-                    <option value="gpt-5-mini">gpt-5-mini</option>
+                    <option>gpt-5 </option>
+                    <option>gpt-5-mini</option>
+                    <option>gpt-4.1-nano</option>
                 </Select>
                 <button class="btn ms-auto" onclick={query_generator.generate} disabled={query_generator.is_generating}>
                     <SparklesIcon --size="1rem" />

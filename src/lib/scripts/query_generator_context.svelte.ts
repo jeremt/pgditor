@@ -7,12 +7,17 @@ import {get_connections_context} from "$lib/connection/connections_context.svelt
 
 const store_path = "ai.json";
 
-type AiEvent =
-    | {type: "tool_call"; name: string}
+type GenerateQueryEvent =
+    | {type: "tool_call"; name: string; args: Record<string, string>} // Might need to change non-string values at some point
     | {type: "tool_result"; name: string; result: string}
     | {type: "delta"; text: string}
     | {type: "done"}
     | {type: "error"; message: string};
+
+type HistoryItem =
+    | {type: "user"; text: string}
+    | {type: "tool_call"; name: string; args: Record<string, string>; result?: string} // Might need to change non-string values at some point
+    | {type: "message"; text: string};
 
 type ToolEntry = {kind: "call"; name: string} | {kind: "result"; name: string; result: string};
 
@@ -28,6 +33,9 @@ class QueryGeneratorContext extends StoreContext {
     query_prompt = $state("");
     is_generating = $state(false);
     tool_log = $state<ToolEntry[]>([]);
+
+    history = $state<HistoryItem[]>([]);
+
     response = $state("");
     error = $state<string | null>(null);
 
@@ -56,10 +64,12 @@ class QueryGeneratorContext extends StoreContext {
 
     generate = async () => {
         // Reset state
+        this.history = [];
         this.tool_log = [];
         this.response = "";
         this.error = null;
         this.is_generating = true;
+        this.history.push({type: "user", text: this.query_prompt});
 
         const connectionString = this.#connections.current?.connectionString;
         if (connectionString === undefined) {
@@ -67,17 +77,30 @@ class QueryGeneratorContext extends StoreContext {
         }
 
         this.#unlisten?.();
-        this.#unlisten = await listen<AiEvent>("ai-event", ({payload}) => {
+        this.#unlisten = await listen<GenerateQueryEvent>("generate-query", ({payload}) => {
             switch (payload.type) {
                 case "tool_call":
-                    this.tool_log = [...this.tool_log, {kind: "call", name: payload.name}];
+                    this.history.push(payload);
+                    // this.tool_log = [...this.tool_log, {kind: "call", name: payload.name}];
                     break;
-                case "tool_result":
+                case "tool_result": {
+                    const last_item = this.history[this.history.length - 1];
+                    if (last_item?.type === "tool_call") {
+                        last_item.result = payload.result;
+                    }
                     this.tool_log = [...this.tool_log, {kind: "result", name: payload.name, result: payload.result}];
                     break;
-                case "delta":
+                }
+                case "delta": {
+                    const last_item = this.history[this.history.length - 1];
+                    if (last_item?.type === "message") {
+                        last_item.text += payload.text;
+                    } else {
+                        this.history.push({type: "message", text: payload.text});
+                    }
                     this.response += payload.text;
                     break;
+                }
                 case "done":
                     this.is_generating = false;
                     this.#unlisten?.();
