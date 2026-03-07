@@ -106,38 +106,64 @@ pub struct ErrorPayload {
     pub message: String,
 }
 
-// ── OpenAI types ──────────────────────────────────────────────────────────────
+// ── OpenAI Responses API streaming event types ────────────────────────────────
+//
+// Relevant SSE events from /v1/responses with stream=true:
+//
+//   response.output_item.added        → new output item started (text or function_call)
+//   response.output_text.delta        → streaming text chunk
+//   response.output_text.done         → text item finished
+//   response.function_call_arguments.delta → streaming tool-call argument chunk
+//   response.function_call_arguments.done  → tool-call arguments complete
+//   response.completed                → full response finished; contains final output array
+//
+// We accumulate tool call arguments in a map keyed by item index, then execute
+// them when response.completed arrives (at which point we have stable call_id values).
 
-#[derive(Deserialize, Debug, Clone, Default)]
-struct ToolCallChunk {
-    index: usize,
-    id: Option<String>,
+#[derive(Deserialize, Debug, Default)]
+struct ResponsesEvent {
+    #[serde(rename = "type")]
+    kind: String,
+    // response.output_text.delta
+    delta: Option<String>,
+    // response.output_item.added  /  response.function_call_arguments.done
+    item: Option<ResponsesItem>,
+    // response.function_call_arguments.delta
+    output_index: Option<usize>,
+    // response.completed
+    response: Option<ResponsesBody>,
+}
+
+#[derive(Deserialize, Debug, Default, Clone)]
+struct ResponsesItem {
     #[serde(rename = "type")]
     kind: Option<String>,
-    function: Option<FunctionChunk>,
-}
-
-#[derive(Deserialize, Debug, Clone, Default)]
-struct FunctionChunk {
+    id: Option<String>,
+    call_id: Option<String>,
     name: Option<String>,
     arguments: Option<String>,
+    // For text items
+    text: Option<String>,
 }
 
-#[derive(Deserialize, Debug)]
-struct Delta {
-    content: Option<String>,
-    tool_calls: Option<Vec<ToolCallChunk>>,
+#[derive(Deserialize, Debug, Default)]
+struct ResponsesBody {
+    id: Option<String>,
+    output: Option<Vec<ResponsesOutputItem>>,
+    status: Option<String>,
 }
 
-#[derive(Deserialize, Debug)]
-struct Choice {
-    delta: Delta,
-    finish_reason: Option<String>,
-}
-
-#[derive(Deserialize, Debug)]
-struct StreamChunk {
-    choices: Vec<Choice>,
+#[derive(Deserialize, Debug, Clone)]
+struct ResponsesOutputItem {
+    #[serde(rename = "type")]
+    kind: String,
+    // text item
+    text: Option<String>,
+    // function_call item
+    id: Option<String>,
+    call_id: Option<String>,
+    name: Option<String>,
+    arguments: Option<String>,
 }
 
 // ── Tool definitions ──────────────────────────────────────────────────────────
@@ -146,40 +172,36 @@ fn tools() -> Value {
     json!([
         {
             "type": "function",
-            "function": {
-                "name": "get_table_schema",
-                "description": "Get the full column schema for a specific table, including data types, nullability, primary keys, foreign keys, and enum values.",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "schema": {
-                            "type": "string",
-                            "description": "The schema name, e.g. 'public'"
-                        },
-                        "table": {
-                            "type": "string",
-                            "description": "The table name, e.g. 'users'"
-                        }
+            "name": "get_table_schema",
+            "description": "Get the full column schema for a specific table, including data types, nullability, primary keys, foreign keys, and enum values.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "schema": {
+                        "type": "string",
+                        "description": "The schema name, e.g. 'public'"
                     },
-                    "required": ["schema", "table"]
-                }
+                    "table": {
+                        "type": "string",
+                        "description": "The table name, e.g. 'users'"
+                    }
+                },
+                "required": ["schema", "table"]
             }
         },
         {
             "type": "function",
-            "function": {
-                "name": "search_tables",
-                "description": "Search PostgreSQL tables by pattern (schema.table format). Supports ILIKE wildcards, e.g. 'public.user%' returns all tables in public schema starting with 'user'.",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "pattern": {
-                            "type": "string",
-                            "description": "Search pattern in 'schema.table' format. Supports SQL ILIKE wildcards (% and _). Examples: 'public.user%', '%.orders', 'public.%'"
-                        }
-                    },
-                    "required": ["pattern"]
-                }
+            "name": "search_tables",
+            "description": "Search PostgreSQL tables by pattern (schema.table format). Supports ILIKE wildcards, e.g. 'public.user%' returns all tables in public schema starting with 'user'.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "pattern": {
+                        "type": "string",
+                        "description": "Search pattern in 'schema.table' format. Supports SQL ILIKE wildcards (% and _). Examples: 'public.user%', '%.orders', 'public.%'"
+                    }
+                },
+                "required": ["pattern"]
             }
         }
     ])
@@ -336,30 +358,49 @@ async fn execute_tool(
         }
         unknown => format!("Unknown tool: {unknown}"),
     };
+
     app.emit("generate-query", ToolResultPayload { kind: "tool_result", name: name.to_string(), result: result.clone() }).ok();
     result
 }
 
-// ── Core streaming call ───────────────────────────────────────────────────────
+// ── Core streaming call using OpenAI Responses API ────────────────────────────
+//
+// POST /v1/responses
+//
+// Request shape (relevant fields):
+// {
+//   "model": "o4-mini",
+//   "stream": true,
+//   "reasoning": { "effort": "low" },
+//   "tools": [...],
+//   "input": [                        ← replaces "messages"
+//     { "role": "system", "content": "..." },
+//     { "role": "user",   "content": "..." },
+//     // tool results use role "tool":
+//     { "type": "function_call_output", "call_id": "...", "output": "..." }
+//   ]
+// }
+//
+// Returns Some(tool_calls) when the model wants to call tools,
+// or None when it has finished generating text.
 
 async fn stream_completion(
     client: &Client,
     api_key: &str,
     model: &str,
-    messages: &[Value],
+    input: &[Value],
     app: &AppHandle,
 ) -> Result<Option<Vec<Value>>, String> {
     let body = json!({
         "model": model,
         "stream": true,
+        "reasoning": { "effort": "low" },
         "tools": tools(),
-        "messages": messages,
+        "input": input,
     });
 
-
-
     let response = client
-        .post("https://api.openai.com/v1/chat/completions")
+        .post("https://api.openai.com/v1/responses")
         .bearer_auth(api_key)
         .json(&body)
         .send()
@@ -375,70 +416,113 @@ async fn stream_completion(
     }
 
     let mut stream = response.bytes_stream();
-    let mut tool_call_accum: Vec<ToolCallChunk> = Vec::new();
-    let mut finish_reason = String::new();
+
+    // Accumulate streamed function-call arguments keyed by output_index.
+    // Each entry: (call_id, name, accumulated_arguments)
+    let mut pending_calls: std::collections::HashMap<usize, (String, String, String)> = Default::default();
+
+    // The completed response body (arrives with response.completed event).
+    let mut completed_output: Option<Vec<ResponsesOutputItem>> = None;
+
+    // The Responses API SSE format is TWO lines per event, then a blank line:
+    //   event: response.output_text.delta
+    //   data: {"delta":"hello","..."}
+    //
+    // We must pair them up — the event type comes from the `event:` line,
+    // NOT from a `"type"` field inside the JSON body (that field is absent or
+    // irrelevant here). We buffer the last seen event-name across lines.
+    let mut line_buffer = String::new();
+    let mut current_event_name = String::new();
 
     while let Some(chunk) = stream.next().await {
         let chunk = chunk.map_err(|e| e.to_string())?;
-        let text = String::from_utf8_lossy(&chunk);
+        // Append raw bytes to line buffer so we handle chunks that split lines.
+        line_buffer.push_str(&String::from_utf8_lossy(&chunk));
 
-        for line in text.lines() {
-            let line = line.trim();
-            if !line.starts_with("data: ") { continue; }
-            let data = &line["data: ".len()..];
+        // Process all complete lines (terminated by \n).
+        while let Some(newline_pos) = line_buffer.find('\n') {
+            let raw_line: String = line_buffer.drain(..=newline_pos).collect();
+            let line = raw_line.trim();
 
-            if data == "[DONE]" { continue; }
-
-            let Ok(parsed) = serde_json::from_str::<StreamChunk>(data) else { continue };
-            let Some(choice) = parsed.choices.first() else { continue };
-
-            if let Some(ref reason) = choice.finish_reason {
-                if !reason.is_empty() {
-                    finish_reason = reason.clone();
-                }
+            if line.starts_with("event:") {
+                // e.g. "event: response.output_text.delta"
+                current_event_name = line["event:".len()..].trim().to_string();
+                continue;
             }
 
-            if let Some(ref tcs) = choice.delta.tool_calls {
-                for tc in tcs {
-                    while tool_call_accum.len() <= tc.index {
-                        tool_call_accum.push(ToolCallChunk::default());
-                    }
-                    let entry = &mut tool_call_accum[tc.index];
-                    if let Some(ref id) = tc.id { entry.id = Some(id.clone()); }
-                    if let Some(ref f) = tc.function {
-                        let ef = entry.function.get_or_insert(FunctionChunk::default());
-                        if let Some(ref name) = f.name { ef.name = Some(name.clone()); }
-                        if let Some(ref args) = f.arguments {
-                            ef.arguments = Some(ef.arguments.clone().unwrap_or_default() + args);
+            if line.starts_with("data:") {
+                let data = line["data:".len()..].trim();
+                if data == "[DONE]" {
+                    current_event_name.clear();
+                    continue;
+                }
+
+                let Ok(event) = serde_json::from_str::<ResponsesEvent>(data) else {
+                    current_event_name.clear();
+                    continue;
+                };
+
+                match current_event_name.as_str() {
+                    // ── A new output item was added (text or function_call) ────
+                    "response.output_item.added" => {
+                        if let Some(item) = &event.item {
+                            if item.kind.as_deref() == Some("function_call") {
+                                let idx = event.output_index.unwrap_or(0);
+                                pending_calls.insert(
+                                    idx,
+                                    (
+                                        item.call_id.clone().unwrap_or_default(),
+                                        item.name.clone().unwrap_or_default(),
+                                        String::new(),
+                                    ),
+                                );
+                            }
                         }
                     }
-                }
-            }
 
-            if let Some(ref content) = choice.delta.content {
-                if !content.is_empty() {
-                    app.emit("generate-query", DeltaPayload { kind: "delta", text: content.clone() }).ok();
+                    // ── Streaming text delta ──────────────────────────────────
+                    "response.output_text.delta" => {
+                        if let Some(ref delta) = event.delta {
+                            if !delta.is_empty() {
+                                app.emit("generate-query", DeltaPayload { kind: "delta", text: delta.clone() }).ok();
+                            }
+                        }
+                    }
+
+                    // ── Streaming function-call argument delta ────────────────
+                    "response.function_call_arguments.delta" => {
+                        if let (Some(idx), Some(ref delta)) = (event.output_index, &event.delta) {
+                            if let Some(entry) = pending_calls.get_mut(&idx) {
+                                entry.2.push_str(delta);
+                            }
+                        }
+                    }
+
+                    // ── Full response completed ───────────────────────────────
+                    "response.completed" => {
+                        if let Some(resp) = event.response {
+                            completed_output = resp.output;
+                        }
+                    }
+
+                    _ => {}
                 }
+
+                current_event_name.clear();
             }
+            // Blank lines between SSE events — just skip.
         }
     }
 
-    if finish_reason == "tool_calls" && !tool_call_accum.is_empty() {
-        let tool_calls: Vec<Value> = tool_call_accum.iter()
-            .filter(|tc| {
-                tc.id.is_some() &&
-                tc.function.as_ref()
-                    .and_then(|f| f.name.as_deref())
-                    .map(|n| !n.is_empty())
-                    .unwrap_or(false)
-            })
-            .map(|tc| json!({
-                "id": tc.id.as_deref().unwrap(),
-                "type": "function",
-                "function": {
-                    "name": tc.function.as_ref().and_then(|f| f.name.as_deref()).unwrap_or(""),
-                    "arguments": tc.function.as_ref().and_then(|f| f.arguments.as_deref()).unwrap_or("{}")
-                }
+    // If the completed response contains function_call items, return them.
+    if let Some(output) = completed_output {
+        let tool_calls: Vec<Value> = output
+            .into_iter()
+            .filter(|item| item.kind == "function_call")
+            .map(|item| json!({
+                "call_id": item.call_id.unwrap_or_default(),
+                "name":    item.name.unwrap_or_default(),
+                "arguments": item.arguments.unwrap_or_else(|| "{}".to_string()),
             }))
             .collect();
 
@@ -474,37 +558,49 @@ pub async fn generate_query(
 
     let db: SharedDb = Arc::new(Mutex::new(pg_client));
 
-    let mut messages: Vec<Value> = vec![
-        json!({ "role": "system", "content": SYSTEM_PROMPT }),
-        json!({ "role": "user",   "content": prompt }),
+    // The Responses API uses "input" instead of "messages".
+    // System instructions live in a top-level "instructions" field OR as a
+    // system-role item inside input — we use the input array approach so we
+    // can keep appending tool results in the same list across turns.
+    let mut input: Vec<Value> = vec![
+        json!({ "role": "system",  "content": SYSTEM_PROMPT }),
+        json!({ "role": "user",    "content": prompt }),
     ];
 
     loop {
-        match stream_completion(&http_client, &api_key, &model, &messages, &app).await? {
+        match stream_completion(&http_client, &api_key, &model, &input, &app).await? {
             Some(tool_calls) => {
-                messages.push(json!({
-                    "role": "assistant",
-                    "tool_calls": tool_calls
-                }));
-
+                // Append each function_call output item that the model produced.
+                // The Responses API expects us to echo the assistant's function_call
+                // items back as-is, followed by function_call_output items.
                 for tc in &tool_calls {
-                    let name = tc["function"]["name"].as_str().unwrap_or("");
+                    let name    = tc["name"].as_str().unwrap_or("");
+                    let call_id = tc["call_id"].as_str().unwrap_or("");
                     let args: Value = serde_json::from_str(
-                        tc["function"]["arguments"].as_str().unwrap_or("{}")
+                        tc["arguments"].as_str().unwrap_or("{}")
                     ).unwrap_or(json!({}));
 
+                    // Echo the assistant's function_call item.
+                    input.push(json!({
+                        "type":      "function_call",
+                        "call_id":   call_id,
+                        "name":      name,
+                        "arguments": tc["arguments"].as_str().unwrap_or("{}")
+                    }));
+
+                    // Execute the tool and append the result.
                     let result = execute_tool(&app, &db, name, &args).await;
 
-                    messages.push(json!({
-                        "role": "tool",
-                        "tool_call_id": tc["id"],
-                        "content": result
+                    input.push(json!({
+                        "type":    "function_call_output",
+                        "call_id": call_id,
+                        "output":  result,
                     }));
                 }
             }
 
             None => {
-               app.emit("generate-query", DonePayload { kind: "done" }).ok();
+                app.emit("generate-query", DonePayload { kind: "done" }).ok();
                 break;
             }
         }
