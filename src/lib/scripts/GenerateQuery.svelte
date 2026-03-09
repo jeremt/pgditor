@@ -34,8 +34,7 @@
                 type="button"
                 onclick={(e) => {
                     e.preventDefault();
-                    query_generator.api_key = api_key;
-                    query_generator.save_api_key();
+                    query_generator.save_api_key(api_key);
                     mode = "chat";
                 }}>Save api key</button
             >
@@ -56,8 +55,7 @@
                     type="button"
                     onclick={(e) => {
                         e.preventDefault();
-                        query_generator.api_key = api_key;
-                        query_generator.save_api_key();
+                        query_generator.save_api_key(api_key);
                         mode = "chat";
                     }}>Save api key</button
                 >
@@ -65,8 +63,7 @@
                     class="btn error"
                     onclick={(e) => {
                         e.preventDefault();
-                        query_generator.api_key = undefined;
-                        query_generator.save_api_key();
+                        query_generator.reset_api_key();
                     }}><TrashIcon --size="1rem" /> Clear api key</button
                 >
             </div>

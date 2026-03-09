@@ -23,7 +23,10 @@ const models = ["gpt-5", "gpt-5-mini"] as const;
 type Model = (typeof models)[number];
 
 class QueryGeneratorContext extends StoreContext {
-    api_key = $state<string>();
+    #api_key = $state<string>();
+    get api_key() {
+        return this.#api_key;
+    }
     model = $state<Model>("gpt-5-mini");
 
     is_open = $state(false);
@@ -46,7 +49,7 @@ class QueryGeneratorContext extends StoreContext {
 
     load_store = async () => {
         this.model = (await this.get_from_store<Model>(`model`)) ?? "gpt-5-mini";
-        this.api_key = await this.get_from_store<string>(`openai_api_key`);
+        this.#api_key = await this.get_from_store<string>(`openai_api_key`);
     };
 
     save_model = async () => {
@@ -54,8 +57,15 @@ class QueryGeneratorContext extends StoreContext {
         await this.save_store();
     };
 
-    save_api_key = async () => {
-        await this.set_to_store(`openai_api_key`, this.api_key);
+    save_api_key = async (api_key: string) => {
+        this.#api_key = api_key;
+        await this.set_to_store(`openai_api_key`, this.#api_key);
+        await this.save_store();
+    };
+
+    reset_api_key = async () => {
+        this.#api_key = undefined;
+        await this.set_to_store(`openai_api_key`, this.#api_key);
         await this.save_store();
     };
 
@@ -113,7 +123,7 @@ class QueryGeneratorContext extends StoreContext {
         });
         const error = await catch_error(() =>
             invoke("generate_query", {
-                apiKey: this.api_key,
+                apiKey: this.#api_key,
                 connectionString,
                 model: "gpt-5-mini",
                 prompt: this.query_prompt,
