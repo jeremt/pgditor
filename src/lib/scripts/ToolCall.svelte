@@ -1,6 +1,5 @@
 <script lang="ts">
     import ChevronIcon from "$lib/icons/ChevronIcon.svelte";
-    import SparklesIcon from "$lib/icons/SparklesIcon.svelte";
     import ProgressCircle from "$lib/widgets/ProgressCircle.svelte";
 
     type Props = {

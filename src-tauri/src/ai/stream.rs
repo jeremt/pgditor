@@ -46,6 +46,7 @@ pub enum AgentEvent {
 #[derive(Deserialize, Debug, Default)]
 struct ResponsesEvent {
     #[serde(rename = "type")]
+    #[allow(dead_code)] // its used from the frondend
     kind:         String,
     delta:        Option<String>,
     item:         Option<ResponsesItem>,
