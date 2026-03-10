@@ -12,6 +12,7 @@
     import {get_scripts_context} from "./scripts_context.svelte";
     import ToolCall from "./ToolCall.svelte";
 
+    const MODELS = ["gpt-5 ", "gpt-5-mini", "gpt-5-nano", "gpt-4.1", "gpt-4.1-mini", "gpt-4.1-nano"];
     const query_generator = get_query_generator_context();
     const scripts = get_scripts_context();
 
@@ -124,9 +125,9 @@
                     ><CogIcon --size="1rem" /></button
                 >
                 <Select bind:value={query_generator.model} onchange={() => query_generator.save_model()}>
-                    <option>gpt-5 </option>
-                    <option>gpt-5-mini</option>
-                    <option>gpt-4.1-nano</option>
+                    {#each MODELS as model}
+                        <option>{model}</option>
+                    {/each}
                 </Select>
                 <button
                     class="btn ms-auto"
