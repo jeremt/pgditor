@@ -121,12 +121,14 @@ class QueryGeneratorContext extends StoreContext {
                     break;
             }
         });
+        const prompt = this.query_prompt;
+        this.query_prompt = "";
         const error = await catch_error(() =>
             invoke("generate_query", {
                 apiKey: this.#api_key,
                 connectionString,
                 model: "gpt-5-mini",
-                prompt: this.query_prompt,
+                prompt,
             }),
         );
         if (error instanceof Error) {
