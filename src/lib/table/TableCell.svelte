@@ -2,6 +2,7 @@
     import {format_geometry_data, type GeoJSONGeometry} from "$lib/helpers/geometry_data";
     import {format_spatial_data, parse_spatial_data} from "$lib/helpers/spatial_data";
     import ArrowIcon from "$lib/icons/ArrowIcon.svelte";
+    import CodeInline from "$lib/monaco/CodeInline.svelte";
     import {filters_to_where, get_pg_context, type PgColumn, type PgRow, type PgValue} from "./pg_context.svelte";
 
     type Props = {
@@ -21,7 +22,8 @@
         if (typeof value === "boolean") return String(value);
         if (typeof value === "number") return String(value);
         if (typeof value === "string") {
-            return value.length > budget ? value.slice(0, budget) + "..." : value;
+            const escaped = value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+            return escaped.length + 2 > budget ? `"${escaped.slice(0, budget - 2)}..."` : `"${escaped}"`;
         }
         if (Array.isArray(value)) {
             if (value.length === 0) return "[]";
@@ -37,7 +39,7 @@
             return result.replace(/, $/, "") + "]";
         }
         if (typeof value === "object") {
-            const entries = Object.entries(value);
+            const entries = Object.entries(value as Record<string, unknown>);
             if (entries.length === 0) return "{}";
             let result = "{";
             for (const [k, v] of entries) {
@@ -46,7 +48,7 @@
                     break;
                 }
                 const preview = fast_preview_json_value(v, budget - result.length);
-                result += `${k}: ${preview}, `;
+                result += `"${k}": ${preview}, `;
             }
             return result.replace(/, $/, "") + "}";
         }
