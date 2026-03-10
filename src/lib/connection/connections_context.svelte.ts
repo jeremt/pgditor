@@ -135,7 +135,7 @@ class ConnectionsContext extends StoreContext {
         }
         const ok = await catch_error(invoke<boolean>("test_connection", {connectionString}));
         if (ok instanceof Error) {
-            return `Could not connect: ${ok.message}`;
+            return ok.message;
         }
         if (!ok) {
             return "Connection string is invalid";

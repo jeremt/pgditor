@@ -1,7 +1,9 @@
 use serde::Serialize;
 
+use crate::pg::pg_connect::PgConnectError;
+
 #[derive(Debug, Serialize)]
-pub struct PgError {
+pub struct CommandError {
     message: String,
     code: Option<String>,
     detail: Option<String>,
@@ -9,11 +11,11 @@ pub struct PgError {
     position: Option<String>,
 }
 
-impl From<postgres::Error> for PgError {
+impl From<postgres::Error> for CommandError {
     fn from(err: postgres::Error) -> Self {
         let db_error = err.as_db_error();
 
-        PgError {
+        CommandError {
             message: db_error
                 .map(|e| e.message().to_string())
                 .unwrap_or_else(|| err.to_string()),
@@ -25,9 +27,9 @@ impl From<postgres::Error> for PgError {
     }
 }
 
-impl From<String> for PgError {
+impl From<String> for CommandError {
     fn from(message: String) -> Self {
-        PgError {
+        CommandError {
             message,
             code: None,
             detail: None,
@@ -37,9 +39,9 @@ impl From<String> for PgError {
     }
 }
 
-impl From<&str> for PgError {
+impl From<&str> for CommandError {
     fn from(message: &str) -> Self {
-        PgError {
+        CommandError {
             message: message.to_string(),
             code: None,
             detail: None,
@@ -49,9 +51,9 @@ impl From<&str> for PgError {
     }
 }
 
-impl From<serde_json::Error> for PgError {
+impl From<serde_json::Error> for CommandError {
     fn from(err: serde_json::Error) -> Self {
-        PgError {
+        CommandError {
             message: format!("JSON error: {}", err),
             code: None,
             detail: None,
@@ -61,9 +63,9 @@ impl From<serde_json::Error> for PgError {
     }
 }
 
-impl From<tokio::task::JoinError> for PgError {
+impl From<tokio::task::JoinError> for CommandError {
     fn from(err: tokio::task::JoinError) -> Self {
-        PgError {
+        CommandError {
             message: format!("Task execution failed: {}", err),
             code: None,
             detail: None,
@@ -73,9 +75,9 @@ impl From<tokio::task::JoinError> for PgError {
     }
 }
 
-impl From<native_tls::Error> for PgError {
+impl From<native_tls::Error> for CommandError {
     fn from(err: native_tls::Error) -> Self {
-        PgError {
+        CommandError {
             message: format!("TLS error: {}", err),
             code: None,
             detail: None,
@@ -85,8 +87,20 @@ impl From<native_tls::Error> for PgError {
     }
 }
 
-impl std::fmt::Display for PgError {
+impl std::fmt::Display for CommandError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.message)
+    }
+}
+
+impl From<PgConnectError> for CommandError {
+    fn from(err: PgConnectError) -> Self {
+        CommandError {
+            message: err.message,
+            code: None,
+            detail: None,
+            hint: None,
+            position: None,
+        }
     }
 }

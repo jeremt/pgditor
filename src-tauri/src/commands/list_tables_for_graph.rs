@@ -1,19 +1,22 @@
 use crate::commands::list_table_columns::fetch_enum_values;
-use crate::error::PgError;
-use crate::models::{PgColumn, PgTableForGraph};
-use crate::utils::create_secure_client;
+use crate::error::CommandError;
+use crate::pg::models::{PgColumn, PgTableForGraph};
+use crate::pg::pg_connect::pg_connect;
 use std::collections::HashMap;
 
 #[tauri::command]
 pub async fn list_tables_for_graph(
     connection_string: String,
-) -> Result<Vec<PgTableForGraph>, PgError> {
-    let conn = connection_string.clone();
+) -> Result<Vec<PgTableForGraph>, CommandError> {
+    let (client, connection) = pg_connect(&connection_string).await?;
 
-    tokio::task::spawn_blocking(move || {
-        let mut client = create_secure_client(&conn)?;
+    tokio::spawn(async move {
+        if let Err(e) = connection.await_connection().await {
+            eprintln!("DB connection error: {e}");
+        }
+    });
 
-        let query = r#"
+    let query = r#"
         SELECT 
             t.table_schema as schema,
             t.table_name as name,
@@ -94,57 +97,52 @@ pub async fn list_tables_for_graph(
             t.table_schema,
             t.table_name,
             c.ordinal_position;
-        "#;
+    "#;
 
-        let rows = client.query(query, &[])?;
+    let rows = client.query(query, &[]).await.map_err(CommandError::from)?;
 
-        let mut tables: HashMap<(String, String), PgTableForGraph> = HashMap::new();
+    let mut tables: HashMap<(String, String), PgTableForGraph> = HashMap::new();
 
-        for row in rows {
-            let schema: String = row.get("schema");
-            let table_name: String = row.get("name");
-            let table_type: String = row.get("type");
+    for row in rows.iter() {
+        let schema: String = row.get("schema");
+        let table_name: String = row.get("name");
+        let table_type: String = row.get("type");
 
-            let key = (schema.clone(), table_name.clone());
+        let key = (schema.clone(), table_name.clone());
 
-            let table = tables.entry(key).or_insert_with(|| PgTableForGraph {
-                schema: schema.clone(),
-                name: table_name.clone(),
-                table_type,
-                columns: Vec::new(),
+        let table = tables.entry(key).or_insert_with(|| PgTableForGraph {
+            schema: schema.clone(),
+            name: table_name.clone(),
+            table_type,
+            columns: Vec::new(),
+        });
+
+        let column_name: Option<String> = row.get("column_name");
+
+        if let Some(column_name) = column_name {
+            let data_type: String = row.get("data_type");
+            let type_category: i8 = row.get("type_category");
+
+            let enum_values = if type_category == b'e' as i8 {
+                fetch_enum_values(&client, &data_type).await.ok()
+            } else {
+                None
+            };
+
+            table.columns.push(PgColumn {
+                column_name,
+                data_type,
+                data_type_params: row.get("data_type_params"),
+                is_nullable: row.get("is_nullable"),
+                column_default: row.get("column_default"),
+                is_primary_key: row.get("is_primary_key"),
+                foreign_table_schema: row.get("foreign_table_schema"),
+                foreign_table_name: row.get("foreign_table_name"),
+                foreign_column_name: row.get("foreign_column_name"),
+                enum_values,
             });
-
-            // Skip if no column (can happen for some table types)
-            let column_name: Option<String> = row.get("column_name");
-
-            if let Some(column_name) = column_name {
-                let data_type: String = row.get("data_type");
-                let type_category: i8 = row.get("type_category");
-
-                let enum_values = if type_category == b'e' as i8 {
-                    fetch_enum_values(&mut client, &data_type).ok()
-                } else {
-                    None
-                };
-
-                let column = PgColumn {
-                    column_name,
-                    data_type,
-                    data_type_params: row.get("data_type_params"),
-                    is_nullable: row.get("is_nullable"),
-                    column_default: row.get("column_default"),
-                    is_primary_key: row.get("is_primary_key"),
-                    foreign_table_schema: row.get("foreign_table_schema"),
-                    foreign_table_name: row.get("foreign_table_name"),
-                    foreign_column_name: row.get("foreign_column_name"),
-                    enum_values,
-                };
-
-                table.columns.push(column);
-            }
         }
+    }
 
-        Ok(tables.into_values().collect())
-    })
-    .await?
+    Ok(tables.into_values().collect())
 }

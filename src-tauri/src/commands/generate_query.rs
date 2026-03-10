@@ -53,7 +53,10 @@ pub async fn generate_query(
 ) -> Result<(), String> {
     let http = Client::new();
 
-    let (pg_client, connection) = pg_connect(&connection_string).await?;
+    let (pg_client, connection) = pg_connect(&connection_string)
+        .await
+        .map_err(|e| e.message)?;
+
     tokio::spawn(async move {
         if let Err(e) = connection.await_connection().await {
             eprintln!("DB connection error: {e}");
