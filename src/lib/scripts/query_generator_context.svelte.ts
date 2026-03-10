@@ -86,7 +86,6 @@ class QueryGeneratorContext extends StoreContext {
             switch (payload.type) {
                 case "tool_call":
                     this.history.push(payload);
-                    // this.tool_log = [...this.tool_log, {kind: "call", name: payload.name}];
                     break;
                 case "tool_result": {
                     const last_item = this.history[this.history.length - 1];

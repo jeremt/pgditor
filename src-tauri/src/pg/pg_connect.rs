@@ -1,8 +1,13 @@
+use std::sync::Arc;
+
+use futures::lock::Mutex;
 use native_tls::TlsConnector;
 use postgres_native_tls::MakeTlsConnector;
 use tokio_postgres::{Client as PgClient, Connection, Socket};
 use tokio_postgres::tls::NoTlsStream;
 use postgres_native_tls::TlsStream;
+
+pub type SharedDb = Arc<Mutex<PgClient>>;
 
 pub enum PgConnection {
     NoTls(Connection<Socket, NoTlsStream>),

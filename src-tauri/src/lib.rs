@@ -3,6 +3,7 @@ pub mod error;
 pub mod models;
 pub mod utils;
 pub mod pg;
+pub mod ai;
 use tauri::Emitter;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
