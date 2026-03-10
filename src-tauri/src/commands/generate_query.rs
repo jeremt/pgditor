@@ -4,7 +4,8 @@ use serde_json::json;
 use std::sync::Arc;
 use tauri::{AppHandle, Emitter};
 
-use crate::ai::tool_registry::build_db_registry;
+use crate::ai::tool_registry::ToolRegistry;
+use crate::ai::tools;
 use crate::pg::pg_connect::{SharedDb, pg_connect};
 use crate::ai::stream::run_agentic_loop;
 
@@ -60,7 +61,10 @@ pub async fn generate_query(
     });
 
     let db: SharedDb = Arc::new(Mutex::new(pg_client));
-    let registry = build_db_registry(app.clone(), db);
+    let mut registry = ToolRegistry::new();
+
+    tools::get_table_schema::register(&mut registry, db.clone());
+    tools::search_tables::register(&mut registry, db.clone());
 
     let mut input = vec![
         json!({ "role": "system", "content": SYSTEM_PROMPT }),

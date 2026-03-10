@@ -77,13 +77,14 @@
                     <ToolCall name={item.name} args={item.args} result={item.result} />
                 {:else if item.type === "message"}
                     {#if item.is_query}
+                        {@const sql_query = item.text.slice("SQL_QUERY: ".length).trim()}
                         <div class="p-2 border border-bg-1 rounded-2xl m-4">
                             <div class="text-xs whitespace-pre-wrap p-2 font-mono text-fg-1">
-                                {item.text.slice("SQL_QUERY: ".length)}
+                                {sql_query}
                             </div>
                             <button
                                 class="btn ghost text-sm! self-start"
-                                onclick={() => (scripts.current_value += item.text.slice("SQL_QUERY: ".length))}
+                                onclick={() => (scripts.current_value += sql_query)}
                                 ><TerminalIcon --size="0.8rem" /> Use query</button
                             >
                         </div>
