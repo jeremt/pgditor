@@ -4,6 +4,7 @@ import {invoke} from "@tauri-apps/api/core";
 import {getContext, setContext} from "svelte";
 import {value_to_sql, value_type_is_number, type PgType} from "./values";
 import {get_toast_context} from "$lib/widgets/Toaster.svelte";
+import {getCurrentWindow} from "@tauri-apps/api/window";
 
 export type PgTable = {
     schema: string;
@@ -265,6 +266,7 @@ ${this.selected_rows_json
         this.connections.save_selected_table(this.current_table);
         this.reset_filters();
         await this.refresh_data();
+        await getCurrentWindow().setTitle(`${this.connections.current.name} - ${this.current_table.name}`);
         this.is_loading = false;
     };
 

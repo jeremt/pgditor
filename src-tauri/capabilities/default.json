@@ -15,7 +15,8 @@
         "global-shortcut:allow-unregister",
         "fs:default",
         "fs:allow-read-file",
-        "os:default"
+        "os:default",
+        "core:window:allow-set-title"
     ],
     "extends": ["allow-dialogs-fs"]
 }
