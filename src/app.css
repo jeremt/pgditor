@@ -8,7 +8,7 @@
     --color-fg-1: #efecdacc;
     --color-fg-2: #efecdaaa;
     --color-fg-3: #efecda22;
-    --color-gold: #f2cf84;
+    --color-primary: #f2cf84;
     --color-bg: #212120;
     --color-bg-1: #343430;
     --color-bg-2: #efecda44;
@@ -18,7 +18,6 @@
     --color-error-1: #e1564f;
     --color-success: #b4f55e;
     --color-debug: magenta;
-    --color-primary: var(--color-gold);
     --radius-btn: 1rem;
     --radius-input: 1em;
     --radius-card: 1rem;
@@ -32,7 +31,7 @@
     --color-fg-1: #5f5b49;
     --color-fg-2: #21212088;
     --color-fg-3: #21212022;
-    --color-gold: #dc9913;
+    --color-primary: #e6890f;
     --color-bg: #efecda;
     --color-bg-1: #dcd5c0;
     --color-bg-2: #d3c9ac;
@@ -41,7 +40,6 @@
     --color-error: #c5354d;
     --color-error-1: #96182d;
     --color-success: #1b8549;
-    --color-primary: var(--color-gold);
 }
 
 * {

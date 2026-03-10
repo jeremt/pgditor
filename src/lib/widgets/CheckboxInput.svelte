@@ -49,7 +49,7 @@
             transition-delay: 0.1s;
         }
         &:has(input[type="checkbox"]:focus-visible) {
-            border: 1px solid var(--color-gold);
+            border: 1px solid var(--color-primary);
         }
         input[type="checkbox"] {
             position: absolute;
@@ -72,7 +72,7 @@
         }
 
         &:has(input[type="checkbox"]:checked:focus-visible) {
-            background-color: var(--color, var(--color-gold));
+            background-color: var(--color, var(--color-primary));
         }
 
         &:has(input[type="checkbox"]:indeterminate) {

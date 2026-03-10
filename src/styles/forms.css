@@ -24,7 +24,7 @@ button.btn {
     }
     &:hover,
     &:focus-visible {
-        background-color: var(--color-gold);
+        background-color: var(--color-primary);
     }
     &:active {
         translate: 0 0.15em;
@@ -51,7 +51,7 @@ button.btn {
             background-color: var(--color-bg-1);
         }
         &:focus-visible {
-            border: 1px solid var(--color-gold);
+            border: 1px solid var(--color-primary);
         }
         &[aria-current="true"] {
             color: var(--color-bg);
@@ -93,7 +93,7 @@ textarea {
         background-color: var(--color-bg-2);
     }
     &:focus-visible {
-        border: 1px solid var(--color-gold);
+        border: 1px solid var(--color-primary);
     }
     &::placeholder {
         color: var(--color-fg-2);
