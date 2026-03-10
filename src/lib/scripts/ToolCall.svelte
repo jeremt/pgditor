@@ -1,5 +1,7 @@
 <script lang="ts">
     import ChevronIcon from "$lib/icons/ChevronIcon.svelte";
+    import CodeBlock from "$lib/monaco/CodeBlock.svelte";
+    import CodeInline from "$lib/monaco/CodeInline.svelte";
     import ProgressCircle from "$lib/widgets/ProgressCircle.svelte";
 
     type Props = {
@@ -29,17 +31,16 @@
             {#each Object.entries(args) as [name, value] (name)}
                 <div class="text-xs w-full mx-2">
                     <span class="text-fg-1 font-bold">{name}:</span>
-                    <span>{JSON.stringify(value).replaceAll(",", ", ")}</span>
+                    <CodeInline code={JSON.stringify(value).replaceAll(",", ", ")} lang="json" />
                 </div>
             {/each}
         </div>
     {/if}
     {#if result !== undefined && show_details}
-        <div class="text-fg-1 font-bold text-xs mt-2 mx-4">result</div>
-        <div
-            class="whitespace-pre-line font-mono text-xs border border-bg-1 rounded-lg overflow-auto p-4 m-2 text-fg-1"
-        >
-            {result}
-        </div>
+        <CodeBlock
+            class="[&_pre]:m-2 [&_pre]:max-h-80 [&_pre]:p-2 [&_pre]:text-xs [&_pre]:font-mono [&_pre]:overflow-auto [&_pre]:rounded-xl [&_pre]:border [&_pre]:border-bg-1"
+            code={JSON.stringify(JSON.parse(result), null, 2)}
+            lang="json"
+        />
     {/if}
 </div>

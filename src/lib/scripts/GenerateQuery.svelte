@@ -4,6 +4,7 @@
     import SparklesIcon from "$lib/icons/SparklesIcon.svelte";
     import TerminalIcon from "$lib/icons/TerminalIcon.svelte";
     import TrashIcon from "$lib/icons/TrashIcon.svelte";
+    import CodeBlock from "$lib/monaco/CodeBlock.svelte";
     import MultilinesInput from "$lib/widgets/MultilinesInput.svelte";
     import PasswordInput from "$lib/widgets/PasswordInput.svelte";
     import ProgressCircle from "$lib/widgets/ProgressCircle.svelte";
@@ -79,12 +80,14 @@
                 {:else if item.type === "message"}
                     {#if item.is_query}
                         {@const sql_query = item.text.slice("SQL_QUERY: ".length).trim()}
-                        <div class="p-2 border border-bg-1 rounded-2xl m-4">
-                            <div class="text-xs whitespace-pre-wrap p-2 font-mono text-fg-1">
-                                {sql_query}
-                            </div>
+                        <div class="px-4">
+                            <CodeBlock
+                                class="[&_pre]:p-2 [&_pre]:text-xs [&_pre]:font-mono [&_pre]:overflow-auto [&_pre]:rounded-xl [&_pre]:border [&_pre]:border-bg-1"
+                                code={sql_query}
+                                lang="sql"
+                            />
                             <button
-                                class="btn ghost text-sm! self-start"
+                                class="btn ghost text-sm! self-start mt-3"
                                 onclick={() => (scripts.current_value += sql_query)}
                                 ><TerminalIcon --size="0.8rem" /> Use query</button
                             >
