@@ -29,7 +29,7 @@ tokio = { version = "1.0", features = ["full"] }
 anyhow = "1.0"
 tauri-plugin-store = "2"
 postgres = { version = "0.19", features = ["with-serde_json-1"] }
-tokio-postgres = "0.7"
+tokio-postgres = { version = "0.7", features = ["with-uuid-1", "with-chrono-0_4", "with-serde_json-1"] }
 native-tls = "0.2"
 postgres-native-tls = "0.5"
 tauri-plugin-clipboard-manager = "2"
@@ -37,6 +37,8 @@ tauri-plugin-os = "2"
 tauri-plugin-persisted-scope = "2"
 futures = "0.3"
 reqwest = { version = "0.12", features = ["json", "stream"] }
+uuid = { version = "1", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-global-shortcut = "2"

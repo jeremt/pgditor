@@ -1,6 +1,8 @@
 <script lang="ts">
     import CogIcon from "$lib/icons/CogIcon.svelte";
+    import CopyIcon from "$lib/icons/CopyIcon.svelte";
     import CrossIcon from "$lib/icons/CrossIcon.svelte";
+    import DownloadIcon from "$lib/icons/DownloadIcon.svelte";
     import SparklesIcon from "$lib/icons/SparklesIcon.svelte";
     import TerminalIcon from "$lib/icons/TerminalIcon.svelte";
     import TrashIcon from "$lib/icons/TrashIcon.svelte";
@@ -9,13 +11,17 @@
     import PasswordInput from "$lib/widgets/PasswordInput.svelte";
     import ProgressCircle from "$lib/widgets/ProgressCircle.svelte";
     import Select from "$lib/widgets/Select.svelte";
+    import {writeText} from "@tauri-apps/plugin-clipboard-manager";
     import {get_query_generator_context} from "./query_generator_context.svelte";
     import {get_scripts_context} from "./scripts_context.svelte";
     import ToolCall from "./ToolCall.svelte";
+    import {get_toast_context} from "$lib/widgets/Toaster.svelte";
+    import {save_to_file} from "$lib/helpers/save_to_file";
 
     const MODELS = ["gpt-5 ", "gpt-5-mini", "gpt-5-nano", "gpt-4.1", "gpt-4.1-mini", "gpt-4.1-nano"];
     const query_generator = get_query_generator_context();
     const scripts = get_scripts_context();
+    const {toast} = get_toast_context();
 
     let api_key = $state("");
     let mode = $state<"chat" | "settings">("chat");
@@ -80,17 +86,36 @@
                 {:else if item.type === "message"}
                     {#if item.is_query}
                         {@const sql_query = item.text.slice("SQL_QUERY: ".length).trim()}
-                        <div class="px-4">
+                        <div class="flex flex-col gap-2 px-4">
+                            <div class="flex gap-2 items-center">
+                                <button
+                                    class="btn ghost text-xs! self-start"
+                                    onclick={() => (scripts.current_value += sql_query)}
+                                    ><TerminalIcon --size="0.8rem" /> Use query</button
+                                >
+                                <button
+                                    class="btn ghost text-xs! self-start"
+                                    onclick={async () => {
+                                        await writeText(sql_query);
+                                        toast("Query copied to clipboard");
+                                    }}><CopyIcon --size="0.8rem" /> Copy query</button
+                                >
+                                <button
+                                    class="btn ghost text-xs! self-start"
+                                    onclick={async () => {
+                                        if (await save_to_file(sql_query, ["sql"])) {
+                                            toast("Query exported to SQL", {kind: "success"});
+                                        } else {
+                                            toast("Failed to export query", {kind: "error"});
+                                        }
+                                    }}><DownloadIcon --size="0.8rem" /> Export query</button
+                                >
+                            </div>
                             <CodeBlock
                                 class="[&_pre]:p-2 [&_pre]:text-xs [&_pre]:font-mono [&_pre]:overflow-auto [&_pre]:rounded-xl [&_pre]:border [&_pre]:border-bg-1"
                                 code={sql_query}
                                 lang="sql"
                             />
-                            <button
-                                class="btn ghost text-sm! self-start mt-3"
-                                onclick={() => (scripts.current_value += sql_query)}
-                                ><TerminalIcon --size="0.8rem" /> Use query</button
-                            >
                         </div>
                     {:else}
                         <div class="text-sm whitespace-pre-wrap p-4">{item.text}</div>
