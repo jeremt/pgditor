@@ -64,6 +64,7 @@ struct ResponsesItem {
 
 #[derive(Deserialize, Debug, Default)]
 struct ResponsesBody {
+    id:     Option<String>,
     output: Option<Vec<ResponsesOutputItem>>,
 }
 
@@ -84,23 +85,35 @@ pub struct ToolCall {
     pub arguments: Value,
 }
 
+// ── Completion result ─────────────────────────────────────────────────────────
+
+pub struct CompletionResult {
+    pub response_id: Option<String>,
+    pub tool_calls:  Option<Vec<ToolCall>>,
+}
+
 // ── stream_completion ─────────────────────────────────────────────────────────
 
 pub async fn stream_completion(
-    http:    &Client,
-    api_key: &str,
-    model:   &str,
-    input:   &[Value],
-    tools:   &Value,
-    on_event: &mut impl FnMut(AgentEvent),
-) -> Result<Option<Vec<ToolCall>>, String> {
-    let body = json!({
+    http:                &Client,
+    api_key:             &str,
+    model:               &str,
+    input:               &[Value],
+    tools:               &Value,
+    previous_response_id: Option<&str>,
+    on_event:            &mut impl FnMut(AgentEvent),
+) -> Result<CompletionResult, String> {
+    let mut body = json!({
         "model":     model,
         "stream":    true,
         "reasoning": { "effort": "low" },
         "tools":     tools,
         "input":     input,
     });
+
+    if let Some(id) = previous_response_id {
+        body["previous_response_id"] = json!(id);
+    }
 
     let response = http
         .post("https://api.openai.com/v1/responses")
@@ -118,11 +131,11 @@ pub async fn stream_completion(
         return Err(msg);
     }
 
-    let mut stream             = response.bytes_stream();
+    let mut stream                                                             = response.bytes_stream();
     let mut pending_calls: std::collections::HashMap<usize, (String, String)> = Default::default();
-    let mut completed_output: Option<Vec<ResponsesOutputItem>>                = None;
-    let mut line_buffer        = String::new();
-    let mut current_event_name = String::new();
+    let mut completed_response: Option<ResponsesBody>                         = None;
+    let mut line_buffer                                                        = String::new();
+    let mut current_event_name                                                 = String::new();
 
     while let Some(chunk) = stream.next().await {
         let chunk = chunk.map_err(|e| e.to_string())?;
@@ -167,7 +180,7 @@ pub async fn stream_completion(
                     }
                     "response.completed" => {
                         if let Some(resp) = event.response {
-                            completed_output = resp.output;
+                            completed_response = Some(resp);
                         }
                     }
                     _ => {}
@@ -177,67 +190,70 @@ pub async fn stream_completion(
         }
     }
 
-    if let Some(output) = completed_output {
-        let calls: Vec<ToolCall> = output
-            .into_iter()
-            .filter(|item| item.kind == "function_call")
-            .filter_map(|item| {
-                let args: Value = serde_json::from_str(
-                    item.arguments.as_deref().unwrap_or("{}")
-                ).ok()?;
-                Some(ToolCall {
-                    call_id:   item.call_id.unwrap_or_default(),
-                    name:      item.name.unwrap_or_default(),
-                    arguments: args,
+    let response_id = completed_response.as_ref().and_then(|r| r.id.clone());
+
+    let tool_calls = completed_response
+        .and_then(|r| r.output)
+        .map(|output| {
+            output
+                .into_iter()
+                .filter(|item| item.kind == "function_call")
+                .filter_map(|item| {
+                    let args: Value = serde_json::from_str(
+                        item.arguments.as_deref().unwrap_or("{}")
+                    ).ok()?;
+                    Some(ToolCall {
+                        call_id:   item.call_id.unwrap_or_default(),
+                        name:      item.name.unwrap_or_default(),
+                        arguments: args,
+                    })
                 })
-            })
-            .collect();
+                .collect::<Vec<_>>()
+        })
+        .filter(|calls: &Vec<ToolCall>| !calls.is_empty());
 
-        if !calls.is_empty() {
-            return Ok(Some(calls));
-        }
-    }
-
-    Ok(None)
+    Ok(CompletionResult { response_id, tool_calls })
 }
 
 // ── Agentic loop ──────────────────────────────────────────────────────────────
-//
-// Drives stream_completion in a loop, executing tool calls via the registry.
-// All observable state changes are reported through `on_event` — no Tauri
-// dependency here, making this reusable in any async context.
 
 pub async fn run_agentic_loop(
-    http:     &Client,
-    api_key:  &str,
-    model:    &str,
-    input:    &mut Vec<Value>,
-    registry: &ToolRegistry,
-    on_event: &mut impl FnMut(AgentEvent),
-) -> Result<(), String> {
+    http:                &Client,
+    api_key:             &str,
+    model:               &str,
+    input:               &mut Vec<Value>,
+    registry:            &ToolRegistry,
+    previous_response_id: Option<String>,
+    on_event:            &mut impl FnMut(AgentEvent),
+) -> Result<Option<String>, String> {
     let tools = registry.to_openai_tools();
+    let mut response_id = previous_response_id;
 
     loop {
-        match stream_completion(http, api_key, model, input, &tools, on_event).await? {
+        let result = stream_completion(
+            http, api_key, model, input, &tools,
+            response_id.as_deref(),
+            on_event,
+        ).await?;
+
+        response_id = result.response_id;
+
+        match result.tool_calls {
             None => {
                 on_event(AgentEvent::Done);
-                return Ok(());
+                return Ok(response_id);
             }
             Some(calls) => {
                 for tc in calls {
                     on_event(AgentEvent::ToolCall { name: tc.name.clone(), args: tc.arguments.clone() });
-
                     input.push(json!({
                         "type":      "function_call",
                         "call_id":   tc.call_id,
                         "name":      tc.name,
                         "arguments": tc.arguments.to_string(),
                     }));
-
                     let result = registry.call(&tc.name, tc.arguments).await;
-
                     on_event(AgentEvent::ToolResult { name: tc.name.clone(), result: result.clone() });
-
                     input.push(json!({
                         "type":    "function_call_output",
                         "call_id": tc.call_id,

@@ -87,7 +87,7 @@
                     {#if item.is_query}
                         {@const sql_query = item.text.slice("SQL_QUERY: ".length).trim()}
                         <div class="flex flex-col gap-2 px-4">
-                            <div class="flex gap-2 items-center">
+                            <div class="flex items-center overflow-auto w-full">
                                 <button
                                     class="btn ghost text-xs! self-start"
                                     onclick={() => (scripts.current_value += sql_query)}

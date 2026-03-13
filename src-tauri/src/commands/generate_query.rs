@@ -56,12 +56,13 @@ return a short explanation.
 
 #[tauri::command]
 pub async fn generate_query(
-    app:               AppHandle,
-    connection_string: String,
-    api_key:           String,
-    model:             String,
-    prompt:            String,
-) -> Result<(), String> {
+    app:                  AppHandle,
+    connection_string:    String,
+    api_key:              String,
+    model:                String,
+    prompt:               String,
+    previous_response_id: Option<String>,
+) -> Result<Option<String>, String> {
     let http = Client::new();
 
     let (pg_client, connection) = pg_connect(&connection_string)
@@ -81,12 +82,20 @@ pub async fn generate_query(
     tools::search_tables::register(&mut registry, db.clone());
     tools::select_table_rows::register(&mut registry, db.clone());
 
-    let mut input = vec![
-        json!({ "role": "system", "content": SYSTEM_PROMPT }),
-        json!({ "role": "user",   "content": prompt }),
-    ];
+    let mut input = vec![json!({ "role": "system", "content": SYSTEM_PROMPT })];
 
-    run_agentic_loop(&http, &api_key, &model, &mut input, &registry, &mut |event| {
-        app.emit("generate-query", event).ok();
-    }).await
+
+    input.push(json!({ "role": "user", "content": prompt }));
+
+    run_agentic_loop(
+        &http,
+        &api_key,
+        &model,
+        &mut input,
+        &registry,
+        previous_response_id,
+        &mut |event| {
+            app.emit("generate-query", event).ok();
+        },
+    ).await
 }
