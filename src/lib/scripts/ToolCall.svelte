@@ -17,7 +17,7 @@
 
 <div class="px-2">
     <button
-        class="flex items-center text-sm text-fg-1 cursor-pointer p-2 gap-2"
+        class="flex items-center text-sm text-fg-1 hover:text-fg transition-all cursor-pointer p-2 gap-2"
         onclick={() => (show_details = !show_details)}
     >
         {#if result === undefined}

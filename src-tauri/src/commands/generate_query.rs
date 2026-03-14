@@ -82,10 +82,16 @@ pub async fn generate_query(
     tools::search_tables::register(&mut registry, db.clone());
     tools::select_table_rows::register(&mut registry, db.clone());
 
-    let mut input = vec![json!({ "role": "system", "content": SYSTEM_PROMPT })];
-
-
-    input.push(json!({ "role": "user", "content": prompt }));
+    // On first call include the system prompt, on subsequent calls the
+    // Responses API already has the full context via previous_response_id
+    let mut input = if previous_response_id.is_none() {
+        vec![
+            json!({ "role": "system", "content": SYSTEM_PROMPT }),
+            json!({ "role": "user", "content": prompt }),
+        ]
+    } else {
+        vec![json!({ "role": "user", "content": prompt })]
+    };
 
     run_agentic_loop(
         &http,

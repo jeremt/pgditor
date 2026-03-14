@@ -8,7 +8,7 @@ import {get_connections_context} from "$lib/connection/connections_context.svelt
 const store_path = "ai.json";
 
 type GenerateQueryEvent =
-    | {type: "tool_call"; name: string; args: Record<string, string>} // Might need to change non-string values at some point
+    | {type: "tool_call"; name: string; args: Record<string, string>}
     | {type: "tool_result"; name: string; result: string}
     | {type: "delta"; text: string}
     | {type: "done"}
@@ -16,7 +16,7 @@ type GenerateQueryEvent =
 
 type HistoryItem =
     | {type: "user"; text: string}
-    | {type: "tool_call"; name: string; args: Record<string, string>; result?: string} // Might need to change non-string values at some point
+    | {type: "tool_call"; name: string; args: Record<string, string>; result?: string}
     | {type: "message"; is_query: boolean; text: string};
 
 const models = ["gpt-5", "gpt-5-mini"] as const;
@@ -34,6 +34,7 @@ class QueryGeneratorContext extends StoreContext {
     query_prompt = $state("");
     is_generating = $state(false);
 
+    #last_response_id = $state<string | null>(null);
     history = $state<HistoryItem[]>([]);
 
     error = $state<string | null>(null);
@@ -69,15 +70,23 @@ class QueryGeneratorContext extends StoreContext {
         await this.save_store();
     };
 
-    generate = async () => {
-        // Reset state
+    clear_history = () => {
         this.history = [];
         this.error = null;
+        this.#last_response_id = null;
+    };
+
+    generate = async () => {
+        this.error = null;
         this.is_generating = true;
-        this.history.push({type: "user", text: this.query_prompt});
+
+        const prompt = this.query_prompt;
+        this.query_prompt = "";
+        this.history.push({type: "user", text: prompt});
 
         const connectionString = this.#connections.current?.connectionString;
         if (connectionString === undefined) {
+            this.is_generating = false;
             return;
         }
 
@@ -115,25 +124,26 @@ class QueryGeneratorContext extends StoreContext {
                 case "error":
                     this.error = payload.message;
                     this.is_generating = false;
-                    this.query_prompt = "";
                     this.#unlisten?.();
                     break;
             }
         });
-        const prompt = this.query_prompt;
-        this.query_prompt = "";
-        const error = await catch_error(() =>
-            invoke("generate_query", {
+
+        const result = await catch_error(() =>
+            invoke<string | null>("generate_query", {
                 apiKey: this.#api_key,
                 connectionString,
-                model: "gpt-5-mini",
+                model: this.model,
                 prompt,
+                previousResponseId: this.#last_response_id,
             }),
         );
-        if (error instanceof Error) {
-            this.error = error.message;
+        if (result instanceof Error) {
+            this.error = result.message;
             this.is_generating = false;
             this.#unlisten?.();
+        } else {
+            this.#last_response_id = result ?? null;
         }
     };
 }
