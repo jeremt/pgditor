@@ -19,15 +19,16 @@ type HistoryItem =
     | {type: "tool_call"; name: string; args: Record<string, string>; result?: string}
     | {type: "message"; is_query: boolean; text: string};
 
-const models = ["gpt-5", "gpt-5-mini"] as const;
-type Model = (typeof models)[number];
-
+export const MODELS = ["gpt-5 ", "gpt-5-mini", "gpt-5-nano", "gpt-4.1", "gpt-4.1-mini", "gpt-4.1-nano"] as const;
+type Model = (typeof MODELS)[number];
+type Reasoning = "low" | "medium" | "high";
 class QueryGeneratorContext extends StoreContext {
     #api_key = $state<string>();
     get api_key() {
         return this.#api_key;
     }
     model = $state<Model>("gpt-5-mini");
+    reasoning = $state<Reasoning>();
 
     is_open = $state(false);
 
@@ -50,11 +51,13 @@ class QueryGeneratorContext extends StoreContext {
 
     load_store = async () => {
         this.model = (await this.get_from_store<Model>(`model`)) ?? "gpt-5-mini";
+        this.reasoning = (await this.get_from_store<Reasoning>(`reasoning`)) ?? "low";
         this.#api_key = await this.get_from_store<string>(`openai_api_key`);
     };
 
     save_model = async () => {
         await this.set_to_store(`model`, this.model);
+        await this.set_to_store(`reasoning`, this.reasoning);
         await this.save_store();
     };
 
@@ -134,6 +137,7 @@ class QueryGeneratorContext extends StoreContext {
                 apiKey: this.#api_key,
                 connectionString,
                 model: this.model,
+                reasoning: this.reasoning,
                 prompt,
                 previousResponseId: this.#last_response_id,
             }),

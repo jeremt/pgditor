@@ -7,7 +7,7 @@ use tauri::{AppHandle, Emitter};
 use crate::ai::tool_registry::ToolRegistry;
 use crate::ai::tools;
 use crate::pg::pg_connect::{SharedDb, pg_connect};
-use crate::ai::stream::run_agentic_loop;
+use crate::ai::stream::{ReasoningEffort, run_agentic_loop};
 
 const SYSTEM_PROMPT: &str = r#"
 You generate PostgreSQL queries.
@@ -60,6 +60,7 @@ pub async fn generate_query(
     connection_string:    String,
     api_key:              String,
     model:                String,
+    reasoning:            Option<ReasoningEffort>,
     prompt:               String,
     previous_response_id: Option<String>,
 ) -> Result<Option<String>, String> {
@@ -100,6 +101,7 @@ pub async fn generate_query(
         &mut input,
         &registry,
         previous_response_id,
+        reasoning,
         &mut |event| {
             app.emit("generate-query", event).ok();
         },

@@ -12,13 +12,12 @@
     import ProgressCircle from "$lib/widgets/ProgressCircle.svelte";
     import Select from "$lib/widgets/Select.svelte";
     import {writeText} from "@tauri-apps/plugin-clipboard-manager";
-    import {get_query_generator_context} from "./query_generator_context.svelte";
+    import {get_query_generator_context, MODELS} from "./query_generator_context.svelte";
     import {get_scripts_context} from "./scripts_context.svelte";
     import ToolCall from "./ToolCall.svelte";
     import {get_toast_context} from "$lib/widgets/Toaster.svelte";
     import {save_to_file} from "$lib/helpers/save_to_file";
 
-    const MODELS = ["gpt-5 ", "gpt-5-mini", "gpt-5-nano", "gpt-4.1", "gpt-4.1-mini", "gpt-4.1-nano"];
     const query_generator = get_query_generator_context();
     const scripts = get_scripts_context();
     const {toast} = get_toast_context();
@@ -75,6 +74,31 @@
                     }}><TrashIcon --size="1rem" /> Clear api key</button
                 >
             </div>
+            <label class="flex flex-col gap-4">
+                <span class="text-xs text-fg-1">Model</span>
+                <Select
+                    bind:value={query_generator.model}
+                    onchange={() => {
+                        query_generator.reasoning = query_generator.model.startsWith("gpt-5") ? "low" : undefined;
+                        query_generator.save_model();
+                    }}
+                >
+                    {#each MODELS as model}
+                        <option>{model}</option>
+                    {/each}
+                </Select>
+            </label>
+
+            {#if query_generator.model.startsWith("gpt-5")}
+                <label class="flex flex-col gap-4">
+                    <span class="text-xs text-fg-1">Reasoning</span>
+                    <Select bind:value={query_generator.reasoning} onchange={() => query_generator.save_model()}>
+                        {#each ["low", "medium", "high"] as reasoning}
+                            <option>{reasoning}</option>
+                        {/each}
+                    </Select>
+                </label>
+            {/if}
         </div>
     {:else if mode === "chat"}
         <div class="flex flex-col w-full overflow-auto grow">
@@ -149,14 +173,12 @@
                 }}
             />
             <div class="flex gap-2 w-full">
-                <button class="btn ghost icon" aria-label="Settings" onclick={() => (mode = "settings")}
+                <button class="btn ghost icon" title="Settings" onclick={() => (mode = "settings")}
                     ><CogIcon --size="1rem" /></button
                 >
-                <Select bind:value={query_generator.model} onchange={() => query_generator.save_model()}>
-                    {#each MODELS as model}
-                        <option>{model}</option>
-                    {/each}
-                </Select>
+                <button class="btn ghost icon" title="Clear chat" onclick={() => query_generator.clear_history()}
+                    ><TrashIcon --size="1rem" /></button
+                >
                 <button
                     class="btn ms-auto"
                     title="Trigger with ⌘ ⏎"

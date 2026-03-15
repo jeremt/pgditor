@@ -7,6 +7,16 @@ use serde_json::{json, Value};
 
 use super::tool_registry::ToolRegistry;
 
+// ── Reasoning effort ──────────────────────────────────────────────────────────
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+#[serde(rename_all = "lowercase")]
+pub enum ReasoningEffort {
+    Low,
+    Medium,
+    High,
+}
+
 // ── Events emitted to frontend ────────────────────────────────────────────────
 
 #[derive(Serialize, Clone)]
@@ -101,15 +111,19 @@ pub async fn stream_completion(
     input:               &[Value],
     tools:               &Value,
     previous_response_id: Option<&str>,
+    reasoning:           Option<ReasoningEffort>,
     on_event:            &mut impl FnMut(AgentEvent),
 ) -> Result<CompletionResult, String> {
     let mut body = json!({
-        "model":     model,
-        "stream":    true,
-        "reasoning": { "effort": "low" },
-        "tools":     tools,
-        "input":     input,
+        "model":  model,
+        "stream": true,
+        "tools":  tools,
+        "input":  input,
     });
+
+    if let Some(effort) = reasoning {
+        body["reasoning"] = json!({ "effort": effort });
+    }
 
     if let Some(id) = previous_response_id {
         body["previous_response_id"] = json!(id);
@@ -224,15 +238,18 @@ pub async fn run_agentic_loop(
     input:               &mut Vec<Value>,
     registry:            &ToolRegistry,
     previous_response_id: Option<String>,
+    reasoning:           Option<ReasoningEffort>,
     on_event:            &mut impl FnMut(AgentEvent),
 ) -> Result<Option<String>, String> {
     let tools = registry.to_openai_tools();
     let mut response_id = previous_response_id;
+    println!("ai > [{}:{:#?}] {:#?}", model, reasoning, input);
 
     loop {
         let result = stream_completion(
             http, api_key, model, input, &tools,
             response_id.as_deref(),
+            reasoning.clone(),
             on_event,
         ).await?;
 
