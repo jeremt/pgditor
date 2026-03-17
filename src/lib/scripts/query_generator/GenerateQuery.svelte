@@ -92,11 +92,18 @@
             {#if query_generator.model.startsWith("gpt-5")}
                 <label class="flex flex-col gap-4">
                     <span class="text-xs text-fg-1">Reasoning</span>
-                    <Select bind:value={query_generator.reasoning} onchange={() => query_generator.save_model()}>
-                        {#each ["low", "medium", "high"] as reasoning}
-                            <option>{reasoning}</option>
+                    <div class="flex gap-2">
+                        {#each ["low", "medium", "high"] as const as reasoning}
+                            <button
+                                aria-current={reasoning === query_generator.reasoning}
+                                class="btn ghost"
+                                onclick={() => {
+                                    query_generator.reasoning = reasoning;
+                                    query_generator.save_model();
+                                }}>{reasoning}</button
+                            >
                         {/each}
-                    </Select>
+                    </div>
                 </label>
             {/if}
         </div>
@@ -104,7 +111,7 @@
         <div class="flex flex-col w-full overflow-auto grow">
             {#each query_generator.history as item, i (i)}
                 {#if item.type === "user"}
-                    <div class="text-sm p-4 self-end rounded-lg bg-bg-1 mt-4 mx-4">{item.text}</div>
+                    <div class="text-sm p-4 self-end rounded-xl rounded-br-none bg-bg-1 m-4">{item.text}</div>
                 {:else if item.type === "tool_call"}
                     <ToolCall name={item.name} args={item.args} result={item.result} />
                 {:else if item.type === "message"}
@@ -122,7 +129,7 @@
                                     onclick={async () => {
                                         await writeText(sql_query);
                                         toast("Query copied to clipboard");
-                                    }}><CopyIcon --size="0.8rem" /> Copy query</button
+                                    }}><CopyIcon --size="0.8rem" /> Copy</button
                                 >
                                 <button
                                     class="btn ghost text-xs! self-start"
@@ -132,7 +139,7 @@
                                         } else {
                                             toast("Failed to export query", {kind: "error"});
                                         }
-                                    }}><DownloadIcon --size="0.8rem" /> Export query</button
+                                    }}><DownloadIcon --size="0.8rem" /> Export</button
                                 >
                             </div>
                             <CodeBlock

@@ -55,7 +55,7 @@ button.btn {
         }
         &[aria-current="true"] {
             color: var(--color-bg);
-            background-color: var(--color-primary);
+            background-color: var(--color-fg);
         }
     }
     &.secondary {
