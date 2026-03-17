@@ -13,8 +13,8 @@
     import Select from "$lib/widgets/Select.svelte";
     import {writeText} from "@tauri-apps/plugin-clipboard-manager";
     import {get_query_generator_context, MODELS} from "./query_generator_context.svelte";
-    import {get_scripts_context} from "./scripts_context.svelte";
-    import ToolCall from "./ToolCall.svelte";
+    import {get_scripts_context} from "../scripts_context.svelte";
+    import ToolCall from "../ToolCall.svelte";
     import {get_toast_context} from "$lib/widgets/Toaster.svelte";
     import {save_to_file} from "$lib/helpers/save_to_file";
 

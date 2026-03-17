@@ -13,7 +13,7 @@
     import {set_commands_context} from "$lib/commands/commands_context.svelte";
     import {set_settings_context} from "$lib/settings/settings_context.svelte";
     import {set_graph_context} from "$lib/graph/graph_context.svelte";
-    import {set_query_generator_context} from "$lib/scripts/query_generator_context.svelte";
+    import {set_query_generator_context} from "$lib/scripts/query_generator/query_generator_context.svelte";
 
     let {children} = $props();
 

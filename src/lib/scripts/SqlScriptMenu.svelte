@@ -15,7 +15,7 @@
     import {get_commands_context} from "$lib/commands/commands_context.svelte";
     import ActionButton from "$lib/widgets/ActionButton.svelte";
     import AIChatIcon from "$lib/icons/AIChatIcon.svelte";
-    import {get_query_generator_context} from "./query_generator_context.svelte";
+    import {get_query_generator_context} from "./query_generator/query_generator_context.svelte";
 
     const scripts = get_scripts_context();
     const pg = get_pg_context();

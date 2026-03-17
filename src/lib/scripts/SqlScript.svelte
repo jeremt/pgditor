@@ -7,9 +7,9 @@
     import {get_pg_context} from "$lib/table/pg_context.svelte";
     import ProgressCircle from "$lib/widgets/ProgressCircle.svelte";
     import {get_settings_context} from "$lib/settings/settings_context.svelte";
-    import {get_query_generator_context} from "./query_generator_context.svelte";
+    import {get_query_generator_context} from "./query_generator/query_generator_context.svelte";
     import {editor} from "monaco-editor";
-    import GenerateQuery from "./GenerateQuery.svelte";
+    import GenerateQuery from "./query_generator/GenerateQuery.svelte";
 
     const scripts = get_scripts_context();
     const {toast} = get_toast_context();
