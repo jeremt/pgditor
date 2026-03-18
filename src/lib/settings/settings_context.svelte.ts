@@ -49,7 +49,7 @@ class SettingsContext extends StoreContext {
     };
 }
 
-const key = Symbol("settings");
+const key = Symbol();
 
 export const get_settings_context = () => getContext<SettingsContext>(key);
 export const set_settings_context = () => setContext(key, new SettingsContext("settings.json"));

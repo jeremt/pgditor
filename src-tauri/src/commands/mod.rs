@@ -6,3 +6,4 @@ pub mod raw_query;
 pub mod test_connection;
 pub mod show_main_window;
 pub mod generate_query;
+pub mod generate_chat_title;

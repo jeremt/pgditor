@@ -136,7 +136,7 @@ class ScriptsContext extends StoreContext {
         }
     };
 }
-const key = Symbol("scriptsContext");
+const key = Symbol();
 
 export const get_scripts_context = () => getContext<ScriptsContext>(key);
 export const set_scripts_context = () => setContext(key, new ScriptsContext(store_path));

@@ -518,7 +518,7 @@ values
         return await this.raw_query(query, {throwError});
     };
 }
-const key = Symbol("pgContext");
+const key = Symbol();
 
 export const get_pg_context = () => getContext<PgContext>(key);
 export const set_pg_context = () => setContext(key, new PgContext());

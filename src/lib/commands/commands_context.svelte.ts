@@ -257,7 +257,7 @@ class CommandsContext {
     };
 }
 
-const key = Symbol("commandsContext");
+const key = Symbol();
 
 /**
  * Manage all commands.

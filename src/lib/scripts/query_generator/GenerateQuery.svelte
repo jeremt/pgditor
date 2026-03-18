@@ -17,13 +17,16 @@
     import ToolCall from "../ToolCall.svelte";
     import {get_toast_context} from "$lib/widgets/Toaster.svelte";
     import {save_to_file} from "$lib/helpers/save_to_file";
+    import ChevronIcon from "$lib/icons/ChevronIcon.svelte";
+    import {format_relative_time} from "$lib/helpers/format_relative_time";
+    import PlusIcon from "$lib/icons/PlusIcon.svelte";
 
     const query_generator = get_query_generator_context();
     const scripts = get_scripts_context();
     const {toast} = get_toast_context();
 
     let api_key = $state("");
-    let mode = $state<"chat" | "settings">("chat");
+    let mode = $state<"chats" | "chat" | "settings">("chat");
 </script>
 
 <div class="flex flex-col gap-4 items-start h-full">
@@ -83,7 +86,7 @@
                         query_generator.save_model();
                     }}
                 >
-                    {#each MODELS as model}
+                    {#each MODELS as model (model)}
                         <option>{model}</option>
                     {/each}
                 </Select>
@@ -93,7 +96,7 @@
                 <label class="flex flex-col gap-4">
                     <span class="text-xs text-fg-1">Reasoning</span>
                     <div class="flex gap-2">
-                        {#each ["low", "medium", "high"] as const as reasoning}
+                        {#each ["low", "medium", "high"] as const as reasoning (reasoning)}
                             <button
                                 aria-current={reasoning === query_generator.reasoning}
                                 class="btn ghost"
@@ -107,65 +110,116 @@
                 </label>
             {/if}
         </div>
+    {:else if mode === "chats"}
+        <div class="flex flex-col w-full h-full">
+            <div class="flex justify-between p-4 items-center">
+                <input
+                    type="text"
+                    autocorrect="off"
+                    bind:value={query_generator.chat_filter}
+                    placeholder="Search chats…"
+                    class="grow search-input"
+                />
+                <button
+                    class="btn ghost icon"
+                    title="Add chat"
+                    onclick={() => {
+                        query_generator.add_chat();
+                        mode = "chat";
+                    }}><PlusIcon --size="1.2rem" /></button
+                >
+            </div>
+            <div class="flex flex-col grow overflow-auto px-4 pb-4">
+                {#each query_generator.chats as chat (chat.id)}
+                    <button
+                        class="rounded-xl p-4 hover:bg-bg-1 cursor-pointer text-start transition-all flex flex-col gap-2"
+                        onclick={() => {
+                            query_generator.select_chat(chat.id);
+                            mode = "chat";
+                        }}
+                    >
+                        <div class="font-bold text-sm">{chat.title}</div>
+                        <div class="text-xs text-fg-1">{format_relative_time(new Date(chat.updated_at))}</div>
+                    </button>
+                {/each}
+            </div>
+        </div>
     {:else if mode === "chat"}
-        <div class="flex flex-col w-full overflow-auto grow">
-            {#each query_generator.history as item, i (i)}
-                {#if item.type === "user"}
-                    <div class="text-sm p-4 self-end rounded-xl rounded-br-none bg-bg-1 m-4">{item.text}</div>
-                {:else if item.type === "tool_call"}
-                    <ToolCall name={item.name} args={item.args} result={item.result} />
-                {:else if item.type === "message"}
-                    {#if item.is_query}
-                        {@const sql_query = item.text.slice("SQL_QUERY: ".length).trim()}
-                        <div class="flex flex-col gap-2 px-4">
-                            <div class="flex items-center overflow-auto w-full">
-                                <button
-                                    class="btn ghost text-xs! self-start"
-                                    onclick={() => (scripts.current_value += sql_query)}
-                                    ><TerminalIcon --size="0.8rem" /> Use query</button
-                                >
-                                <button
-                                    class="btn ghost text-xs! self-start"
-                                    onclick={async () => {
-                                        await writeText(sql_query);
-                                        toast("Query copied to clipboard");
-                                    }}><CopyIcon --size="0.8rem" /> Copy</button
-                                >
-                                <button
-                                    class="btn ghost text-xs! self-start"
-                                    onclick={async () => {
-                                        if (await save_to_file(sql_query, ["sql"])) {
-                                            toast("Query exported to SQL", {kind: "success"});
-                                        } else {
-                                            toast("Failed to export query", {kind: "error"});
-                                        }
-                                    }}><DownloadIcon --size="0.8rem" /> Export</button
-                                >
-                            </div>
-                            <CodeBlock
-                                class="[&_pre]:p-2 [&_pre]:text-xs [&_pre]:font-mono [&_pre]:overflow-auto [&_pre]:rounded-xl [&_pre]:border [&_pre]:border-bg-1"
-                                code={sql_query}
-                                lang="sql"
-                            />
-                        </div>
-                    {:else}
-                        <div class="text-sm whitespace-pre-wrap p-4">{item.text}</div>
-                    {/if}
+        <div class="flex flex-col w-full h-full overflow-hidden">
+            <div class="flex gap-2 items-center mt-4 mx-4">
+                <button class="btn ghost icon" title="Back to chats" onclick={() => (mode = "chats")}
+                    ><ChevronIcon direction="left" /></button
+                >
+                <div class="grow text-sm font-bold">{query_generator.current_chat.title}</div>
+                {#if query_generator.chats.length > 1 || query_generator.current_chat.history.length !== 0}
+                    <button
+                        class="btn ghost icon"
+                        title="Remove chat"
+                        onclick={() => query_generator.remove_current_chat()}
+                    >
+                        <TrashIcon --size="1rem" />
+                    </button>
                 {/if}
-            {/each}
-            {#if query_generator.is_generating}
-                <div class="flex items-center gap-2 text-sm p-4">
-                    <ProgressCircle --size="1rem" infinite={true} show_value={false} />
-                    Thinking…
-                </div>
-            {/if}
+            </div>
+            <div class="overflow-auto grow">
+                {#each query_generator.current_chat.history as item, i (i)}
+                    {#if item.type === "user"}
+                        <div class="text-sm p-4 self-end rounded-xl rounded-br-none bg-bg-1 m-4">{item.text}</div>
+                    {:else if item.type === "tool_call"}
+                        <ToolCall name={item.name} args={item.args} result={item.result} />
+                    {:else if item.type === "message"}
+                        {#if item.is_query}
+                            {@const sql_query = item.text.slice("SQL_QUERY: ".length).trim()}
+                            <div class="flex flex-col gap-2 px-4">
+                                <div class="flex items-center overflow-auto w-full">
+                                    <button
+                                        class="btn ghost text-xs! self-start"
+                                        onclick={() => (scripts.current_value += sql_query)}
+                                        ><TerminalIcon --size="0.8rem" /> Use query</button
+                                    >
+                                    <button
+                                        class="btn ghost text-xs! self-start"
+                                        onclick={async () => {
+                                            await writeText(sql_query);
+                                            toast("Query copied to clipboard");
+                                        }}><CopyIcon --size="0.8rem" /> Copy</button
+                                    >
+                                    <button
+                                        class="btn ghost text-xs! self-start"
+                                        onclick={async () => {
+                                            if (await save_to_file(sql_query, ["sql"])) {
+                                                toast("Query exported to SQL", {kind: "success"});
+                                            } else {
+                                                toast("Failed to export query", {kind: "error"});
+                                            }
+                                        }}><DownloadIcon --size="0.8rem" /> Export</button
+                                    >
+                                </div>
+                                <CodeBlock
+                                    class="[&_pre]:p-2 [&_pre]:text-xs [&_pre]:font-mono [&_pre]:overflow-auto [&_pre]:rounded-xl [&_pre]:border [&_pre]:border-bg-1"
+                                    code={sql_query}
+                                    lang="sql"
+                                />
+                            </div>
+                        {:else}
+                            <div class="text-sm whitespace-pre-wrap p-4">{item.text}</div>
+                        {/if}
+                    {/if}
+                {/each}
+                {#if query_generator.is_generating}
+                    <div class="flex items-center gap-2 text-sm p-4">
+                        <ProgressCircle --size="1rem" infinite={true} show_value={false} />
+                        Thinking…
+                    </div>
+                {/if}
 
-            <!-- Error -->
-            {#if query_generator.error}
-                <div class="text-error text-sm border border-error p-4 m-4 rounded-2xl">
-                    Error: {query_generator.error}
-                </div>
-            {/if}
+                <!-- Error -->
+                {#if query_generator.error}
+                    <div class="text-error text-sm border border-error p-4 m-4 rounded-2xl">
+                        Error: {query_generator.error}
+                    </div>
+                {/if}
+            </div>
         </div>
         <div class="flex flex-col gap-4 px-4 pb-4 w-full">
             <MultilinesInput
@@ -183,9 +237,6 @@
                 <button class="btn ghost icon" title="Settings" onclick={() => (mode = "settings")}
                     ><CogIcon --size="1rem" /></button
                 >
-                <button class="btn ghost icon" title="Clear chat" onclick={() => query_generator.clear_history()}
-                    ><TrashIcon --size="1rem" /></button
-                >
                 <button
                     class="btn ms-auto"
                     title="Trigger with ⌘ ⏎"
@@ -199,3 +250,15 @@
         </div>
     {/if}
 </div>
+
+<style>
+    .search-input {
+        background-color: transparent;
+        &:hover {
+            background-color: transparent;
+        }
+        &:focus-visible {
+            border: 1px solid transparent;
+        }
+    }
+</style>

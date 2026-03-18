@@ -66,7 +66,7 @@
         };
     };
 
-    const key = Symbol("toastContext");
+    const key = Symbol();
     export const get_toast_context = () => getContext<ReturnType<typeof create_toast_context>>(key);
     export const set_toast_context = () => setContext(key, create_toast_context());
 </script>

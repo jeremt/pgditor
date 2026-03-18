@@ -143,7 +143,7 @@ class ConnectionsContext extends StoreContext {
     };
 }
 
-const key = Symbol("connectionsContext");
+const key = Symbol();
 
 /**
  * Persist postgres connection strings using tauri's store plugin.

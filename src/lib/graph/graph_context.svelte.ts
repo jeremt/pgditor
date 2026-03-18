@@ -49,6 +49,6 @@ class GraphContext {
     };
 }
 
-const key = Symbol("graphContext");
+const key = Symbol();
 export const get_graph_context = () => getContext<GraphContext>(key);
 export const set_graph_context = () => setContext(key, new GraphContext());
