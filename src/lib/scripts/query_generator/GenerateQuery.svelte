@@ -138,7 +138,17 @@
                             mode = "chat";
                         }}
                     >
-                        <div class="font-bold text-sm">{chat.title}</div>
+                        <div class="font-bold text-sm search-result">
+                            {@html query_generator.chat_filter.trim()
+                                ? chat.title.replace(
+                                      new RegExp(
+                                          `(${query_generator.chat_filter.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`,
+                                          "gi",
+                                      ),
+                                      (m) => `<b>${m}</b>`,
+                                  )
+                                : `<b>${chat.title}</b>`}
+                        </div>
                         <div class="text-xs text-fg-1">{format_relative_time(new Date(chat.updated_at))}</div>
                     </button>
                 {/each}
@@ -259,6 +269,12 @@
         }
         &:focus-visible {
             border: 1px solid transparent;
+        }
+    }
+    .search-result {
+        color: var(--color-fg-2);
+        :global(b) {
+            color: var(--color-fg);
         }
     }
 </style>
