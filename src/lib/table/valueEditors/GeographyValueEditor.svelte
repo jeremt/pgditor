@@ -1,5 +1,5 @@
 <script lang="ts">
-    import {catch_error} from "$lib/helpers/catch_error";
+    import {catch_error} from "@les3dev/catch_error";
     import {format_spatial_data, parse_spatial_data, spatial_data_to_Hex} from "$lib/helpers/spatial_data";
     import Mapbox from "$lib/widgets/Mapbox.svelte";
     import MultilinesInput from "$lib/widgets/MultilinesInput.svelte";

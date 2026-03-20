@@ -1,5 +1,5 @@
 <script lang="ts">
-    import {catch_error} from "$lib/helpers/catch_error";
+    import {catch_error} from "@les3dev/catch_error";
     import {format_geometry_data, type GeoJSONGeometry} from "$lib/helpers/geometry_data";
     import Mapbox from "$lib/widgets/Mapbox.svelte";
     import MultilinesInput from "$lib/widgets/MultilinesInput.svelte";

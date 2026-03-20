@@ -1,6 +1,6 @@
 <script lang="ts">
     import {get_commands_context} from "$lib/commands/commands_context.svelte";
-    import {catch_error} from "$lib/helpers/catch_error";
+    import {catch_error} from "@les3dev/catch_error";
     import CheckIcon from "$lib/icons/CheckIcon.svelte";
     import CopyIcon from "$lib/icons/CopyIcon.svelte";
     import CrossIcon from "$lib/icons/CrossIcon.svelte";
@@ -40,7 +40,7 @@
         if (target === undefined || pk === undefined) {
             return;
         }
-        const error = await catch_error(
+        const error = await catch_error(() =>
             pg.update_row({
                 [pk.column_name]: target.row[pk.column_name],
                 [target.column.column_name]: target.row[target.column.column_name],

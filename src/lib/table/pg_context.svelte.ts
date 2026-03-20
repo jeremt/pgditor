@@ -1,5 +1,5 @@
 import {get_connections_context} from "$lib/connection/connections_context.svelte";
-import {catch_error} from "$lib/helpers/catch_error";
+import {catch_error} from "@les3dev/catch_error";
 import {invoke} from "@tauri-apps/api/core";
 import {getContext, setContext} from "svelte";
 import {value_to_sql, value_type_is_number, type PgType} from "./values";
@@ -196,7 +196,7 @@ ${this.selected_rows_json
         }
         const connectionString = this.connections.current.connectionString;
         this.is_loading = true;
-        const unsortedTables = await catch_error(invoke<PgTable[]>("list_tables", {connectionString}));
+        const unsortedTables = await catch_error(() => invoke<PgTable[]>("list_tables", {connectionString}));
         if (unsortedTables instanceof Error) {
             console.error(unsortedTables.message);
             this.#toast_context.toast(`Server error: ${unsortedTables.message} (${this.connections.current.name})`, {
@@ -227,7 +227,7 @@ ${this.selected_rows_json
         const connectionString = this.connections.current.connectionString;
         this.is_loading = true;
 
-        const unsortedTables = await catch_error(
+        const unsortedTables = await catch_error(() =>
             invoke<PgTableForGraph[]>("list_tables_for_graph", {connectionString}),
         );
         this.is_loading = false;
@@ -243,7 +243,7 @@ ${this.selected_rows_json
         }
         const connectionString = this.connections.current.connectionString;
         this.is_loading = true;
-        const columns = await catch_error(
+        const columns = await catch_error(() =>
             invoke<PgColumn[]>("list_table_columns", {
                 connectionString,
                 schema: table.schema,
@@ -278,7 +278,7 @@ ${this.selected_rows_json
             return;
         }
         const connectionString = this.connections.current.connectionString;
-        const columns = await catch_error(
+        const columns = await catch_error(() =>
             invoke<PgColumn[]>("list_table_columns", {
                 connectionString,
                 schema: table.schema,
@@ -288,7 +288,7 @@ ${this.selected_rows_json
         if (columns instanceof Error) {
             return columns;
         }
-        const data = await catch_error(
+        const data = await catch_error(() =>
             invoke<{rows: PgRow[]; count: number}>("get_table_data", {
                 connectionString,
                 schema: table.schema,
@@ -322,7 +322,7 @@ ${this.selected_rows_json
         const connectionString = this.connections.current.connectionString;
         this.is_loading = true;
         const primary_key = this.current_table.columns.find((col) => col.is_primary_key === "YES");
-        const data = await catch_error(
+        const data = await catch_error(() =>
             invoke<{rows: PgRow[]; count: number}>("get_table_data", {
                 connectionString,
                 schema: this.current_table.schema,
@@ -375,7 +375,7 @@ ${this.selected_rows_json
         }
         const connectionString = this.connections.current.connectionString;
         this.is_loading = true;
-        const data = await catch_error(
+        const data = await catch_error(() =>
             invoke<{rows: Record<string, string | null>[]; duration_ms: number}>("raw_query", {
                 connectionString,
                 sql,

@@ -7,7 +7,7 @@
     import {default_values} from "./values";
     import {get_pg_context, type PgRow} from "./pg_context.svelte";
     import TableValueEditor from "./TableValueEditor.svelte";
-    import {catch_error} from "$lib/helpers/catch_error";
+    import {catch_error} from "@les3dev/catch_error";
     import ActionButton from "$lib/widgets/ActionButton.svelte";
     import TerminalIcon from "$lib/icons/TerminalIcon.svelte";
 
@@ -44,7 +44,7 @@
     });
 
     const insertOrUpdate = async () => {
-        const error = await catch_error(hasPkValue === false ? pg.insert_row(localRow) : pg.upsert_row(localRow));
+        const error = await catch_error(() => hasPkValue === false ? pg.insert_row(localRow) : pg.upsert_row(localRow));
         if (error instanceof Error) {
             errorMessage = error.message;
         } else {

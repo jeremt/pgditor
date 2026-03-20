@@ -1,5 +1,5 @@
 <script lang="ts">
-    import {catch_error} from "$lib/helpers/catch_error";
+    import {catch_error} from "@les3dev/catch_error";
     import ChevronIcon from "$lib/icons/ChevronIcon.svelte";
     import CodeBlock from "$lib/monaco/CodeBlock.svelte";
     import CodeInline from "$lib/monaco/CodeInline.svelte";

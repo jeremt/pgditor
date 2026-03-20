@@ -2,7 +2,7 @@ import {getContext, setContext} from "svelte";
 import {StoreContext} from "$lib/helpers/StoreContext";
 import {listen, type UnlistenFn} from "@tauri-apps/api/event";
 import {invoke} from "@tauri-apps/api/core";
-import {catch_error} from "$lib/helpers/catch_error";
+import {catch_error} from "@les3dev/catch_error";
 import {get_connections_context} from "$lib/connection/connections_context.svelte";
 
 const store_path = "ai.json";

@@ -1,5 +1,5 @@
 import {browser} from "$app/environment";
-import {catch_error} from "$lib/helpers/catch_error";
+import {catch_error} from "@les3dev/catch_error";
 import {StoreContext} from "$lib/helpers/StoreContext";
 import {get_toast_context} from "$lib/widgets/Toaster.svelte";
 import {getContext, setContext} from "svelte";
@@ -33,11 +33,11 @@ class SettingsContext extends StoreContext {
         this.#color_scheme = newValue;
         document.documentElement.setAttribute("color-scheme", this.#color_scheme);
         (async () => {
-            const setError = await catch_error(this.set_to_store("colorScheme", this.#color_scheme));
+            const setError = await catch_error(() => this.set_to_store("colorScheme", this.#color_scheme));
             if (setError instanceof Error) {
                 this.#toast_context.toast("Failed to save color scheme", {kind: "error"});
             }
-            const saveError = await catch_error(this.save_store());
+            const saveError = await catch_error(() => this.save_store());
             if (saveError instanceof Error) {
                 this.#toast_context.toast("Failed to save color scheme", {kind: "error"});
             }

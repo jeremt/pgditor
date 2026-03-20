@@ -1,4 +1,4 @@
-import {catch_error} from "$lib/helpers/catch_error";
+import {catch_error} from "@les3dev/catch_error";
 import {StoreContext} from "$lib/helpers/StoreContext";
 import type {PgTable} from "$lib/table/pg_context.svelte";
 import {invoke} from "@tauri-apps/api/core";
@@ -133,7 +133,7 @@ class ConnectionsContext extends StoreContext {
         if (connectionString === "") {
             return "Connection string is required";
         }
-        const ok = await catch_error(invoke<boolean>("test_connection", {connectionString}));
+        const ok = await catch_error(() => invoke<boolean>("test_connection", {connectionString}));
         if (ok instanceof Error) {
             return ok.message;
         }

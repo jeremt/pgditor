@@ -1,7 +1,7 @@
 import {getContext, setContext} from "svelte";
 import {get_toast_context} from "$lib/widgets/Toaster.svelte";
 import {get_pg_context} from "$lib/table/pg_context.svelte";
-import {catch_error} from "$lib/helpers/catch_error";
+import {catch_error} from "@les3dev/catch_error";
 import {StoreContext} from "$lib/helpers/StoreContext";
 import {get_connections_context} from "$lib/connection/connections_context.svelte";
 import {readFile, writeTextFile} from "@tauri-apps/plugin-fs";
@@ -121,7 +121,7 @@ class ScriptsContext extends StoreContext {
 
     run = async () => {
         this.error_message = "";
-        const result = await catch_error(
+        const result = await catch_error(() =>
             this.#pg.raw_query(this.current_selection ? this.current_selection : this.current_value),
         );
         if (result instanceof Error) {
