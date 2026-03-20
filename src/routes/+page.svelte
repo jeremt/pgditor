@@ -10,6 +10,7 @@
     import {get_commands_context} from "$lib/commands/commands_context.svelte";
     import {onMount} from "svelte";
     import {invoke} from "@tauri-apps/api/core";
+    import {getCurrentWindow} from "@tauri-apps/api/window";
     import SearchIcon from "$lib/icons/SearchIcon.svelte";
     import GraphIcon from "$lib/icons/GraphIcon.svelte";
     import Graph from "$lib/graph/Graph.svelte";
@@ -18,8 +19,11 @@
 
     const commands = get_commands_context();
 
-    onMount(() => {
-        invoke("show_main_window");
+    onMount(async () => {
+        const window = getCurrentWindow();
+        if (window.label === "main") {
+            await invoke("show_main_window");
+        }
     });
 </script>
 

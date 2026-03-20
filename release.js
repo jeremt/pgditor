@@ -64,11 +64,10 @@ function checkPreconditions() {
     console.log("✓ Up to date with origin/main");
 }
 
-function updatePackageJson(version) {
-    console.log(`\nUpdating package.json to version ${version}...`);
+function updateVersionFiles(version) {
+    console.log(`\nUpdating versions to ${version}...`);
 
     const packageJsonPath = path.join(process.cwd(), "package.json");
-
     if (!fs.existsSync(packageJsonPath)) {
         console.error("Error: package.json not found in current directory");
         process.exit(1);
@@ -76,18 +75,27 @@ function updatePackageJson(version) {
 
     const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"));
     const oldVersion = packageJson.version;
-
     packageJson.version = version;
-
     fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2) + "\n");
-    console.log(`✓ Version updated from ${oldVersion} to ${version}`);
+    console.log(`✓ package.json updated from ${oldVersion} to ${version}`);
+
+    const cargoTomlPath = path.join(process.cwd(), "src-tauri", "Cargo.toml");
+    if (!fs.existsSync(cargoTomlPath)) {
+        console.error("Error: src-tauri/Cargo.toml not found");
+        process.exit(1);
+    }
+
+    let cargoToml = fs.readFileSync(cargoTomlPath, "utf8");
+    cargoToml = cargoToml.replace(/^version = "[\d.]+"$/m, `version = "${version}"`);
+    fs.writeFileSync(cargoTomlPath, cargoToml);
+    console.log(`✓ Cargo.toml version updated to ${version}`);
 }
 
 function createRelease(version) {
     const tag = `v${version}`;
 
     console.log("\nCommitting changes...");
-    exec("git add package.json");
+    exec("git add package.json src-tauri/Cargo.toml");
     exec(`git commit -m "release: ${tag}"`);
     console.log("✓ Changes committed");
 
@@ -104,7 +112,7 @@ function createRelease(version) {
 // Main execution
 try {
     checkPreconditions();
-    updatePackageJson(newVersion);
+    updateVersionFiles(newVersion);
     createRelease(newVersion);
 
     console.log("\n🎉 Release successful!");

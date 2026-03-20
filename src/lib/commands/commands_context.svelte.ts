@@ -4,6 +4,7 @@ import {platform} from "@tauri-apps/plugin-os";
 import {get_settings_context} from "$lib/settings/settings_context.svelte";
 import {get_scripts_context} from "$lib/scripts/scripts_context.svelte";
 import {get_graph_context} from "$lib/graph/graph_context.svelte";
+import {invoke} from "@tauri-apps/api/core";
 
 type Mode = "tables" | "script" | "graph";
 
@@ -24,6 +25,15 @@ const make_commands = (ctx: CommandsContext) =>
             description: "Allows you to search through all available commands and execute them",
             action: () => {
                 ctx.is_command_palette_open = true;
+            },
+        },
+        {
+            mode: undefined,
+            title: "New Window",
+            shortcut: `${ctx.cmd_or_ctrl} N`,
+            description: "Open a new pgditor window",
+            action: async () => {
+                await invoke("create_new_window");
             },
         },
         {

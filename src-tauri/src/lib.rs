@@ -3,6 +3,11 @@ pub mod error;
 pub mod pg;
 pub mod ai;
 use tauri::Emitter;
+use tauri::menu::{Menu, MenuItem, Submenu};
+use tauri::async_runtime::block_on;
+use tauri_plugin_dialog::{DialogExt, MessageDialogKind, MessageDialogButtons};
+
+const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -16,9 +21,36 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_persisted_scope::init())
+        .setup(|app| {
+            let new_window = MenuItem::with_id(app, "new-window", "New Window", true, Some("CmdOrCtrl+N"))?;
+            let about = MenuItem::with_id(app, "about", "About PGditor", true, None::<&str>)?;
+            let file_menu = Submenu::with_items(
+                app,
+                "File",
+                true,
+                &[&new_window],
+            )?;
+            let help_menu = Submenu::with_items(
+                app,
+                "Help",
+                true,
+                &[&about],
+            )?;
+            let menu = Menu::with_items(app, &[&file_menu, &help_menu])?;
+            app.set_menu(menu)?;
+            Ok(())
+        })
         .on_menu_event(|app, event| {
             let event_id = event.id.0.as_str();
-            // emit all menu events to the frontend so the UI can react
+            if event_id == "new-window" {
+                let _ = block_on(commands::create_new_window::create_new_window(app.clone()));
+            } else if event_id == "about" {
+                app.dialog()
+                    .message(format!("Version {}\nhttps://pgditor-landing.vercel.app", VERSION))
+                    .kind(MessageDialogKind::Info)
+                    .buttons(MessageDialogButtons::Ok)
+                    .show(|_| {});
+            }
             let _ = app.emit("menu-event", event_id);
         })
         .invoke_handler(tauri::generate_handler![
@@ -31,6 +63,7 @@ pub fn run() {
             commands::list_tables_for_graph::list_tables_for_graph,
             commands::generate_query::generate_query,
             commands::generate_chat_title::generate_chat_title,
+            commands::create_new_window::create_new_window,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

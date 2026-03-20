@@ -4,7 +4,7 @@ version = 4
 
 [[package]]
 name = "PGditor"
-version = "0.0.1"
+version = "0.0.31"
 dependencies = [
  "anyhow",
  "chrono",
