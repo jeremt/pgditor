@@ -35,7 +35,7 @@
         }
     });
 
-    const updateValue = async () => {
+    const update_value = async () => {
         const pk = pg.get_primary_key();
         if (target === undefined || pk === undefined) {
             return;
@@ -55,7 +55,7 @@
         }
     };
 
-    const copyValue = async () => {
+    const copy_value = async () => {
         if (!target) {
             return;
         }
@@ -63,7 +63,7 @@
         toast(`Copied value to clipboard`);
     };
 
-    const copySql = async () => {
+    const copy_sql = async () => {
         const pk = pg.get_primary_key();
         if (target === undefined || pk === undefined) {
             return;
@@ -78,7 +78,7 @@
         }
     };
 
-    const editSql = async () => {
+    const edit_sql = async () => {
         const pk = pg.get_primary_key();
         if (target === undefined || pk === undefined) {
             return;
@@ -95,9 +95,9 @@
         }
     };
 
-    const noPk = $derived(pg.current_table && !pg.current_table.columns.some((col) => col.is_primary_key === "YES"));
+    const no_pk = $derived(pg.current_table && !pg.current_table.columns.some((col) => col.is_primary_key === "YES"));
 
-    const useSmallDialog = $derived.by(() => {
+    const use_small_dialog = $derived.by(() => {
         if (!target || target.column.foreign_table_name !== null) {
             return false;
         }
@@ -110,11 +110,11 @@
         );
     });
 
-    let positionStyle = $state("");
+    let position_style = $state("");
 
-    const updatePosition = () => {
-        if (!target?.element || (!useSmallDialog && !noPk)) {
-            positionStyle = "";
+    const update_position = async () => {
+        if (!target?.element || (!use_small_dialog && !no_pk)) {
+            position_style = "";
             return;
         }
 
@@ -122,46 +122,45 @@
         let top = rect.top;
         let left = rect.left;
 
-        positionStyle = `position: fixed; top: ${top}px; left: ${left}px;`;
+        position_style = `position: fixed; top: ${top}px; left: ${left}px;`;
 
-        tick().then(() => {
-            const dialog = document.querySelector(".small-dialog-anchor");
-            if (dialog) {
-                const dialogRect = dialog.getBoundingClientRect();
-                let newTop = top;
-                let newLeft = left;
+        await tick();
+        const dialog = document.querySelector(".small_dialog_anchor");
+        if (dialog) {
+            const dialog_rect = dialog.getBoundingClientRect();
+            let new_top = top;
+            let new_left = left;
 
-                if (newLeft + dialogRect.width > window.innerWidth) {
-                    newLeft = window.innerWidth - dialogRect.width - 8;
-                }
-                if (newTop + dialogRect.height > window.innerHeight) {
-                    newTop = window.innerHeight - dialogRect.height - 8;
-                }
-                if (newLeft < 8) newLeft = 8;
-                if (newTop < 8) newTop = 8;
-
-                if (newLeft !== left || newTop !== top) {
-                    positionStyle = `position: fixed; top: ${newTop}px; left: ${newLeft}px;`;
-                }
+            if (new_left + dialog_rect.width > window.innerWidth) {
+                new_left = window.innerWidth - dialog_rect.width - 8;
             }
-        });
+            if (new_top + dialog_rect.height > window.innerHeight) {
+                new_top = window.innerHeight - dialog_rect.height - 8;
+            }
+            if (new_left < 8) new_left = 8;
+            if (new_top < 8) new_top = 8;
+
+            if (new_left !== left || new_top !== top) {
+                position_style = `position: fixed; top: ${new_top}px; left: ${new_left}px;`;
+            }
+        }
     };
 
     $effect(() => {
-        if (!target?.element || (!useSmallDialog && !noPk)) {
-            positionStyle = "";
+        if (!target?.element || (!use_small_dialog && !no_pk)) {
+            position_style = "";
             return;
         }
 
-        updatePosition();
+        update_position();
 
-        const onResize = () => updatePosition();
-        window.addEventListener("resize", onResize);
-        return () => window.removeEventListener("resize", onResize);
+        const on_resize = () => update_position();
+        window.addEventListener("resize", on_resize);
+        return () => window.removeEventListener("resize", on_resize);
     });
 </script>
 
-{#snippet noPkDialog()}
+{#snippet no_pk_dialog()}
     <div class="flex flex-col gap-4 p-4 items-start w-sm">
         <p>This table doesn't have a primary key so it cannot be updated automatically.</p>
         <p>Use the script editor to update it instead.</p>
@@ -190,7 +189,7 @@ where ${row.reduce((result, [name, value], index) => {
     </div>
 {/snippet}
 
-{#snippet mainDialog()}
+{#snippet main_dialog()}
     {@const t = target!}
     <header class="flex flex-col pt-4 px-4">
         <div class="flex gap-2 items-center pb-4">
@@ -229,7 +228,7 @@ where ${row.reduce((result, [name, value], index) => {
                         />
                     </label>
                 {/if}
-                <ActionButton class="btn " disabled={t.column.is_primary_key === "YES"} onaction={updateValue}
+                <ActionButton class="btn " disabled={t.column.is_primary_key === "YES"} onaction={update_value}
                     ><CheckIcon --size="1.2rem" />Update</ActionButton
                 >
             {/if}
@@ -242,20 +241,20 @@ where ${row.reduce((result, [name, value], index) => {
         <TableValueEditor column={t.column} bind:row={t.row} inlined={false} />
     </div>
     <div class="flex px-4 pb-4 gap-2">
-        <button class="btn ghost" onclick={copyValue}><CopyIcon --size="1rem" /> Copy value</button>
-        <button class="btn ghost" onclick={copySql}><CopyIcon --size="1rem" /> Copy sql</button>
-        <button class="btn ghost" onclick={editSql}><TerminalIcon --size="1rem" /> Edit sql</button>
+        <button class="btn ghost" onclick={copy_value}><CopyIcon --size="1rem" /> Value</button>
+        <button class="btn ghost" onclick={copy_sql}><CopyIcon --size="1rem" /> SQL</button>
+        <button class="btn ghost" onclick={edit_sql}><TerminalIcon --size="1rem" /> Edit</button>
     </div>
 {/snippet}
 
-{#if noPk && target}
-    <div class="small-dialog-anchor w-md border border-bg-2 rounded-xl shadow-lg bg-bg z-50" style={positionStyle}>
-        {@render noPkDialog()}
+{#if no_pk && target}
+    <div class="small_dialog_anchor w-sm border border-bg-2 rounded-xl shadow-lg bg-bg z-50" style={position_style}>
+        {@render no_pk_dialog()}
     </div>
 {:else if target}
-    {#if useSmallDialog}
-        <div class="small-dialog-anchor w-md border border-bg-2 rounded-xl shadow-lg bg-bg z-50" style={positionStyle}>
-            {@render mainDialog()}
+    {#if use_small_dialog}
+        <div class="small_dialog_anchor w-md border border-bg-2 rounded-xl shadow-lg bg-bg z-50" style={position_style}>
+            {@render main_dialog()}
         </div>
     {:else}
         <Dialog
@@ -265,7 +264,7 @@ where ${row.reduce((result, [name, value], index) => {
             position="right"
             animation="right"
         >
-            {@render mainDialog()}
+            {@render main_dialog()}
         </Dialog>
     {/if}
 {/if}
