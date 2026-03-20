@@ -206,6 +206,13 @@ export const value_to_sql = (column: Pick<PgColumn, "data_type">, value: any): s
     // check if already using explicit cast
     if (value.includes(`::${type}`)) {
         return value;
-    } // otherwise, explicitly cast and wrap in quote special types
+    }
+    // Handle objects (JSON stringify for any unknown object types)
+    if (typeof value === "object" && value !== null) {
+        const escaped = JSON.stringify(value).replace(/'/g, "''");
+        return `'${escaped}'::${type}`;
+    }
+
+    // otherwise, explicitly cast and wrap in quote special types
     return `'${value}'::${type}`;
 };

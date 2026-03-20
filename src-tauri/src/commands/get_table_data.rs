@@ -25,17 +25,24 @@ pub async fn get_table_data(
 
     let columns = columns.unwrap_or("*".to_string());
     let offset = offset.unwrap_or(0);
-    let limit = limit.unwrap_or(100);
     let where_clause = where_clause.unwrap_or_default();
     let order_by = order_by.unwrap_or_default();
 
     let schema_q = quote_ident(&schema);
     let table_q = quote_ident(&table);
 
-    let select_sql = format!(
-        "select row_to_json(t)::text as json_text from (select {} from {}.{} {} {} offset {} limit {}) t",
-        columns, schema_q, table_q, where_clause, order_by, offset, limit
-    );
+    eprintln!("DEBUG get_table_data: limit = {:?}, where_clause = {:?}", limit, where_clause);
+
+    let select_sql = match limit {
+        Some(l) if l > 0 => format!(
+            "select row_to_json(t)::text as json_text from (select {} from {}.{} {} {} offset {} limit {}) t",
+            columns, schema_q, table_q, where_clause, order_by, offset, l
+        ),
+        _ => format!(
+            "select row_to_json(t)::text as json_text from (select {} from {}.{} {} {}) t",
+            columns, schema_q, table_q, where_clause, order_by
+        ),
+    };
 
     println!("psql > {}", select_sql);
 

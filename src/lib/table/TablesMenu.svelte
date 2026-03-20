@@ -114,8 +114,9 @@
             <button
                 class="btn ghost"
                 onclick={async () => {
-                    if (await save_to_file(JSON.stringify(pg.selected_rows_json), ["json"])) {
-                        toast("Selected rows exported to JSON", {kind: "success"});
+                    const rows = pg.selected_rows.length > 0 ? pg.selected_rows_json : await pg.get_all_rows();
+                    if (await save_to_file(JSON.stringify(rows), ["json"])) {
+                        toast(`Exported ${rows.length} rows to JSON`, {kind: "success"});
                     } else {
                         toast("Failed to export JSON", {kind: "error"});
                     }
@@ -125,8 +126,15 @@
             <button
                 class="btn ghost"
                 onclick={async () => {
-                    if (await save_to_file(pg.selected_rows_csv, ["csv"])) {
-                        toast("Selected rows exported to CSV", {kind: "success"});
+                    const rows = pg.selected_rows.length > 0 ? pg.selected_rows_json : await pg.get_all_rows();
+                    const headers = pg.current_table!.columns.map((col) => col.column_name);
+                    const escape = (val: unknown) => {
+                        const str = typeof val === "object" ? JSON.stringify(val) : val === null || val === undefined ? "" : String(val);
+                        return str.includes(",") || str.includes('"') || str.includes("\n") ? `"${str.replace(/"/g, '""')}"` : str;
+                    };
+                    const csv = headers.join(",") + "\n" + rows.map((row: PgRow) => headers.map((h) => escape(row[h])).join(",")).join("\n");
+                    if (await save_to_file(csv, ["csv"])) {
+                        toast(`Exported ${rows.length} rows to CSV`, {kind: "success"});
                     } else {
                         toast("Failed to export CSV", {kind: "error"});
                     }
@@ -136,8 +144,14 @@
             <button
                 class="btn ghost"
                 onclick={async () => {
-                    if (await save_to_file(pg.selected_rows_sql, ["sql"])) {
-                        toast("Selected rows exported to SQL", {kind: "success"});
+                    const rows = pg.selected_rows.length > 0 ? pg.selected_rows_json : await pg.get_all_rows();
+                    const sql = `INSERT INTO ${pg.fullname}
+(${pg.current_table!.columns.map((col) => col.column_name).join(",")})
+VALUES
+${rows.map((row: PgRow) => `(${pg.current_table!.columns.map((col) => value_to_sql(col, row[col.column_name])).join(",")})`).join(",\n")}
+;`;
+                    if (await save_to_file(sql, ["sql"])) {
+                        toast(`Exported ${rows.length} rows to SQL`, {kind: "success"});
                     } else {
                         toast("Failed to export SQL", {kind: "error"});
                     }

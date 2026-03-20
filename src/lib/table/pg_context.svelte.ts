@@ -310,6 +310,35 @@ ${this.selected_rows_json
     };
 
     /**
+     * Get all rows for the currently selected table (no limit).
+     */
+    get_all_rows = async () => {
+        if (!this.connections.current || !this.current_table) {
+            return [];
+        }
+        const connectionString = this.connections.current.connectionString;
+        const schema = this.current_table.schema;
+        const table = this.current_table.name;
+        const where = this.where_sql;
+        const data = await catch_error(() =>
+            invoke<{rows: PgRow[]; count: number}>("get_table_data", {
+                connectionString,
+                schema,
+                table,
+                columns: "*",
+                whereClause: where,
+                offset: 0,
+                limit: undefined,
+                orderBy: "",
+            }),
+        );
+        if (data instanceof Error) {
+            return [];
+        }
+        return data.rows;
+    };
+
+    /**
      * Run a select to get a list of rows from the currently selected table which applying the given filters.
      * @param where The where cause to apply (e.g. "WHERE id = 1 AND status = 'success'")
      * @param offset The offset to apply to the select query.
@@ -322,12 +351,12 @@ ${this.selected_rows_json
         const connectionString = this.connections.current.connectionString;
         this.is_loading = true;
         const primary_key = this.current_table.columns.find((col) => col.is_primary_key === "YES");
-        const {schema, name, column_names} = this.current_table;
+        const {schema, name: table, column_names} = this.current_table;
         const data = await catch_error(() =>
             invoke<{rows: PgRow[]; count: number}>("get_table_data", {
                 connectionString,
                 schema,
-                name,
+                table,
                 columns:
                     this.selected_columns.size === 0 || this.selected_columns.size === column_names.length
                         ? "*"
