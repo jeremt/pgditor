@@ -53,21 +53,29 @@ pub async fn list_table_columns(
             AND c.table_name = pk.table_name
             AND c.column_name = pk.column_name
         LEFT JOIN (
-            SELECT 
-                kcu.table_schema,
-                kcu.table_name,
-                kcu.column_name,
-                ccu.table_schema AS foreign_table_schema,
-                ccu.table_name AS foreign_table_name,
-                ccu.column_name AS foreign_column_name
-            FROM information_schema.key_column_usage AS kcu
-            INNER JOIN information_schema.table_constraints AS tc
-                ON kcu.constraint_name = tc.constraint_name
-                AND kcu.table_schema = tc.table_schema
-                AND tc.constraint_type = 'FOREIGN KEY'
-            INNER JOIN information_schema.constraint_column_usage AS ccu
-                ON kcu.constraint_name = ccu.constraint_name
-                AND kcu.table_schema = ccu.constraint_schema
+            SELECT
+                src_ns.nspname       AS table_schema,
+                src_cls.relname      AS table_name,
+                src_attr.attname     AS column_name,
+                tgt_ns.nspname       AS foreign_table_schema,
+                tgt_cls.relname      AS foreign_table_name,
+                tgt_attr.attname     AS foreign_column_name
+            FROM pg_catalog.pg_constraint AS con
+            INNER JOIN pg_catalog.pg_class AS src_cls
+                ON src_cls.oid = con.conrelid
+            INNER JOIN pg_catalog.pg_namespace AS src_ns
+                ON src_ns.oid = src_cls.relnamespace
+            INNER JOIN pg_catalog.pg_class AS tgt_cls
+                ON tgt_cls.oid = con.confrelid
+            INNER JOIN pg_catalog.pg_namespace AS tgt_ns
+                ON tgt_ns.oid = tgt_cls.relnamespace
+            INNER JOIN pg_catalog.pg_attribute AS src_attr
+                ON src_attr.attrelid = con.conrelid
+                AND src_attr.attnum = ANY(con.conkey)
+            INNER JOIN pg_catalog.pg_attribute AS tgt_attr
+                ON tgt_attr.attrelid = con.confrelid
+                AND tgt_attr.attnum = ANY(con.confkey)
+            WHERE con.contype = 'f'
         ) AS fk
             ON c.table_schema = fk.table_schema
             AND c.table_name = fk.table_name
