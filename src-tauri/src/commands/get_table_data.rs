@@ -31,8 +31,6 @@ pub async fn get_table_data(
     let schema_q = quote_ident(&schema);
     let table_q = quote_ident(&table);
 
-    eprintln!("DEBUG get_table_data: limit = {:?}, where_clause = {:?}", limit, where_clause);
-
     let select_sql = match limit {
         Some(l) if l > 0 => format!(
             "select row_to_json(t)::text as json_text from (select {} from {}.{} {} {} offset {} limit {}) t",
