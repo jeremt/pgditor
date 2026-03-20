@@ -17,6 +17,7 @@
     import {default_values, value_type_is_boolean, value_type_is_number, value_to_sql} from "./values";
     import {writeText} from "@tauri-apps/plugin-clipboard-manager";
     import {anchor_to_target} from "$lib/helpers/anchor_to_target.svelte";
+    import NoPkWarning from "./NoPkWarning.svelte";
 
     type Props = {
         target: {element: HTMLElement; row: PgRow; column: PgColumn} | undefined;
@@ -113,35 +114,6 @@
     const anchor = anchor_to_target(() => target?.element);
 </script>
 
-{#snippet no_pk_dialog()}
-    <div class="flex flex-col gap-4 p-4 items-start w-sm">
-        <p>This table doesn't have a primary key so it cannot be updated automatically.</p>
-        <p>Use the script editor to update it instead.</p>
-        <div class="flex justify-between w-full">
-            <button class="btn secondary" onclick={() => (target = undefined)}>Cancel</button>
-            <button
-                class="btn"
-                onclick={() => {
-                    commands.mode = "script";
-                    const row = Object.entries(target!.row).filter(([key]) => key !== "__index");
-                    if (row.length > 0 && pg.current_table) {
-                        scripts.current_value = `update ${pg.fullname} set
-    ${row[0][0]} = ${value_to_sql(pg.current_table.columns.find((col) => col.column_name === row[0][0])!, row[0][1])}
-where ${row.reduce((result, [name, value], index) => {
-                            return (
-                                result +
-                                `${name} = ${value_to_sql(pg.current_table!.columns.find((col) => col.column_name === name)!, value)}` +
-                                (index < row.length - 1 ? `\nor ` : "")
-                            );
-                        }, "")};`;
-                    }
-                    target = undefined;
-                }}><TerminalIcon --size="1rem" /> Open editor</button
-            >
-        </div>
-    </div>
-{/snippet}
-
 {#snippet main_dialog_content()}
     {@const t = target!}
     <header class="flex flex-col pt-4 px-4">
@@ -202,11 +174,11 @@ where ${row.reduce((result, [name, value], index) => {
 
 {#if no_pk && target}
     <div
-        class="fixed small_dialog_anchor w-sm border border-bg-2 rounded-xl shadow-lg bg-bg z-50"
+        class="fixed small_dialog_anchor w-sm border border-bg-2 rounded-xl shadow-lg bg-bg z-50 p-4"
         style:left="{anchor.left}px"
         style:top="{anchor.top}px"
     >
-        {@render no_pk_dialog()}
+        <NoPkWarning bind:target />
     </div>
 {:else if target}
     {#if use_small_dialog}
