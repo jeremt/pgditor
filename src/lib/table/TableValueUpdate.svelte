@@ -1,5 +1,4 @@
 <script lang="ts">
-    import {tick} from "svelte";
     import {get_commands_context} from "$lib/commands/commands_context.svelte";
     import {catch_error} from "@les3dev/catch_error";
     import CheckIcon from "$lib/icons/CheckIcon.svelte";
@@ -17,6 +16,7 @@
     import TableValueEditor from "./TableValueEditor.svelte";
     import {default_values, value_type_is_boolean, value_type_is_number, value_to_sql} from "./values";
     import {writeText} from "@tauri-apps/plugin-clipboard-manager";
+    import {anchor_to_target} from "$lib/helpers/anchor_to_target.svelte";
 
     type Props = {
         target: {element: HTMLElement; row: PgRow; column: PgColumn} | undefined;
@@ -110,54 +110,7 @@
         );
     });
 
-    let position_style = $state("");
-
-    const update_position = async () => {
-        if (!target?.element || (!use_small_dialog && !no_pk)) {
-            position_style = "";
-            return;
-        }
-
-        const rect = target.element.getBoundingClientRect();
-        let top = rect.top;
-        let left = rect.left;
-
-        position_style = `position: fixed; top: ${top}px; left: ${left}px;`;
-
-        await tick();
-        const dialog = document.querySelector(".small_dialog_anchor");
-        if (dialog) {
-            const dialog_rect = dialog.getBoundingClientRect();
-            let new_top = top;
-            let new_left = left;
-
-            if (new_left + dialog_rect.width > window.innerWidth) {
-                new_left = window.innerWidth - dialog_rect.width - 8;
-            }
-            if (new_top + dialog_rect.height > window.innerHeight) {
-                new_top = window.innerHeight - dialog_rect.height - 8;
-            }
-            if (new_left < 8) new_left = 8;
-            if (new_top < 8) new_top = 8;
-
-            if (new_left !== left || new_top !== top) {
-                position_style = `position: fixed; top: ${new_top}px; left: ${new_left}px;`;
-            }
-        }
-    };
-
-    $effect(() => {
-        if (!target?.element || (!use_small_dialog && !no_pk)) {
-            position_style = "";
-            return;
-        }
-
-        update_position();
-
-        const on_resize = () => update_position();
-        window.addEventListener("resize", on_resize);
-        return () => window.removeEventListener("resize", on_resize);
-    });
+    const anchor = anchor_to_target(() => target?.element);
 </script>
 
 {#snippet no_pk_dialog()}
@@ -189,7 +142,7 @@ where ${row.reduce((result, [name, value], index) => {
     </div>
 {/snippet}
 
-{#snippet main_dialog()}
+{#snippet main_dialog_content()}
     {@const t = target!}
     <header class="flex flex-col pt-4 px-4">
         <div class="flex gap-2 items-center pb-4">
@@ -248,13 +201,23 @@ where ${row.reduce((result, [name, value], index) => {
 {/snippet}
 
 {#if no_pk && target}
-    <div class="small_dialog_anchor w-sm border border-bg-2 rounded-xl shadow-lg bg-bg z-50" style={position_style}>
+    <div
+        class="fixed small_dialog_anchor w-sm border border-bg-2 rounded-xl shadow-lg bg-bg z-50"
+        style:left="{anchor.left}px"
+        style:top="{anchor.top}px"
+    >
         {@render no_pk_dialog()}
     </div>
 {:else if target}
     {#if use_small_dialog}
-        <div class="small_dialog_anchor w-md border border-bg-2 rounded-xl shadow-lg bg-bg z-50" style={position_style}>
-            {@render main_dialog()}
+        <div
+            class="fixed small_dialog_anchor w-md border border-bg-2 rounded-xl shadow-lg bg-bg z-50"
+            style:left="{anchor.left}px"
+            style:top="{anchor.top}px"
+        >
+            <div class="flex flex-col w-full h-full">
+                {@render main_dialog_content()}
+            </div>
         </div>
     {:else}
         <Dialog
@@ -264,7 +227,9 @@ where ${row.reduce((result, [name, value], index) => {
             position="right"
             animation="right"
         >
-            {@render main_dialog()}
+            <div class="flex flex-col w-xl h-full">
+                {@render main_dialog_content()}
+            </div>
         </Dialog>
     {/if}
 {/if}
