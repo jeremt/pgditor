@@ -10,7 +10,10 @@
     import TableUpsert from "./TableUpsert.svelte";
     import {create_context_menu} from "./table_context_menu.svelte";
     import ProgressCircle from "$lib/widgets/ProgressCircle.svelte";
-    import TableValueUpdate from "./TableValueUpdate.svelte";
+    import PopoverTableValueUpdate from "./PopoverTableValueUpdate.svelte";
+    import DialogTableValueUpdate from "./DialogTableValueUpdate.svelte";
+    import NoPkWarning from "./NoPkWarning.svelte";
+    import {value_type_is_boolean, value_type_is_number} from "./values";
     import {writeText} from "@tauri-apps/plugin-clipboard-manager";
     import {get_toast_context} from "$lib/widgets/Toaster.svelte";
     import TableCell from "./TableCell.svelte";
@@ -21,6 +24,21 @@
     const {oncontextmenu} = create_context_menu();
     let cell = $state<{element: HTMLElement; row: PgRow; column: PgColumn}>();
     let last_checked_index: number | null = null;
+
+    const no_pk = $derived(pg.current_table && !pg.current_table.columns.some((col) => col.is_primary_key === "YES"));
+
+    const use_small_dialog = $derived.by(() => {
+        if (!cell || cell.column.foreign_table_name !== null) {
+            return false;
+        }
+        return (
+            cell.column.is_primary_key === "YES" ||
+            cell.column.data_type === "uuid" ||
+            value_type_is_number(cell.column.data_type) ||
+            value_type_is_boolean(cell.column.data_type) ||
+            cell.column.enum_values !== null
+        );
+    });
 </script>
 
 {#if pg.current_table === undefined}
@@ -188,4 +206,12 @@
     </Dialog>
 {/if}
 
-<TableValueUpdate bind:target={cell} />
+{#if no_pk && cell}
+    <NoPkWarning bind:target={cell} />
+{:else if cell}
+    {#if use_small_dialog}
+        <PopoverTableValueUpdate bind:target={cell} />
+    {:else}
+        <DialogTableValueUpdate bind:target={cell} />
+    {/if}
+{/if}
