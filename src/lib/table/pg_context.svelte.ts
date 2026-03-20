@@ -322,14 +322,14 @@ ${this.selected_rows_json
         const connectionString = this.connections.current.connectionString;
         this.is_loading = true;
         const primary_key = this.current_table.columns.find((col) => col.is_primary_key === "YES");
+        const {schema, name, column_names} = this.current_table;
         const data = await catch_error(() =>
             invoke<{rows: PgRow[]; count: number}>("get_table_data", {
                 connectionString,
-                schema: this.current_table.schema,
-                table: this.current_table.name,
+                schema,
+                name,
                 columns:
-                    this.selected_columns.size === 0 ||
-                    this.selected_columns.size === this.current_table.column_names.length
+                    this.selected_columns.size === 0 || this.selected_columns.size === column_names.length
                         ? "*"
                         : this.selected_columns.values().toArray().join(", "),
                 offset,

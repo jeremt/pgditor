@@ -40,10 +40,12 @@
         if (target === undefined || pk === undefined) {
             return;
         }
+        const row = target.row;
+        const column = target.column;
         const error = await catch_error(() =>
             pg.update_row({
-                [pk.column_name]: target.row[pk.column_name],
-                [target.column.column_name]: target.row[target.column.column_name],
+                [pk.column_name]: row[pk.column_name],
+                [column.column_name]: row[column.column_name],
             }),
         );
         if (error instanceof Error) {
