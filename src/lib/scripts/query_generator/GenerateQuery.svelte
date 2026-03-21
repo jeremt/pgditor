@@ -128,6 +128,9 @@
                         mode = "chat";
                     }}><PlusIcon --size="1.2rem" /></button
                 >
+                <button class="btn ghost icon" title="Settings" onclick={() => (mode = "settings")}
+                    ><CogIcon --size="1.2rem" /></button
+                >
             </div>
             <div class="flex flex-col grow overflow-auto px-4 pb-4">
                 {#each query_generator.chats as chat (chat.id)}
@@ -245,7 +248,7 @@
             />
             <div class="flex gap-2 w-full">
                 <button class="btn ghost icon" title="Settings" onclick={() => (mode = "settings")}
-                    ><CogIcon --size="1rem" /></button
+                    ><CogIcon --size="1.2rem" /></button
                 >
                 <button
                     class="btn ms-auto"
