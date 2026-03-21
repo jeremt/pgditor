@@ -31,7 +31,7 @@
     <div class="fixed inset-0 z-40" role="presentation" onclick={() => (target = undefined)} onkeydown={() => {}}>
         <div
             bind:this={anchor_element}
-            class="fixed w-md border border-bg-2 rounded-xl shadow-lg bg-bg"
+            class="fixed border border-bg-2 rounded-xl shadow-lg bg-bg"
             style:left="{anchor.left}px"
             style:top="{anchor.top}px"
             role="dialog"
