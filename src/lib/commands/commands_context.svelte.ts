@@ -182,6 +182,16 @@ const make_commands = (ctx: CommandsContext) =>
                 ctx.settings.toggle_color_scheme();
             },
         },
+        {
+            mode: undefined,
+            title: "Toggle Hide System Tables",
+            shortcut: undefined,
+            description: "Show or hide system tables (pg_catalog, information_schema).",
+            action: () => {
+                ctx.settings.toggle_hide_system_tables();
+                ctx.pg.load_tables();
+            },
+        },
     ] as const satisfies Command[];
 
 export type CommandTitle = ReturnType<typeof make_commands>[number]["title"];

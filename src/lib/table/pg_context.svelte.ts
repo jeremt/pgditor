@@ -5,6 +5,7 @@ import {getContext, setContext} from "svelte";
 import {value_to_sql, value_type_is_number, type PgType} from "./values";
 import {get_toast_context} from "$lib/widgets/Toaster.svelte";
 import {getCurrentWindow} from "@tauri-apps/api/window";
+import {get_settings_context} from "$lib/settings/settings_context.svelte";
 
 export type PgTable = {
     schema: string;
@@ -101,6 +102,7 @@ const DEFAULT_LIMIT = 100;
 
 class PgContext {
     #toast_context = get_toast_context();
+    #settings = get_settings_context();
     tables = $state<PgTable[]>([]);
     current_table = $state<PgTable & {columns: PgColumn[]; rows: PgRow[]; count: number}>();
     last_query_time = $state<number>();
@@ -196,7 +198,9 @@ ${this.selected_rows_json
         }
         const connectionString = this.connections.current.connectionString;
         this.is_loading = true;
-        const unsortedTables = await catch_error(() => invoke<PgTable[]>("list_tables", {connectionString}));
+        const unsortedTables = await catch_error(() =>
+            invoke<PgTable[]>("list_tables", {connectionString, hideSystemTables: this.#settings.hide_system_tables}),
+        );
         if (unsortedTables instanceof Error) {
             console.error(unsortedTables.message);
             this.#toast_context.toast(`Server error: ${unsortedTables.message} (${this.connections.current.name})`, {
@@ -228,7 +232,11 @@ ${this.selected_rows_json
         this.is_loading = true;
 
         const unsortedTables = await catch_error(() =>
-            invoke<PgTableForGraph[]>("list_tables_for_graph", {connectionString, schema}),
+            invoke<PgTableForGraph[]>("list_tables_for_graph", {
+                connectionString,
+                schema,
+                hideSystemTables: this.#settings.hide_system_tables,
+            }),
         );
         this.is_loading = false;
         return unsortedTables;
@@ -240,7 +248,9 @@ ${this.selected_rows_json
         }
         const connectionString = this.connections.current.connectionString;
 
-        const schemas = await catch_error(() => invoke<string[]>("list_schemas", {connectionString}));
+        const schemas = await catch_error(() =>
+            invoke<string[]>("list_schemas", {connectionString, hideSystemTables: this.#settings.hide_system_tables}),
+        );
         return schemas;
     };
 

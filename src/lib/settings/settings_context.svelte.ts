@@ -7,6 +7,7 @@ import {getContext, setContext} from "svelte";
 class SettingsContext extends StoreContext {
     #color_scheme = $state<"light" | "dark">("dark");
     #match_light_color_scheme = matchMedia("(prefers-color-scheme: light)");
+    #hide_system_tables = $state(true);
 
     #toast_context = get_toast_context();
 
@@ -18,6 +19,8 @@ class SettingsContext extends StoreContext {
                 this.#color_scheme =
                     (await this.get_from_store<"light" | "dark">("colorScheme")) ?? system_color_scheme;
                 document.documentElement.setAttribute("color-scheme", this.#color_scheme);
+                this.#hide_system_tables =
+                    (await this.get_from_store<boolean>("hideSystemTables")) ?? true;
             }
         })();
         this.#match_light_color_scheme.addEventListener("change", ({matches}) => {
@@ -44,8 +47,30 @@ class SettingsContext extends StoreContext {
         })();
     }
 
+    get hide_system_tables() {
+        return this.#hide_system_tables;
+    }
+
+    set hide_system_tables(newValue: boolean) {
+        this.#hide_system_tables = newValue;
+        (async () => {
+            const setError = await catch_error(() => this.set_to_store("hideSystemTables", this.#hide_system_tables));
+            if (setError instanceof Error) {
+                this.#toast_context.toast("Failed to save hide system tables setting", {kind: "error"});
+            }
+            const saveError = await catch_error(() => this.save_store());
+            if (saveError instanceof Error) {
+                this.#toast_context.toast("Failed to save hide system tables setting", {kind: "error"});
+            }
+        })();
+    }
+
     toggle_color_scheme = () => {
         this.color_scheme = this.color_scheme === "light" ? "dark" : "light";
+    };
+
+    toggle_hide_system_tables = () => {
+        this.hide_system_tables = !this.hide_system_tables;
     };
 }
 

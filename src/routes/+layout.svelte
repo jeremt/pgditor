@@ -20,10 +20,10 @@
     set_toast_context();
 
     const connections = set_connections_context();
+    set_settings_context();
     const pg = set_pg_context();
     set_scripts_context();
     set_query_generator_context();
-    set_settings_context();
     set_graph_context();
     set_commands_context();
 

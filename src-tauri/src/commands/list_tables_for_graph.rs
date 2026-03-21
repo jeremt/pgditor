@@ -8,6 +8,7 @@ use std::collections::HashMap;
 pub async fn list_tables_for_graph(
     connection_string: String,
     schema: Option<String>,
+    hide_system_tables: bool,
 ) -> Result<Vec<PgTableForGraph>, CommandError> {
     let (client, connection) = pg_connect(&connection_string).await?;
 
@@ -17,7 +18,14 @@ pub async fn list_tables_for_graph(
         }
     });
 
-    let query = r#"
+    let system_schemas_filter = if hide_system_tables {
+        "t.table_schema NOT IN ('pg_catalog', 'information_schema')"
+    } else {
+        "true"
+    };
+
+    let query = format!(
+        r#"
         SELECT 
             t.table_schema as schema,
             t.table_name as name,
@@ -100,16 +108,18 @@ pub async fn list_tables_for_graph(
             AND fk.table_name = c.table_name
             AND fk.column_name = c.column_name
 
-        WHERE t.table_schema NOT IN ('pg_catalog', 'information_schema')
+        WHERE {}
         AND ($1::text IS NULL OR t.table_schema = $1)
 
         ORDER BY
             t.table_schema,
             t.table_name,
             c.ordinal_position;
-    "#;
+        "#,
+        system_schemas_filter
+    );
 
-    let rows = client.query(query, &[&schema]).await.map_err(CommandError::from)?;
+    let rows = client.query(&query, &[&schema]).await.map_err(CommandError::from)?;
 
     let mut tables: HashMap<(String, String), PgTableForGraph> = HashMap::new();
 
