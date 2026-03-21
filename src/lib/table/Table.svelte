@@ -13,7 +13,7 @@
     import DialogTableValueUpdate from "./DialogTableValueUpdate.svelte";
     import NoPkWarning from "./NoPkWarning.svelte";
     import TableRowCheckbox from "./TableRowCheckbox.svelte";
-    import {value_type_is_boolean, value_type_is_number} from "./values";
+    import {value_type_is_boolean, value_type_is_number, value_type_is_textish} from "./values";
     import {writeText} from "@tauri-apps/plugin-clipboard-manager";
     import {get_toast_context} from "$lib/widgets/Toaster.svelte";
     import TableCell from "./TableCell.svelte";
@@ -23,20 +23,17 @@
     const {toast} = get_toast_context();
     const {oncontextmenu} = create_context_menu();
     let cell = $state<{element: HTMLElement; row: PgRow; column: PgColumn}>();
+    let force_mode = $state<"popover" | "dialog" | undefined>(undefined);
 
     const no_pk = $derived(pg.current_table && !pg.current_table.columns.some((col) => col.is_primary_key === "YES"));
 
+    const TEXT_POPOVER_THRESHOLD = 200;
+
     const use_small_dialog = $derived.by(() => {
-        if (!cell || cell.column.foreign_table_name !== null) {
-            return false;
+        if (force_mode !== undefined) {
+            return force_mode === "popover";
         }
-        return (
-            cell.column.is_primary_key === "YES" ||
-            cell.column.data_type === "uuid" ||
-            value_type_is_number(cell.column.data_type) ||
-            value_type_is_boolean(cell.column.data_type) ||
-            cell.column.enum_values !== null
-        );
+        return false;
     });
 </script>
 
@@ -111,6 +108,19 @@
                                 onclick={async (event) => {
                                     if (pg.current_table?.type === "BASE TABLE") {
                                         if (event.currentTarget instanceof HTMLElement) {
+                                            const value = row[column.column_name];
+                                            const is_short_text =
+                                                value_type_is_textish(column.data_type) &&
+                                                typeof value === "string" &&
+                                                value.length < TEXT_POPOVER_THRESHOLD;
+                                            const use_popover =
+                                                column.is_primary_key === "YES" ||
+                                                column.data_type === "uuid" ||
+                                                value_type_is_number(column.data_type) ||
+                                                value_type_is_boolean(column.data_type) ||
+                                                column.enum_values !== null ||
+                                                is_short_text;
+                                            force_mode = use_popover ? "popover" : "dialog";
                                             cell = {
                                                 element: event.currentTarget,
                                                 column,
@@ -154,8 +164,8 @@
     <NoPkWarning bind:target={cell} />
 {:else if cell}
     {#if use_small_dialog}
-        <PopoverTableValueUpdate bind:target={cell} />
+        <PopoverTableValueUpdate bind:target={cell} onswitch_mode={() => (force_mode = "dialog")} />
     {:else}
-        <DialogTableValueUpdate bind:target={cell} />
+        <DialogTableValueUpdate bind:target={cell} onswitch_mode={() => (force_mode = "popover")} />
     {/if}
 {/if}

@@ -9,11 +9,13 @@
     import {default_values} from "./values";
     import {anchor_to_target} from "$lib/helpers/anchor_to_target.svelte";
     import {create_table_value_actions} from "./table_value_actions.svelte";
+    import ExpandIcon from "$lib/icons/ExpandIcon.svelte";
 
     type Props = {
         target: {element: HTMLElement; row: PgRow; column: PgColumn} | undefined;
+        onswitch_mode: () => void;
     };
-    let {target = $bindable()}: Props = $props();
+    let {target = $bindable(), onswitch_mode}: Props = $props();
 
     const pg = get_pg_context();
 
@@ -46,14 +48,17 @@
                 </div>
             {/if}
             <div class="p-4 w-full grow overflow-hidden">
-                <TableValueEditor column={target.column} bind:row={target.row} inlined={false} />
+                <TableValueEditor column={target.column} bind:row={target.row} inlined={true} />
             </div>
             <div class="flex px-4 pb-4 gap-2 items-center">
                 <button class="btn ghost text-xs!" onclick={actions.copy_value}><CopyIcon --size="1rem" /> Value</button
                 >
                 <button class="btn ghost text-xs!" onclick={actions.copy_sql}><CopyIcon --size="1rem" /> SQL</button>
-                <button class="btn ghost text-xs! me-auto" onclick={actions.edit_sql}
+                <button class="btn ghost text-xs!" onclick={actions.edit_sql}
                     ><TerminalIcon --size="1rem" /> Edit</button
+                >
+                <button class="btn ghost icon" onclick={onswitch_mode} title="Switch to dialog view"
+                    ><ExpandIcon --size="1rem" /></button
                 >
                 {#if pg.current_table?.type === "BASE TABLE"}
                     {#if target.column.is_nullable === "YES"}

@@ -109,6 +109,15 @@ export const value_type_is_boolean = (data_type: PgType) => {
     return data_type === "bool" || data_type === "boolean";
 };
 
+export const value_type_is_textish = (data_type: PgType) => {
+    return (
+        data_type === "varchar" ||
+        data_type === "character" ||
+        data_type === "character_varying" ||
+        data_type === "text"
+    );
+};
+
 export const value_type_is_date = (data_type: PgType) => {
     return (
         data_type === "date" ||

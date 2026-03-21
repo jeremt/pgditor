@@ -12,11 +12,13 @@
     import TableValueEditor from "./TableValueEditor.svelte";
     import {default_values} from "./values";
     import {create_table_value_actions} from "./table_value_actions.svelte";
+    import CollapseIcon from "$lib/icons/CollapseIcon.svelte";
 
     type Props = {
         target: {element: HTMLElement; row: PgRow; column: PgColumn} | undefined;
+        onswitch_mode: () => void;
     };
-    let {target = $bindable()}: Props = $props();
+    let {target = $bindable(), onswitch_mode}: Props = $props();
 
     const pg = get_pg_context();
 
@@ -27,18 +29,15 @@
 </script>
 
 {#if target}
-    <Dialog
-        --padding="0"
-        is_open={true}
-        onrequestclose={() => (target = undefined)}
-        position="right"
-        animation="right"
-    >
+    <Dialog --padding="0" is_open={true} onrequestclose={() => (target = undefined)} position="right" animation="right">
         <div class="flex flex-col w-xl h-full">
             <header class="flex flex-col pt-4 px-4">
                 <div class="flex gap-2 items-center pb-4">
-                    <button class="btn icon ghost" type="button" aria-label="Cancel" onclick={() => (target = undefined)}
-                        ><CrossIcon /></button
+                    <button
+                        class="btn icon ghost"
+                        type="button"
+                        aria-label="Cancel"
+                        onclick={() => (target = undefined)}><CrossIcon /></button
                     >
                     <h2 class="flex gap-2 me-auto items-center">
                         {#if target.column.foreign_column_name !== null}
@@ -48,7 +47,8 @@
                         {/if}
                         {target.column.column_name}
                         <span class="font-normal"
-                            >{target.column.data_type}{#if target.column.data_type_params}{target.column.data_type_params}{/if}</span
+                            >{target.column.data_type}{#if target.column.data_type_params}{target.column
+                                    .data_type_params}{/if}</span
                         >
                         {#if target.column.foreign_table_schema !== null && target.column.foreign_table_name !== null}
                             <span class="font-mono text-sm bg-bg-1 py-0.5 px-2 rounded-md ml-1">
@@ -66,20 +66,25 @@
                                         if (target!.row[target!.column.column_name] !== null) {
                                             target!.row[target!.column.column_name] = null;
                                         } else {
-                                            target!.row[target!.column.column_name] = default_values[target!.column.data_type] ?? "";
+                                            target!.row[target!.column.column_name] =
+                                                default_values[target!.column.data_type] ?? "";
                                         }
                                     }}
                                 />
                             </label>
                         {/if}
-                        <ActionButton class="btn " disabled={target.column.is_primary_key === "YES"} onaction={actions.update_value}
-                            ><CheckIcon --size="1.2rem" />Update</ActionButton
+                        <ActionButton
+                            class="btn "
+                            disabled={target.column.is_primary_key === "YES"}
+                            onaction={actions.update_value}><CheckIcon --size="1.2rem" />Update</ActionButton
                         >
                     {/if}
                 </div>
             </header>
             {#if actions.error_message}
-                <div class="text-sm text-error p-2 mx-4 mb-4 border border-bg-2 rounded-xl">{actions.error_message}</div>
+                <div class="text-sm text-error p-2 mx-4 mb-4 border border-bg-2 rounded-xl">
+                    {actions.error_message}
+                </div>
             {/if}
             <div class="px-4 pb-4 w-full grow overflow-hidden">
                 <TableValueEditor column={target.column} bind:row={target.row} inlined={false} />
@@ -88,6 +93,9 @@
                 <button class="btn ghost" onclick={actions.copy_value}><CopyIcon --size="1rem" /> Value</button>
                 <button class="btn ghost" onclick={actions.copy_sql}><CopyIcon --size="1rem" /> SQL</button>
                 <button class="btn ghost" onclick={actions.edit_sql}><TerminalIcon --size="1rem" /> Edit</button>
+                <button class="btn ghost icon ms-auto" onclick={onswitch_mode} title="Switch to popover view"
+                    ><CollapseIcon --size="1rem" /></button
+                >
             </div>
         </div>
     </Dialog>
