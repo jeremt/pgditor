@@ -1,6 +1,7 @@
 <script lang="ts">
-    import {SvelteFlow, Background, BackgroundVariant, MiniMap, useNodes, useSvelteFlow} from "@xyflow/svelte";
+    import {SvelteFlow, Background, BackgroundVariant, MiniMap, useNodes, useSvelteFlow, type Node} from "@xyflow/svelte";
     import TableNode from "./TableNode.svelte";
+    import ForeignNode from "./ForeignNode.svelte";
 
     import "@xyflow/svelte/dist/style.css";
     import {get_graph_context} from "./graph_context.svelte";
@@ -16,6 +17,13 @@
 
     const nodeTypes = {
         table: TableNode,
+        foreign: ForeignNode,
+    };
+
+    const onnodeclick = ({node}: {node: Node}) => {
+        if (node.type === "foreign" && (node.data as {schema?: string})?.schema) {
+            graph.navigate_to_schema((node.data as {schema: string}).schema);
+        }
     };
 </script>
 
@@ -24,6 +32,7 @@
         bind:nodes={graph.nodes}
         bind:edges={graph.edges}
         {nodeTypes}
+        {onnodeclick}
         fitView
         nodesConnectable={false}
         minZoom={0.1}

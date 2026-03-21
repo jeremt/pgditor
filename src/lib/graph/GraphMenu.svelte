@@ -18,6 +18,16 @@
     };
 </script>
 
+<select
+    class="select text-sm"
+    bind:value={graph.current_schema}
+    onchange={() => graph.filter_by_schema()}
+>
+    {#each graph.schemas as schema}
+        <option value={schema}>{schema}</option>
+    {/each}
+</select>
+
 <button class="btn icon ghost" onclick={graph.apply_layout} title="Re-layout {commands.shortcut('Re-layout')}">
     <CleanBrushIcon --size="1.2rem" />
 </button>

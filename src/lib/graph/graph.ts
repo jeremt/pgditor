@@ -2,8 +2,8 @@ import dagre from "@dagrejs/dagre";
 import type {PgTableForGraph} from "$lib/table/pg_context.svelte";
 import {MarkerType, Position, type Edge, type Node} from "@xyflow/svelte";
 
-export const build_nodes = (tables: PgTableForGraph[]) =>
-    tables.map((table, index) => {
+export const build_nodes = (tables: PgTableForGraph[]) => {
+    const nodes: Node[] = tables.map((table, index) => {
         return {
             id: `${table.schema}.${table.name}`,
             position: {x: index * 300, y: 100},
@@ -16,6 +16,44 @@ export const build_nodes = (tables: PgTableForGraph[]) =>
             type: "table",
         };
     });
+
+    const foreign_handles = new Map<string, Set<string>>();
+    for (const table of tables) {
+        for (const col of table.columns) {
+            if (col.foreign_table_schema !== null && col.foreign_table_name !== null && col.foreign_column_name !== null) {
+                const fk_schema_id = `${col.foreign_table_schema}.${col.foreign_table_name}`;
+                if (!foreign_handles.has(fk_schema_id)) {
+                    foreign_handles.set(fk_schema_id, new Set());
+                }
+                foreign_handles.get(fk_schema_id)!.add(col.foreign_column_name);
+            }
+        }
+    }
+
+    const existing_node_ids = new Set(nodes.map((n) => n.id));
+    for (const [fk_id, columns] of foreign_handles) {
+        if (existing_node_ids.has(fk_id)) {
+            continue;
+        }
+        const [schema, name] = fk_id.split(".");
+        const label_parts = Array.from(columns).join(", ");
+        nodes.push({
+            id: fk_id,
+            position: {x: 0, y: 0},
+            data: {
+                label: `${schema}.${name} (${label_parts})`,
+                schema,
+                name,
+                type: "foreign" as const,
+                columns: [],
+                handles: Array.from(columns).map((col) => `${fk_id}.${col}`),
+            },
+            type: "foreign",
+        });
+    }
+
+    return nodes;
+};
 
 export const build_edges = (tables: PgTableForGraph[]) =>
     tables.flatMap((table) =>
@@ -50,8 +88,10 @@ export const build_edges = (tables: PgTableForGraph[]) =>
     );
 
 export const build_layout = (nodes: Node[], edges: Edge[], direction = "LR") => {
+    const visible_nodes = nodes.filter((n) => !n.hidden);
+
     // Sort nodes deterministically by ID to ensure consistent ordering
-    const sorted_nodes = [...nodes].sort((a, b) => a.id.localeCompare(b.id));
+    const sorted_nodes = [...visible_nodes].sort((a, b) => a.id.localeCompare(b.id));
 
     // First, find all connected components
     const components = find_connected_components(sorted_nodes, edges);

@@ -33,6 +33,7 @@ pub fn run() {
             commands::raw_query::raw_query,
             commands::show_main_window::show_main_window,
             commands::list_tables_for_graph::list_tables_for_graph,
+            commands::list_schemas::list_schemas,
             commands::generate_query::generate_query,
             commands::generate_chat_title::generate_chat_title,
             commands::create_new_window::create_new_window,

@@ -220,7 +220,7 @@ ${this.selected_rows_json
         this.is_loading = false;
     };
 
-    list_tables_for_graph = async () => {
+    list_tables_for_graph = async (schema?: string) => {
         if (!this.connections.current) {
             return new Error(`Couldn't connect to the database`);
         }
@@ -228,10 +228,20 @@ ${this.selected_rows_json
         this.is_loading = true;
 
         const unsortedTables = await catch_error(() =>
-            invoke<PgTableForGraph[]>("list_tables_for_graph", {connectionString}),
+            invoke<PgTableForGraph[]>("list_tables_for_graph", {connectionString, schema}),
         );
         this.is_loading = false;
         return unsortedTables;
+    };
+
+    list_schemas = async () => {
+        if (!this.connections.current) {
+            return new Error(`Couldn't connect to the database`);
+        }
+        const connectionString = this.connections.current.connectionString;
+
+        const schemas = await catch_error(() => invoke<string[]>("list_schemas", {connectionString}));
+        return schemas;
     };
 
     /**
