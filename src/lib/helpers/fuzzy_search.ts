@@ -2,11 +2,24 @@ const fuzzy_match_with_highlights = (pattern: string, str: string) => {
     const lower_pattern = pattern.toLowerCase();
     const lower_str = str.toLowerCase();
 
+    if (lower_str === lower_pattern) {
+        return {matched: true, score: 1000, indexes: Array.from({length: pattern.length}, (_, i) => i)};
+    }
+
+    let best_result: {matched: boolean; score: number; indexes: number[]} = {matched: false, score: 0, indexes: []};
+
+    const contiguous_idx = lower_str.indexOf(lower_pattern);
+    if (contiguous_idx !== -1) {
+        const indexes = Array.from({length: pattern.length}, (_, i) => contiguous_idx + i);
+        best_result = {matched: true, score: 400 - contiguous_idx, indexes};
+    }
+
     let pattern_idx = 0;
     let str_idx = 0;
     let score = 0;
     let consecutive = 0;
     let first_match = -1;
+    let max_consecutive = 0;
     const indexes: number[] = [];
 
     while (str_idx < lower_str.length) {
@@ -15,6 +28,7 @@ const fuzzy_match_with_highlights = (pattern: string, str: string) => {
 
             score += 10 + consecutive * 5;
             consecutive++;
+            max_consecutive = Math.max(max_consecutive, consecutive);
             indexes.push(str_idx);
             pattern_idx++;
         } else {
@@ -24,15 +38,19 @@ const fuzzy_match_with_highlights = (pattern: string, str: string) => {
     }
 
     if (pattern_idx !== lower_pattern.length) {
-        return {matched: false, score: 0, indexes: []};
+        return best_result.matched ? best_result : {matched: false, score: 0, indexes: []};
     }
 
     score -= first_match;
+    score += max_consecutive * 10;
 
     const length_penalty = (lower_str.length - lower_pattern.length) * 2;
     score -= length_penalty;
 
-    return {matched: true, score, indexes};
+    if (score > best_result.score) {
+        return {matched: true, score, indexes};
+    }
+    return best_result;
 };
 
 const merge_highlight_indexes = (indexes: number[]) => {

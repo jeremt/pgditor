@@ -44,11 +44,8 @@ suite("fuzzySearchWithHighlights", () => {
 
     test("ranges match correct substrings", () => {
         const results = fuzzy_search_with_highlights("rg", ["reorganize"]);
-        const [start1, end1] = results[0].ranges[0];
-        const [start2, end2] = results[0].ranges[1];
-        const str = results[0].item;
-        expect(str.slice(start1, end1)).toBe("r");
-        expect(str.slice(start2, end2)).toBe("g");
+        expect(results[0].item).toBe("reorganize");
+        expect(results[0].ranges).toStrictEqual([[3, 5]]);
     });
 
     test("empty pattern returns no results", () => {
@@ -137,6 +134,40 @@ suite("renderHighlightedMatch", () => {
         expect(results[0].item).toBe("tasks");
         expect(results[1].item).toBe("tasks_triggers");
 
+        expect(results[0].score).toBeGreaterThan(results[1].score);
+    });
+
+    test("exact match scores highest", () => {
+        const results = fuzzy_search_with_highlights("user", ["user", "user_profile", "user_posts"]);
+
+        expect(results.length).toBe(3);
+        expect(results[0].item).toBe("user");
+        expect(results[0].score).toBeGreaterThan(results[1].score);
+        expect(results[0].score).toBeGreaterThan(results[2].score);
+    });
+
+    test("contiguous substring match scores higher than scattered match", () => {
+        const results = fuzzy_search_with_highlights("user", [
+            "auth.custom_oauth_providers",
+            "user_custom_table",
+            "public.user_points_transactions",
+        ]);
+
+        expect(results.length).toBe(3);
+        expect(results[0].item).toBe("user_custom_table");
+        expect(results[1].item).toBe("public.user_points_transactions");
+        expect(results[2].item).toBe("auth.custom_oauth_providers");
+    });
+
+    test("prefix match scores higher", () => {
+        const results = fuzzy_search_with_highlights("user", [
+            "public.user_points_transactions",
+            "user_custom_table",
+        ]);
+
+        expect(results.length).toBe(2);
+        expect(results[0].item).toBe("user_custom_table");
+        expect(results[1].item).toBe("public.user_points_transactions");
         expect(results[0].score).toBeGreaterThan(results[1].score);
     });
 });
