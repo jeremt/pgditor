@@ -53,6 +53,33 @@
         await pg.load_tables(false);
         await pg.refresh_data();
     };
+
+    const escape_csv_value = (val: unknown) => {
+        const str = typeof val === "object" ? JSON.stringify(val) : val === null || val === undefined ? "" : String(val);
+        return str.includes(",") || str.includes('"') || str.includes("\n") ? `"${str.replace(/"/g, '""')}"` : str;
+    };
+
+    const rows_to_csv = (rows: PgRow[]) => {
+        const headers = pg.current_table!.columns.map((col) => col.column_name);
+        return headers.join(",") + "\n" + rows.map((row: PgRow) => headers.map((h) => escape_csv_value(row[h])).join(",")).join("\n");
+    };
+
+    const rows_to_sql = (rows: PgRow[]) => `INSERT INTO ${pg.fullname}
+(${pg.current_table!.columns.map((col) => col.column_name).join(",")})
+VALUES
+${rows.map((row: PgRow) => `(${pg.current_table!.columns.map((col) => value_to_sql(col, row[col.column_name])).join(",")})`).join(",\n")}
+;`;
+
+    const export_rows = async (rows: PgRow[], format: "json" | "csv" | "sql") => {
+        const content = format === "json" ? JSON.stringify(rows) : format === "csv" ? rows_to_csv(rows) : rows_to_sql(rows);
+        const success = await save_to_file(content, [format]);
+        if (success) {
+            toast(`Exported ${rows.length} rows to ${format.toUpperCase()}`, {kind: "success"});
+        } else {
+            toast(`Failed to export ${format.toUpperCase()}`, {kind: "error"});
+        }
+        commands.is_export_open = false;
+    };
 </script>
 
 <TableSelect />
@@ -98,6 +125,20 @@
                 style:right="-0.6rem">{pg.selected_rows.length > 100 ? "99+" : pg.selected_rows.length}</span
             >{/if}
     </ActionButton>
+    {#snippet export_section(label: string, get_rows: () => Promise<PgRow[]>)}
+        <span class="text-xs text-fg-2 px-2 py-1">{label}</span>
+        <div class="flex gap-1">
+            {#each ["json", "csv", "sql"] as format}
+                <button
+                    class="btn secondary flex-1"
+                    onclick={async () => {
+                        const rows = await get_rows();
+                        await export_rows(rows, format as "json" | "csv" | "sql");
+                    }}>{format.toUpperCase()}</button
+                >
+            {/each}
+        </div>
+    {/snippet}
     <Popover bind:is_open={commands.is_export_open} offset_y={10}>
         {#snippet target()}
             <button
@@ -110,54 +151,14 @@
                     >{/if}
             </button>
         {/snippet}
-        <div>
-            <button
-                class="btn ghost"
-                onclick={async () => {
-                    const rows = pg.selected_rows.length > 0 ? pg.selected_rows_json : await pg.get_all_rows();
-                    if (await save_to_file(JSON.stringify(rows), ["json"])) {
-                        toast(`Exported ${rows.length} rows to JSON`, {kind: "success"});
-                    } else {
-                        toast("Failed to export JSON", {kind: "error"});
-                    }
-                    commands.is_export_open = false;
-                }}>Export {pg.selected_rows.length > 0 ? `${pg.selected_rows.length} rows` : "all rows"} to JSON</button
-            >
-            <button
-                class="btn ghost"
-                onclick={async () => {
-                    const rows = pg.selected_rows.length > 0 ? pg.selected_rows_json : await pg.get_all_rows();
-                    const headers = pg.current_table!.columns.map((col) => col.column_name);
-                    const escape = (val: unknown) => {
-                        const str = typeof val === "object" ? JSON.stringify(val) : val === null || val === undefined ? "" : String(val);
-                        return str.includes(",") || str.includes('"') || str.includes("\n") ? `"${str.replace(/"/g, '""')}"` : str;
-                    };
-                    const csv = headers.join(",") + "\n" + rows.map((row: PgRow) => headers.map((h) => escape(row[h])).join(",")).join("\n");
-                    if (await save_to_file(csv, ["csv"])) {
-                        toast(`Exported ${rows.length} rows to CSV`, {kind: "success"});
-                    } else {
-                        toast("Failed to export CSV", {kind: "error"});
-                    }
-                    commands.is_export_open = false;
-                }}>Export {pg.selected_rows.length > 0 ? `${pg.selected_rows.length} rows` : "all rows"} to CSV</button
-            >
-            <button
-                class="btn ghost"
-                onclick={async () => {
-                    const rows = pg.selected_rows.length > 0 ? pg.selected_rows_json : await pg.get_all_rows();
-                    const sql = `INSERT INTO ${pg.fullname}
-(${pg.current_table!.columns.map((col) => col.column_name).join(",")})
-VALUES
-${rows.map((row: PgRow) => `(${pg.current_table!.columns.map((col) => value_to_sql(col, row[col.column_name])).join(",")})`).join(",\n")}
-;`;
-                    if (await save_to_file(sql, ["sql"])) {
-                        toast(`Exported ${rows.length} rows to SQL`, {kind: "success"});
-                    } else {
-                        toast("Failed to export SQL", {kind: "error"});
-                    }
-                    commands.is_export_open = false;
-                }}>Export {pg.selected_rows.length > 0 ? `${pg.selected_rows.length} rows` : "all rows"} to SQL</button
-            >
+        <div class="flex flex-col gap-1">
+            {@render export_section("All rows", pg.get_unfiltered_rows)}
+            {#if pg.selected_rows.length > 0}
+                {@render export_section(`${pg.selected_rows.length} selected`, async () => pg.selected_rows_json)}
+            {/if}
+            {#if pg.applied_filters > 0}
+                {@render export_section("Filtered rows", pg.get_all_rows)}
+            {/if}
         </div>
     </Popover>
     <button class="btn icon ghost" onclick={refresh} title="Refresh {commands.shortcut('Refresh data')}">

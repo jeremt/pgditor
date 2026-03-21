@@ -330,7 +330,35 @@ ${this.selected_rows_json
     };
 
     /**
-     * Get all rows for the currently selected table (no limit).
+     * Get all rows for the currently selected table (no limit, no filters).
+     */
+    get_unfiltered_rows = async () => {
+        if (!this.connections.current || !this.current_table) {
+            return [];
+        }
+        const connectionString = this.connections.current.connectionString;
+        const schema = this.current_table.schema;
+        const table = this.current_table.name;
+        const data = await catch_error(() =>
+            invoke<{rows: PgRow[]; count: number}>("get_table_data", {
+                connectionString,
+                schema,
+                table,
+                columns: "*",
+                whereClause: "",
+                offset: 0,
+                limit: undefined,
+                orderBy: "",
+            }),
+        );
+        if (data instanceof Error) {
+            return [];
+        }
+        return data.rows;
+    };
+
+    /**
+     * Get all rows for the currently selected table (no limit, with filters).
      */
     get_all_rows = async () => {
         if (!this.connections.current || !this.current_table) {
