@@ -1,6 +1,6 @@
 [package]
 name = "PGditor"
-version = "0.0.31"
+version = "0.0.32"
 description = "A simple, minimalistic, and fast editor to work with your Postgres databases."
 authors = ["jeremt"]
 edition = "2021"
