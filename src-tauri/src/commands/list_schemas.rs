@@ -24,7 +24,7 @@ pub async fn list_schemas(connection_string: String, hide_system_tables: bool) -
         SELECT nspname AS schema_name
         FROM pg_catalog.pg_namespace
         WHERE {}
-        ORDER BY nspname DESC;
+        ORDER BY (CASE WHEN nspname = 'public' THEN 0 ELSE 1 END), nspname ASC;
         "#,
         system_schemas_filter
     );

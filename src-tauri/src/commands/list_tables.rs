@@ -38,8 +38,9 @@ pub async fn list_tables(connection_string: String, hide_system_tables: bool) ->
         WHERE 
             {}
         ORDER BY 
-            t.table_schema DESC,
-            t.table_name DESC;",
+            (CASE WHEN t.table_schema = 'public' THEN 0 ELSE 1 END),
+            t.table_schema ASC,
+            t.table_name ASC;",
         system_schemas_filter
     );
 

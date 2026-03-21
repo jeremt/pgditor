@@ -215,7 +215,7 @@ ${this.selected_rows_json
                 timeout: 2000,
             });
         }
-        this.tables = unsortedTables.toSorted((table) => (table.schema === "public" ? -1 : 1));
+        this.tables = unsortedTables;
         if (autoUse && this.tables[0]) {
             const selectedTable = await this.connections.get_selected_table();
             const index = this.tables.findIndex((table) => `${table.schema}.${table.name}` === selectedTable);
