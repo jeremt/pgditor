@@ -5,7 +5,7 @@
     import CrossIcon from "$lib/icons/CrossIcon.svelte";
     import FunnelIcon from "$lib/icons/FunnelIcon.svelte";
     import PlusIcon from "$lib/icons/PlusIcon.svelte";
-    import MultilinesInput from "$lib/widgets/MultilinesInput.svelte";
+    import SqlTextarea from "$lib/widgets/SqlTextarea.svelte";
     import Popover from "$lib/widgets/Popover.svelte";
     import Select from "$lib/widgets/Select.svelte";
     import {
@@ -149,7 +149,7 @@
                 <p class="text-sx text-fg-1 text-center py-2">No filters applied, all rows will be listed.</p>
             {/each}
         {:else}
-            <MultilinesInput class="font-mono!" bind:value={where_sql} placeholder="WHERE id = ..." />
+            <SqlTextarea bind:value={where_sql} placeholder="where id = ..." />
         {/if}
     </div>
     <div class="flex">
