@@ -95,7 +95,7 @@ function createRelease(version) {
     const tag = `v${version}`;
 
     console.log("\nCommitting changes...");
-    exec("git add package.json src-tauri/Cargo.toml");
+    exec("git add package.json src-tauri/Cargo.toml src-tauri/Cargo.lock");
     exec(`git commit -m "release: ${tag}"`);
     console.log("✓ Changes committed");
 
