@@ -3,12 +3,14 @@
     import CleanBrushIcon from "$lib/icons/CleanBrushIcon.svelte";
     import FitViewIcon from "$lib/icons/FitViewIcon.svelte";
     import RefreshIcon from "$lib/icons/RefreshIcon.svelte";
+    import SchemaSelect from "./SchemaSelect.svelte";
     import {get_graph_context} from "./graph_context.svelte";
 
     const commands = get_commands_context();
     const graph = get_graph_context();
 
     let refreshing = $state(false);
+
     const refresh = async () => {
         refreshing = true;
         setTimeout(() => {
@@ -18,15 +20,11 @@
     };
 </script>
 
-<select
-    class="select text-sm"
-    bind:value={graph.current_schema}
-    onchange={() => graph.filter_by_schema()}
->
-    {#each graph.schemas as schema}
-        <option value={schema}>{schema}</option>
-    {/each}
-</select>
+<SchemaSelect
+    schemas={graph.schemas}
+    current_schema={graph.current_schema}
+    onselect={(schema) => graph.navigate_to_schema(schema)}
+/>
 
 <button class="btn icon ghost" onclick={graph.apply_layout} title="Re-layout {commands.shortcut('Re-layout')}">
     <CleanBrushIcon --size="1.2rem" />
