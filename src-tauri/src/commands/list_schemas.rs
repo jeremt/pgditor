@@ -12,7 +12,9 @@ pub async fn list_schemas(connection_string: String, hide_system_tables: bool) -
     });
 
     let system_schemas_filter = if hide_system_tables {
-        "nspname NOT IN ('pg_catalog', 'information_schema')"
+        "nspname NOT IN ('pg_catalog', 'information_schema')
+        AND nspname NOT LIKE 'pg_toast%'
+        AND nspname NOT LIKE 'pg_temp%'"
     } else {
         "true"
     };

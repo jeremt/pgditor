@@ -13,7 +13,9 @@ pub async fn list_tables(connection_string: String, hide_system_tables: bool) ->
     });
 
     let system_schemas_filter = if hide_system_tables {
-        "t.table_schema NOT IN ('pg_catalog', 'information_schema')"
+        "t.table_schema NOT IN ('pg_catalog', 'information_schema')
+        AND t.table_schema NOT LIKE 'pg_toast%'
+        AND t.table_schema NOT LIKE 'pg_temp%'"
     } else {
         "true"
     };
