@@ -5,7 +5,7 @@
         min_rows?: number;
     }
 
-    let {value = $bindable(), min_rows, rows, ...props}: Props = $props();
+    let {value = $bindable(), min_rows = 1, rows = 1, ...props}: Props = $props();
 
     let element: HTMLTextAreaElement;
     let shadowElement: HTMLTextAreaElement;
@@ -29,7 +29,7 @@
         const borderBlock = parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth);
 
         const height = Math.max(
-            rowHeight * (min_rows ?? 0) + paddingBlock + borderBlock,
+            rowHeight * min_rows + paddingBlock + borderBlock,
             element.scrollHeight + borderBlock + paddingBlock,
         );
         element.style.height = `${height}px`;

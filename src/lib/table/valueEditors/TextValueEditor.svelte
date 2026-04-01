@@ -13,10 +13,9 @@
 {#if inlined}
     <MultilinesInput
         id={column.column_name}
-        class="font-mono!"
+        class="font-mono! text-xs!"
         autocomplete="off"
         autocapitalize="off"
-        min_rows={1}
         bind:value
     />
 {:else}

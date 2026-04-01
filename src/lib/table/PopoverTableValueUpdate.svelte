@@ -47,10 +47,10 @@
                     {actions.error_message}
                 </div>
             {/if}
-            <div class="p-4 w-full grow overflow-hidden">
+            <div class="pt-2 px-2 w-full grow overflow-hidden">
                 <TableValueEditor column={target.column} bind:row={target.row} inlined={true} />
             </div>
-            <div class="flex px-4 pb-4 gap-2 items-center">
+            <div class="flex px-2 pb-2 gap-2 items-center">
                 <button class="btn ghost text-xs!" onclick={actions.copy_value}><CopyIcon --size="1rem" /> Value</button
                 >
                 <button class="btn ghost text-xs!" onclick={actions.copy_sql}><CopyIcon --size="1rem" /> SQL</button>
