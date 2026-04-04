@@ -168,10 +168,11 @@
             const uri = Monaco.Uri.parse(`inmemory://model/${file.path}`);
             let model = Monaco.editor.getModel(uri);
 
-            // Ensure the content we give to Monaco is a string. Monaco assumes
-            // model values are strings and will call `split` internally.
+            // Determine initial text: prefer external value prop, fallback to file.value
             let text: string;
-            if (file.value === undefined || file.value === null) {
+            if (file.path === selected_file && value !== undefined) {
+                text = typeof value === "string" ? value : JSON.stringify(value, null, 2);
+            } else if (file.value === undefined || file.value === null) {
                 text = "";
             } else if (typeof file.value === "string") {
                 text = file.value;
@@ -270,9 +271,9 @@
         }
     });
 
-    // load model when selected file changes
+    // update editor when selected file or value changes
     $effect(() => {
-        if (editor) {
+        if (editor && value !== undefined) {
             const uri = Monaco?.Uri.parse(`inmemory://model/${selected_file}`);
             const model = uri ? Monaco?.editor.getModel(uri) : undefined;
             if (model === undefined) {
@@ -280,21 +281,18 @@
             }
             editor.setModel(model as any);
 
-            // update editor if value is changed from outside
-            if (model !== undefined && value !== undefined) {
-                const newText = typeof value === "string" ? value : JSON.stringify(value, null, 2);
-                if (newText !== model?.getValue()) {
-                    model?.pushEditOperations(
-                        [],
-                        [
-                            {
-                                range: model.getFullModelRange(),
-                                text: newText,
-                            },
-                        ],
-                        () => [],
-                    );
-                }
+            const newText = typeof value === "string" ? value : JSON.stringify(value, null, 2);
+            if (newText !== model?.getValue()) {
+                model?.pushEditOperations(
+                    [],
+                    [
+                        {
+                            range: model.getFullModelRange(),
+                            text: newText,
+                        },
+                    ],
+                    () => [],
+                );
             }
         }
     });
