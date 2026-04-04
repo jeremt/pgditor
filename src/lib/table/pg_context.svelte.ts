@@ -199,7 +199,7 @@ ${this.selected_rows_json
         const connectionString = this.connections.current.connectionString;
         this.is_loading = true;
         const unsortedTables = await catch_error(() =>
-            invoke<PgTable[]>("list_tables", {connectionString, hideSystemTables: this.#settings.hide_system_tables}),
+            invoke<PgTable[]>("list_tables", {connectionString, hideSystemTables: this.#settings.hide_system_tables, hideViews: this.#settings.hide_views}),
         );
         if (unsortedTables instanceof Error) {
             console.error(unsortedTables.message);
@@ -236,6 +236,7 @@ ${this.selected_rows_json
                 connectionString,
                 schema,
                 hideSystemTables: this.#settings.hide_system_tables,
+                hideViews: this.#settings.hide_views,
             }),
         );
         this.is_loading = false;

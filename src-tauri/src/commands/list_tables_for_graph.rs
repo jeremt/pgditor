@@ -9,6 +9,7 @@ pub async fn list_tables_for_graph(
     connection_string: String,
     schema: Option<String>,
     hide_system_tables: bool,
+    hide_views: bool,
 ) -> Result<Vec<PgTableForGraph>, CommandError> {
     let (client, connection) = pg_connect(&connection_string).await?;
 
@@ -22,6 +23,12 @@ pub async fn list_tables_for_graph(
         "t.table_schema NOT IN ('pg_catalog', 'information_schema')
         AND t.table_schema NOT LIKE 'pg_toast%'
         AND t.table_schema NOT LIKE 'pg_temp%'"
+    } else {
+        "true"
+    };
+
+    let views_filter = if hide_views {
+        "t.table_type = 'BASE TABLE'"
     } else {
         "true"
     };
@@ -111,6 +118,7 @@ pub async fn list_tables_for_graph(
             AND fk.column_name = c.column_name
 
         WHERE {}
+        AND {}
         AND ($1::text IS NULL OR t.table_schema = $1)
 
         ORDER BY
@@ -118,7 +126,8 @@ pub async fn list_tables_for_graph(
             t.table_name,
             c.ordinal_position;
         "#,
-        system_schemas_filter
+        system_schemas_filter,
+        views_filter
     );
 
     let rows = client.query(&query, &[&schema]).await.map_err(CommandError::from)?;

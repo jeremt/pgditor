@@ -8,6 +8,7 @@ class SettingsContext extends StoreContext {
     #color_scheme = $state<"light" | "dark">("dark");
     #match_light_color_scheme = matchMedia("(prefers-color-scheme: light)");
     #hide_system_tables = $state(true);
+    #hide_views = $state(true);
 
     #toast_context = get_toast_context();
 
@@ -21,6 +22,7 @@ class SettingsContext extends StoreContext {
                 document.documentElement.setAttribute("color-scheme", this.#color_scheme);
                 this.#hide_system_tables =
                     (await this.get_from_store<boolean>("hideSystemTables")) ?? true;
+                this.#hide_views = (await this.get_from_store<boolean>("hideViews")) ?? true;
             }
         })();
         this.#match_light_color_scheme.addEventListener("change", ({matches}) => {
@@ -71,6 +73,28 @@ class SettingsContext extends StoreContext {
 
     toggle_hide_system_tables = () => {
         this.hide_system_tables = !this.hide_system_tables;
+    };
+
+    get hide_views() {
+        return this.#hide_views;
+    }
+
+    set hide_views(newValue: boolean) {
+        this.#hide_views = newValue;
+        (async () => {
+            const setError = await catch_error(() => this.set_to_store("hideViews", this.#hide_views));
+            if (setError instanceof Error) {
+                this.#toast_context.toast("Failed to save hide views setting", {kind: "error"});
+            }
+            const saveError = await catch_error(() => this.save_store());
+            if (saveError instanceof Error) {
+                this.#toast_context.toast("Failed to save hide views setting", {kind: "error"});
+            }
+        })();
+    }
+
+    toggle_hide_views = () => {
+        this.hide_views = !this.hide_views;
     };
 }
 

@@ -175,7 +175,7 @@ const make_commands = (ctx: CommandsContext) =>
         },
         {
             mode: undefined,
-            title: "Toggle between Light/Dark ColorScheme",
+            title: `Use ${ctx.settings.color_scheme === "light" ? "dark" : "light"} ui theme`,
             shortcut: undefined,
             description: "Override the default system color scheme.",
             action: () => {
@@ -184,11 +184,21 @@ const make_commands = (ctx: CommandsContext) =>
         },
         {
             mode: undefined,
-            title: "Toggle Hide System Tables",
+            title: `${ctx.settings.hide_system_tables ? "Show" : "Hide"} system tables`,
             shortcut: undefined,
-            description: "Show or hide system tables (pg_catalog, information_schema).",
+            description: "Whether system tables (pg_catalog, information_schema) appear when listing tables.",
             action: () => {
                 ctx.settings.toggle_hide_system_tables();
+                ctx.pg.load_tables();
+            },
+        },
+        {
+            mode: undefined,
+            title: `${ctx.settings.hide_views ? "Show" : "Hide"} views`,
+            shortcut: undefined,
+            description: `Whether views appear when listing tables.`,
+            action: () => {
+                ctx.settings.toggle_hide_views();
                 ctx.pg.load_tables();
             },
         },

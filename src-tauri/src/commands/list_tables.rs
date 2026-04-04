@@ -3,7 +3,7 @@ use crate::pg::models::PgTable;
 use crate::pg::pg_connect::pg_connect;
 
 #[tauri::command]
-pub async fn list_tables(connection_string: String, hide_system_tables: bool) -> Result<Vec<PgTable>, CommandError> {
+pub async fn list_tables(connection_string: String, hide_system_tables: bool, hide_views: bool) -> Result<Vec<PgTable>, CommandError> {
     let (client, connection) = pg_connect(&connection_string).await?;
 
     tokio::spawn(async move {
@@ -16,6 +16,12 @@ pub async fn list_tables(connection_string: String, hide_system_tables: bool) ->
         "t.table_schema NOT IN ('pg_catalog', 'information_schema')
         AND t.table_schema NOT LIKE 'pg_toast%'
         AND t.table_schema NOT LIKE 'pg_temp%'"
+    } else {
+        "true"
+    };
+
+    let views_filter = if hide_views {
+        "t.table_type = 'BASE TABLE'"
     } else {
         "true"
     };
@@ -37,11 +43,13 @@ pub async fn list_tables(connection_string: String, hide_system_tables: bool) ->
             information_schema.tables t
         WHERE 
             {}
+            AND {}
         ORDER BY 
             (CASE WHEN t.table_schema = 'public' THEN 0 ELSE 1 END),
             t.table_schema ASC,
             t.table_name ASC;",
-        system_schemas_filter
+        system_schemas_filter,
+        views_filter
     );
 
     let rows = client.query(&query, &[]).await.map_err(CommandError::from)?;
