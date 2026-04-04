@@ -38,7 +38,7 @@
         class="btn ghost icon"
         title="Visualize tables {commands.shortcut('Open tables mode')}"
         disabled={commands.mode === "tables"}
-        onclick={() => (commands.mode = "tables")}
+        onclick={() => commands.execute("Open tables mode")}
     >
         <TablesIcon --size="1.2rem" />
     </button>
@@ -46,7 +46,7 @@
         class="btn ghost icon"
         title="Run raw sql queries {commands.shortcut('Open script mode')}"
         disabled={commands.mode === "script"}
-        onclick={() => (commands.mode = "script")}
+        onclick={() => commands.execute("Open script mode")}
     >
         <TerminalIcon --size="1.2rem" />
     </button>
@@ -54,7 +54,7 @@
         class="btn ghost icon"
         title="Visualize your db as a graph {commands.shortcut('Open graph mode')}"
         disabled={commands.mode === "graph"}
-        onclick={() => (commands.mode = "graph")}
+        onclick={() => commands.execute("Open graph mode")}
     >
         <GraphIcon --size="1.1rem" />
     </button>

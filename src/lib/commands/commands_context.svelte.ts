@@ -78,7 +78,6 @@ const make_commands = (ctx: CommandsContext) =>
             shortcut: `${ctx.cmd_or_ctrl} R`,
             description: "Refresh the data of the currently selected table",
             action: () => {
-                console.log("IN");
                 if (ctx.mode === "graph") {
                     ctx.graph.load_db();
                 } else {
