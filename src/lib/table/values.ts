@@ -158,7 +158,11 @@ export const value_to_sql = (column: Pick<PgColumn, "data_type">, value: any): s
     }
 
     // String types (need quoting and escaping)
-    if (["character", "character_varying", "text", "uuid", "xml", "tsquery"].includes(type)) {
+    if (type === "uuid") {
+        const escaped = String(value).replace(/'/g, "''");
+        return `'${escaped}'::uuid`;
+    }
+    if (["character", "character_varying", "text", "xml", "tsquery"].includes(type)) {
         const escaped = String(value).replace(/'/g, "''");
         return `'${escaped}'`;
     }
