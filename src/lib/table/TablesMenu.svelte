@@ -45,9 +45,9 @@
             pg.selected_rows.length > 0 &&
             pg.current_table?.type === "BASE TABLE"
         ) {
-            pg.delete_selection();
+            await pg.delete_selection();
         } else {
-            pg.truncate_table();
+            await pg.truncate_table();
         }
     };
 

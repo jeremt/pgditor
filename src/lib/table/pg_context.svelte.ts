@@ -503,7 +503,11 @@ ${this.selected_rows_json
 where ${pk.column_name} = any(array[${this.selected_rows
             .map((index) => value_to_sql(pk, this.current_table!.rows[index][pk.column_name]))
             .join(", ")}]);`;
-        await this.raw_query(query);
+        const result = await catch_error(() => this.raw_query(query));
+        if (result instanceof Error) {
+            this.#toast_context.toast(`Failed to delete rows: ${result.message}`, {kind: "error", details: query});
+            return;
+        }
         this.selected_rows = [];
         this.reset_filters();
     };
