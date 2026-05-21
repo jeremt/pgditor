@@ -20,9 +20,9 @@ if (!/^\d+\.\d+\.\d+$/.test(newVersion)) {
     process.exit(1);
 }
 
-function exec(command) {
+function exec(command, options = {}) {
     try {
-        return execSync(command, {encoding: "utf8"}).trim();
+        return execSync(command, {...options, encoding: "utf8"}).trim();
     } catch (error) {
         throw new Error(`Command failed: ${command}\n${error.message}`);
     }
@@ -89,6 +89,10 @@ function updateVersionFiles(version) {
     cargoToml = cargoToml.replace(/^version = "[\d.]+"$/m, `version = "${version}"`);
     fs.writeFileSync(cargoTomlPath, cargoToml);
     console.log(`✓ Cargo.toml version updated to ${version}`);
+
+    // Regenerate Cargo.lock to stay in sync with updated Cargo.toml
+    exec("cargo generate-lockfile", {cwd: path.join(process.cwd(), "src-tauri")});
+    console.log("✓ Cargo.lock regenerated");
 }
 
 function createRelease(version) {
