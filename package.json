@@ -1,5 +1,6 @@
 {
   "name": "pgditor",
+  "private": true,
   "version": "0.1.1",
   "description": "A simple, minimalistic, and fast editor to work with your Postgres databases.",
   "type": "module",
