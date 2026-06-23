@@ -12,10 +12,10 @@
     const pg = get_pg_context();
     const commands = get_commands_context();
 
-    let searchText = $state("");
-    let searchResult = $derived(
+    let search_text = $state("");
+    let search_result = $derived(
         fuzzy_search_with_highlights(
-            searchText,
+            search_text,
             pg.tables.map((item) => `${item.schema}.${item.name}`),
         ).map(({item, ranges}) => ({text: item, html: render_highlighted_match(item, ranges)})),
     );
@@ -35,23 +35,23 @@
     const handleKeys = (event: KeyboardEvent) => {
         if (event.key === "Enter") {
             const table =
-                searchText === ""
+                search_text === ""
                     ? pg.tables[selectedIndex]
-                    : pg.tables.find((table) => `${table.schema}.${table.name}` === searchResult[selectedIndex].text);
+                    : pg.tables.find((table) => `${table.schema}.${table.name}` === search_result[selectedIndex].text);
             if (table) {
                 pg.select_table(table);
-                searchText = "";
+                search_text = "";
                 commands.is_tables_open = false;
             }
         } else if (event.key === "ArrowUp") {
             selectedIndex =
                 selectedIndex === 0
-                    ? (searchText === "" ? pg.tables.length : searchResult.length) - 1
+                    ? (search_text === "" ? pg.tables.length : search_result.length) - 1
                     : selectedIndex - 1;
             event.preventDefault();
         } else if (
             event.key === "ArrowDown" &&
-            selectedIndex + 1 < (searchText === "" ? pg.tables.length : searchResult.length)
+            selectedIndex + 1 < (search_text === "" ? pg.tables.length : search_result.length)
         ) {
             selectedIndex += 1;
             event.preventDefault();
@@ -86,13 +86,13 @@
     <div class="flex flex-col gap-2 w-2xl overflow-hidden">
         <input
             type="text"
-            bind:value={searchText}
+            bind:value={search_text}
             onkeydown={handleKeys}
             autocorrect="off"
             placeholder="Filter tables by name and schema"
         />
         <div class="flex flex-col gap-2 overflow-auto h-80 py-2">
-            {#if searchText === ""}
+            {#if search_text === ""}
                 {#each pg.tables as table, i}
                     <button
                         bind:this={buttonRefs[i]}
@@ -118,7 +118,7 @@
                     </button>
                 {/each}
             {:else}
-                {#each searchResult as { text, html }, i}
+                {#each search_result as { text, html }, i}
                     {@const table = pg.tables.find((table) => `${table.schema}.${table.name}` === text)}
                     {#if table}
                         <button
@@ -128,7 +128,7 @@
                             onclick={() => {
                                 if (table) {
                                     pg.select_table(table);
-                                    searchText = "";
+                                    search_text = "";
                                     commands.is_tables_open = false;
                                 }
                             }}
