@@ -79,6 +79,9 @@
             bind:value={search}
             onkeydown={handle_keys}
             autocorrect="off"
+            autocomplete="off"
+            autocapitalize="off"
+            spellcheck="false"
             placeholder="Search schemas"
         />
         <div class="flex flex-col gap-1 overflow-auto max-h-60 py-1">

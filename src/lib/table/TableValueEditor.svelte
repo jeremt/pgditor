@@ -40,6 +40,7 @@
             autocorrect="off"
             autocomplete="off"
             autocapitalize="off"
+            spellcheck="false"
             disabled={true}
             placeholder={(row[column.column_name] as string) ?? "generated"}
         />
@@ -100,6 +101,7 @@
         autocorrect="off"
         autocomplete="off"
         autocapitalize="off"
+        spellcheck="false"
         disabled={true}
         placeholder="generated"
     />

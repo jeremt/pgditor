@@ -131,6 +131,7 @@
                             autocorrect="off"
                             autocapitalize="off"
                             autocomplete="off"
+                            spellcheck="false"
                             bind:value={() => filters[i].value, (newValue) => (filters[i].value = newValue)}
                             placeholder={get_placeholder_by_operator(filter.operator)}
                         />

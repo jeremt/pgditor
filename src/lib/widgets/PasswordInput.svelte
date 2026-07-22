@@ -44,7 +44,14 @@
 {/snippet}
 
 <div>
-    <input type={show ? "text" : "password"} bind:value {...props} />
+    <input
+        type={show ? "text" : "password"}
+        bind:value
+        autocomplete="off"
+        autocapitalize="off"
+        spellcheck="false"
+        {...props}
+    />
     <button aria-label="Afficher ou masquer mot de passe" type="button" onclick={toggleShow}>
         {#if show}
             {@render eye()}

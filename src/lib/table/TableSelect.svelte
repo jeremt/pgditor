@@ -89,6 +89,9 @@
             bind:value={search_text}
             onkeydown={handleKeys}
             autocorrect="off"
+            autocomplete="off"
+            autocapitalize="off"
+            spellcheck="false"
             placeholder="Filter tables by name and schema"
         />
         <div class="flex flex-col gap-2 overflow-auto h-80 py-2">

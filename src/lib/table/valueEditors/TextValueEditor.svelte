@@ -16,6 +16,7 @@
         class="font-mono! text-xs!"
         autocomplete="off"
         autocapitalize="off"
+        spellcheck="false"
         bind:value
     />
 {:else}
@@ -24,6 +25,7 @@
         class="font-mono! w-full h-full! py-2"
         autocomplete="off"
         autocapitalize="off"
+        spellcheck="false"
         bind:value
     ></textarea>
 {/if}

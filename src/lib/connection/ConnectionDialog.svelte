@@ -40,6 +40,9 @@
         bind:value={connection.name}
         placeholder="My connection"
         autocorrect="off"
+        autocomplete="off"
+        autocapitalize="off"
+        spellcheck="false"
     />
     <label class="text-sm" for="{connection.name}-connectionString">Connection string</label>
     <PasswordInput

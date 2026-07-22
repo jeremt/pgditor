@@ -41,6 +41,8 @@
         bind:value
         {placeholder}
         class="code-textarea"
+        autocomplete="off"
+        autocapitalize="off"
         spellcheck="false"
         onscroll={sync_scroll}
     ></textarea>

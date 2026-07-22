@@ -106,7 +106,16 @@
 
 <svelte:window onresize={resize} />
 <textarea bind:this={shadowElement} rows="1" aria-hidden="true" tabindex="-1"></textarea>
-<textarea bind:this={element} bind:value oninput={handleInput} rows={min_rows ?? rows} {...props}></textarea>
+<textarea
+    bind:this={element}
+    bind:value
+    oninput={handleInput}
+    rows={min_rows ?? rows}
+    autocomplete="off"
+    autocapitalize="off"
+    spellcheck="false"
+    {...props}
+></textarea>
 
 <style>
     textarea {

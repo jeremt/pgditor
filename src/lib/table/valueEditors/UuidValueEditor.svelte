@@ -17,6 +17,7 @@
         class="font-mono! grow"
         autocomplete="off"
         autocapitalize="off"
+        spellcheck="false"
         bind:value
     />
     <button class="btn secondary" onclick={() => (value = crypto.randomUUID())}><RefreshIcon --size="1rem" /></button>

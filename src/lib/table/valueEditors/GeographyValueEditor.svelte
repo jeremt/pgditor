@@ -95,6 +95,7 @@
             class="font-mono! w-full py-2"
             autocomplete="off"
             autocapitalize="off"
+            spellcheck="false"
             bind:value={value_to_text.value}
         />
         <div class="w-full grow">

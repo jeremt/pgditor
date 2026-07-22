@@ -116,6 +116,9 @@
                 <input
                     type="text"
                     autocorrect="off"
+                    autocomplete="off"
+                    autocapitalize="off"
+                    spellcheck="false"
                     bind:value={query_generator.chat_filter}
                     placeholder="Search chats…"
                     class="grow search-input"

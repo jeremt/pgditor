@@ -80,6 +80,9 @@
             bind:value={search_text}
             onkeydown={handle_keys}
             autocorrect="off"
+            autocomplete="off"
+            autocapitalize="off"
+            spellcheck="false"
             {placeholder}
         />
         {@render render_action?.()}

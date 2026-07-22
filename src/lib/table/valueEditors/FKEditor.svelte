@@ -59,6 +59,7 @@
                 bind:value
                 autocomplete="off"
                 autocapitalize="off"
+                spellcheck="false"
             />
             <div class="flex gap-2 items-center pt-2 grow">
                 {#if data}
@@ -160,6 +161,7 @@
             bind:value
             autocomplete="off"
             autocapitalize="off"
+            spellcheck="false"
         />
         <button class="btn secondary" onclick={() => (isDialogOpen = true)}><SearchIcon --size="1rem" /></button>
     </div>

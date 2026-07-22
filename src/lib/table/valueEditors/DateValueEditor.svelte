@@ -146,6 +146,7 @@
             class="font-mono! w-full py-2"
             autocomplete="off"
             autocapitalize="off"
+            spellcheck="false"
             bind:value
         />
         {#if !is_valid}
@@ -231,6 +232,7 @@
             class="font-mono! grow py-2"
             autocomplete="off"
             autocapitalize="off"
+            spellcheck="false"
             bind:value
         />
         <button class="btn secondary" onclick={() => (is_dialog_open = true)}><CalendarIcon --size="1rem" /></button>
