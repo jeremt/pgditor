@@ -26,7 +26,12 @@
     --font-mono: "Space Mono", monospace;
 }
 
+[color-scheme="dark"] {
+    color-scheme: dark;
+}
+
 [color-scheme="light"] {
+    color-scheme: light;
     --color-fg: #262521;
     --color-fg-1: #5f5b49;
     --color-fg-2: #21212088;
