@@ -10,6 +10,7 @@
     import {anchor_to_target} from "$lib/helpers/anchor_to_target.svelte";
     import {create_table_value_actions} from "./table_value_actions.svelte";
     import ExpandIcon from "$lib/icons/ExpandIcon.svelte";
+    import RefreshIcon from "$lib/icons/RefreshIcon.svelte";
 
     type Props = {
         target: {element: HTMLElement; row: PgRow; column: PgColumn} | undefined;
@@ -77,6 +78,14 @@
                             />
                         </label>
                     {/if}
+                    <button
+                        class="btn ghost icon"
+                        title="Refresh this value from the database (discards your changes)"
+                        aria-label="Refresh value"
+                        onclick={actions.refresh_value}
+                    >
+                        <RefreshIcon --size="1.2rem" spinning={actions.refreshing} />
+                    </button>
                     <ActionButton
                         class="btn icon"
                         disabled={target.column.is_primary_key === "YES"}

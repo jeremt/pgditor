@@ -13,6 +13,7 @@
     import {default_values} from "./values";
     import {create_table_value_actions} from "./table_value_actions.svelte";
     import CollapseIcon from "$lib/icons/CollapseIcon.svelte";
+    import RefreshIcon from "$lib/icons/RefreshIcon.svelte";
 
     type Props = {
         target: {element: HTMLElement; row: PgRow; column: PgColumn} | undefined;
@@ -73,6 +74,14 @@
                                 />
                             </label>
                         {/if}
+                        <button
+                            class="btn ghost icon"
+                            title="Refresh this value from the database (discards your changes)"
+                            aria-label="Refresh value"
+                            onclick={actions.refresh_value}
+                        >
+                            <RefreshIcon --size="1.2rem" spinning={actions.refreshing} />
+                        </button>
                         <ActionButton
                             class="btn "
                             disabled={target.column.is_primary_key === "YES"}

@@ -16,6 +16,7 @@ export const create_table_value_actions = (
     const {toast} = get_toast_context();
 
     let error_message = $state("");
+    let refreshing = $state(false);
 
     $effect(() => {
         if (target()) {
@@ -39,6 +40,24 @@ export const create_table_value_actions = (
             error_message = error.message;
         } else {
             close();
+        }
+    };
+
+    /**
+     * Re-run the query for this cell only, dropping the changes that have not been applied yet.
+     */
+    const refresh_value = async () => {
+        const t = target();
+        if (t === undefined) {
+            return;
+        }
+        refreshing = true;
+        setTimeout(() => {
+            refreshing = false;
+        }, 500);
+        const value = await pg.get_row_value(t.row, t.column);
+        if (value !== undefined) {
+            t.row[t.column.column_name] = value;
         }
     };
 
@@ -88,7 +107,11 @@ export const create_table_value_actions = (
         get error_message() {
             return error_message;
         },
+        get refreshing() {
+            return refreshing;
+        },
         update_value,
+        refresh_value,
         copy_value,
         copy_sql,
         edit_sql,

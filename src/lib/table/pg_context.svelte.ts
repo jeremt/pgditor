@@ -443,6 +443,35 @@ ${this.selected_rows_json
     };
 
     /**
+     * Re-run a select to get the up to date value of a single cell from the database.
+     *
+     * Returns `undefined` when the value cannot be fetched (no primary key, deleted row or sql error).
+     * @param row The row containing the cell, it must contain the primary key value.
+     * @param column The column of the cell to fetch.
+     */
+    get_row_value = async (row: PgRow, column: PgColumn) => {
+        if (!this.current_table) {
+            return;
+        }
+        const primary_key = this.get_primary_key();
+        if (!primary_key) {
+            return;
+        }
+        const where = `where ${primary_key.column_name} = ${value_to_sql(primary_key, row[primary_key.column_name])}`;
+        const data = await this.get_table_data(this.current_table, where, 0, 1);
+        if (data instanceof Error) {
+            console.error(data.message);
+            this.#toast_context.toast(`SQL error: ${data.message}`, {kind: "error"});
+            return;
+        }
+        if (data === undefined || data.rows.length === 0) {
+            this.#toast_context.toast(`This row doesn't exist anymore.`, {kind: "error"});
+            return;
+        }
+        return data.rows[0][column.column_name];
+    };
+
+    /**
      * Run the given raw sql query and call `refresh()` to update the displayed rows.
      * @param sql The raw query string to run.
      * @param throwError Throws an error by default, set to `false` if you want a toast like other helpers.
