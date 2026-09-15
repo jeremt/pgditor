@@ -41,10 +41,13 @@
             <EyeIcon --size="1.2rem" />
         {/if}
         <strong class="text-lg">{data.label}</strong>
-        <span class="font-mono text-sm bg-bg-1 py-0.5 px-2 rounded-md ms-auto">
+        <span class="font-mono text-sm bg-bg-1 py-0.5 px-2 rounded-md ms-auto" data-export-push-end>
             {data.schema}
         </span>
-        <button class="btn ghost icon" onclick={() => selectTable({schema: data.schema, name: data.label})}
+        <button
+            class="btn ghost icon"
+            data-export-hidden
+            onclick={() => selectTable({schema: data.schema, name: data.label})}
             ><ArrowIcon direction="right" /></button
         >
     </div>

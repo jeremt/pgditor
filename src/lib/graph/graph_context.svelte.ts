@@ -1,14 +1,19 @@
+import {catch_error} from "@les3dev/catch_error";
 import {get_pg_context, type PgTableForGraph} from "$lib/table/pg_context.svelte";
 import {type Node, type Edge, useNodesInitialized} from "@xyflow/svelte";
 import {getContext, setContext} from "svelte";
 import {build_edges, build_layout, build_nodes} from "./graph";
+import {render_graph_png} from "./export_image";
 import {get_toast_context} from "$lib/widgets/Toaster.svelte";
+import {save_to_file} from "$lib/helpers/save_to_file";
 
 class GraphContext {
     nodes = $state.raw<Node[]>([]);
     edges = $state.raw<Edge[]>([]);
     error_message = $state("");
     current_schema = $state("");
+    container = $state.raw<HTMLElement>();
+    exporting = $state(false);
 
     fit_view = () => {};
 
@@ -74,6 +79,27 @@ class GraphContext {
         }
         this.nodes = new_nodes;
         this.fit_view();
+    };
+
+    export_png = async () => {
+        const viewport = this.container?.querySelector<HTMLElement>(".svelte-flow__viewport");
+        if (!viewport || this.nodes.length === 0 || this.exporting) {
+            return;
+        }
+        this.exporting = true;
+        const background_color = getComputedStyle(document.body).backgroundColor;
+        const png = await catch_error(() => render_graph_png(viewport, this.nodes, background_color));
+        this.exporting = false;
+        if (png instanceof Error) {
+            this.#toast.toast(`Failed to render the graph: ${png.message}`, {kind: "error"});
+            return;
+        }
+        const saved = await catch_error(() => save_to_file(png, ["png"], `${this.current_schema}.png`));
+        if (saved instanceof Error) {
+            this.#toast.toast(`Failed to save the image: ${saved.message}`, {kind: "error"});
+        } else if (saved) {
+            this.#toast.toast(`Graph exported to PNG`, {kind: "success"});
+        }
     };
 }
 

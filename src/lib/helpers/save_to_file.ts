@@ -1,14 +1,19 @@
 import {save} from "@tauri-apps/plugin-dialog";
-import {writeTextFile} from "@tauri-apps/plugin-fs";
+import {writeFile, writeTextFile} from "@tauri-apps/plugin-fs";
 
-export const save_to_file = async (data: string, extensions: string[]) => {
+export const save_to_file = async (data: string | Uint8Array, extensions: string[], default_path?: string) => {
     const path = await save({
         title: "Export file",
+        defaultPath: default_path,
         filters: [{name: extensions.join(","), extensions}],
     });
     if (!path) {
         return false;
     }
-    await writeTextFile(path, data);
+    if (typeof data === "string") {
+        await writeTextFile(path, data);
+    } else {
+        await writeFile(path, data);
+    }
     return true;
 };

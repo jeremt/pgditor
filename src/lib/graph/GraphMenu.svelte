@@ -1,6 +1,7 @@
 <script lang="ts">
     import {get_commands_context} from "$lib/commands/commands_context.svelte";
     import CleanBrushIcon from "$lib/icons/CleanBrushIcon.svelte";
+    import DownloadIcon from "$lib/icons/DownloadIcon.svelte";
     import FitViewIcon from "$lib/icons/FitViewIcon.svelte";
     import RefreshIcon from "$lib/icons/RefreshIcon.svelte";
     import SchemaSelect from "./SchemaSelect.svelte";
@@ -32,6 +33,15 @@
 
 <button class="btn icon ghost" onclick={graph.fit_view} title="Fit View">
     <FitViewIcon --size="1.2rem" />
+</button>
+
+<button
+    class="btn icon ghost"
+    onclick={graph.export_png}
+    title="Export as PNG"
+    disabled={graph.exporting || graph.nodes.length === 0}
+>
+    <DownloadIcon --size="1.2rem" />
 </button>
 
 <button class="btn icon ghost" onclick={refresh} title="Refresh">

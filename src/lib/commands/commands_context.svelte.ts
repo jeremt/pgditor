@@ -173,6 +173,15 @@ const make_commands = (ctx: CommandsContext) =>
             },
         },
         {
+            mode: "graph",
+            title: "Export graph as PNG",
+            shortcut: undefined,
+            description: `Save the whole graph of the current schema as a PNG image.`,
+            action: () => {
+                ctx.graph.export_png();
+            },
+        },
+        {
             mode: undefined,
             title: `Use ${ctx.settings.color_scheme === "light" ? "dark" : "light"} ui theme`,
             shortcut: undefined,

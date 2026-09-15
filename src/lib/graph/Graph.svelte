@@ -27,7 +27,7 @@
     };
 </script>
 
-<div class="grow border-t border-t-bg-1">
+<div class="grow border-t border-t-bg-1" bind:this={graph.container}>
     <SvelteFlow
         bind:nodes={graph.nodes}
         bind:edges={graph.edges}
