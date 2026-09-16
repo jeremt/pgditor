@@ -3,6 +3,7 @@ import {get_pg_context, type PgTableForGraph} from "$lib/table/pg_context.svelte
 import {type Node, type Edge, useNodesInitialized} from "@xyflow/svelte";
 import {getContext, setContext} from "svelte";
 import {build_edges, build_layout, build_nodes} from "./graph";
+import {build_d2} from "./d2";
 import {render_graph_png} from "./export_image";
 import {get_toast_context} from "$lib/widgets/Toaster.svelte";
 import {save_to_file} from "$lib/helpers/save_to_file";
@@ -99,6 +100,19 @@ class GraphContext {
             this.#toast.toast(`Failed to save the image: ${saved.message}`, {kind: "error"});
         } else if (saved) {
             this.#toast.toast(`Graph exported to PNG`, {kind: "success"});
+        }
+    };
+
+    export_d2 = async () => {
+        if (this.#tables.length === 0) {
+            return;
+        }
+        const d2 = build_d2(this.#tables, this.current_schema);
+        const saved = await catch_error(() => save_to_file(d2, ["d2"], `${this.current_schema}.d2`));
+        if (saved instanceof Error) {
+            this.#toast.toast(`Failed to save the diagram: ${saved.message}`, {kind: "error"});
+        } else if (saved) {
+            this.#toast.toast(`Graph exported to D2`, {kind: "success"});
         }
     };
 }

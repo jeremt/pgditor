@@ -182,6 +182,15 @@ const make_commands = (ctx: CommandsContext) =>
             },
         },
         {
+            mode: "graph",
+            title: "Export graph as D2",
+            shortcut: undefined,
+            description: `Save the tables and relations of the current schema as a d2 diagram (d2lang.com).`,
+            action: () => {
+                ctx.graph.export_d2();
+            },
+        },
+        {
             mode: undefined,
             title: `Use ${ctx.settings.color_scheme === "light" ? "dark" : "light"} ui theme`,
             shortcut: undefined,
