@@ -8,20 +8,46 @@ import {get_connections_context} from "$lib/connection/connections_context.svelt
 const store_path = "ai.json";
 
 type GenerateQueryEvent =
-    | {type: "tool_call"; name: string; args: Record<string, string>}
+    | {type: "tool_call"; call_id: string; name: string; args: Record<string, string>}
     | {type: "tool_result"; name: string; result: string}
     | {type: "delta"; text: string}
+    | {type: "model"; model: string}
     | {type: "done"}
     | {type: "error"; message: string};
 
 type HistoryItem =
     | {type: "user"; text: string}
-    | {type: "tool_call"; name: string; args: Record<string, string>; result?: string}
-    | {type: "message"; is_query: boolean; text: string};
+    | {type: "tool_call"; call_id: string; name: string; args: Record<string, string>; result?: string}
+    | {type: "message"; is_query: boolean; text: string; resolved_model?: string};
 
-export const MODELS = ["gpt-5.4", "gpt-5-mini", "gpt-5-nano"] as const;
-type Model = (typeof MODELS)[number];
-type Reasoning = "low" | "medium" | "high";
+const DEFAULT_MODEL = "openrouter/free";
+
+export type OpenRouterModel = {id: string; name: string; context_length: number | null};
+
+/**
+ * Converts pgditor's internal chat history into OpenAI Chat Completions
+ * messages, so it can be resent to OpenRouter on every call — Chat
+ * Completions has no server-side conversation state.
+ */
+const to_chat_messages = (history: HistoryItem[]): Record<string, unknown>[] =>
+    history.flatMap((item): Record<string, unknown>[] => {
+        if (item.type === "user") return [{role: "user", content: item.text}];
+        if (item.type === "message") return [{role: "assistant", content: item.text}];
+        return [
+            {
+                role: "assistant",
+                content: null,
+                tool_calls: [
+                    {
+                        id: item.call_id,
+                        type: "function",
+                        function: {name: item.name, arguments: JSON.stringify(item.args)},
+                    },
+                ],
+            },
+            {role: "tool", tool_call_id: item.call_id, content: item.result ?? ""},
+        ];
+    });
 
 type Chat = {id: string; title: string; updated_at: string; history: HistoryItem[]};
 
@@ -30,8 +56,11 @@ class QueryGeneratorContext extends StoreContext {
     get api_key() {
         return this.#api_key;
     }
-    model = $state<Model>("gpt-5-mini");
-    reasoning = $state<Reasoning>();
+
+    model = $state<string>(DEFAULT_MODEL);
+
+    openrouter_models = $state<OpenRouterModel[]>([]);
+    is_loading_openrouter_models = $state(false);
 
     is_open = $state(false);
 
@@ -53,13 +82,12 @@ class QueryGeneratorContext extends StoreContext {
         return this.#chats[this.#current_chat_index];
     }
 
-    #last_response_id = $state<string | null>(null);
-
     error = $state<string | null>(null);
 
     #connections = get_connections_context();
 
     #unlisten: UnlistenFn | null = null;
+    #pending_resolved_model: string | undefined;
 
     constructor(store_path: string) {
         super(store_path);
@@ -67,27 +95,33 @@ class QueryGeneratorContext extends StoreContext {
     }
 
     load_store = async () => {
-        this.model = (await this.get_from_store<Model>(`model`)) ?? "gpt-5-mini";
-        this.reasoning = (await this.get_from_store<Reasoning>(`reasoning`)) ?? "low";
-        this.#api_key = await this.get_from_store<string>(`openai_api_key`);
+        this.model = (await this.get_from_store<string>(`model`)) ?? DEFAULT_MODEL;
+        this.#api_key = await this.get_from_store<string>(`openrouter_api_key`);
         this.#chats = (await this.get_from_store<Chat[]>(`chats`)) ?? [this.#create_chat()];
+        this.fetch_openrouter_models();
+    };
+
+    fetch_openrouter_models = async () => {
+        this.is_loading_openrouter_models = true;
+        const result = await catch_error(() => invoke<OpenRouterModel[]>("list_openrouter_models"));
+        if (!(result instanceof Error)) this.openrouter_models = result;
+        this.is_loading_openrouter_models = false;
     };
 
     save_model = async () => {
         await this.set_to_store(`model`, this.model);
-        await this.set_to_store(`reasoning`, this.reasoning);
         await this.save_store();
     };
 
     save_api_key = async (api_key: string) => {
         this.#api_key = api_key;
-        await this.set_to_store(`openai_api_key`, this.#api_key);
+        await this.set_to_store(`openrouter_api_key`, this.#api_key);
         await this.save_store();
     };
 
     reset_api_key = async () => {
         this.#api_key = undefined;
-        await this.set_to_store(`openai_api_key`, this.#api_key);
+        await this.set_to_store(`openrouter_api_key`, this.#api_key);
         await this.save_store();
     };
 
@@ -109,7 +143,6 @@ class QueryGeneratorContext extends StoreContext {
         if (index !== -1) {
             this.#current_chat_index = index;
         }
-        this.#last_response_id = null;
     };
 
     remove_current_chat = () => {
@@ -117,7 +150,6 @@ class QueryGeneratorContext extends StoreContext {
         if (this.#chats.length === 0) {
             this.#chats.unshift(this.#create_chat());
             this.error = null;
-            this.#last_response_id = null;
             // TODO: save to store
         }
     };
@@ -128,6 +160,8 @@ class QueryGeneratorContext extends StoreContext {
 
         const prompt = this.query_prompt;
         this.query_prompt = "";
+        // captured before pushing the new user turn — the backend appends `prompt` itself
+        const history_for_request = to_chat_messages(this.current_chat.history);
         this.current_chat.history.push({type: "user", text: prompt});
 
         const connectionString = this.#connections.current?.connectionString;
@@ -149,6 +183,9 @@ class QueryGeneratorContext extends StoreContext {
                     }
                     break;
                 }
+                case "model":
+                    this.#pending_resolved_model = payload.model;
+                    break;
                 case "delta": {
                     const last_item = this.current_chat.history[this.current_chat.history.length - 1];
                     if (last_item?.type === "message") {
@@ -159,7 +196,9 @@ class QueryGeneratorContext extends StoreContext {
                             type: "message",
                             is_query: payload.text.startsWith("SQL_QUERY: "),
                             text: payload.text,
+                            resolved_model: this.#pending_resolved_model,
                         });
+                        this.#pending_resolved_model = undefined;
                     }
                     break;
                 }
@@ -176,21 +215,18 @@ class QueryGeneratorContext extends StoreContext {
         });
 
         const result = await catch_error(() =>
-            invoke<string | null>("generate_query", {
+            invoke("generate_query", {
                 apiKey: this.#api_key,
                 connectionString,
                 model: this.model,
-                reasoning: this.reasoning,
                 prompt,
-                previousResponseId: this.#last_response_id,
+                history: history_for_request,
             }),
         );
         if (result instanceof Error) {
             this.error = result.message;
             this.is_generating = false;
             this.#unlisten?.();
-        } else {
-            this.#last_response_id = result ?? null;
         }
         if (this.current_chat.title === "New chat") {
             const result = await catch_error(() =>

@@ -36,6 +36,7 @@ pub fn run() {
             commands::list_schemas::list_schemas,
             commands::generate_query::generate_query,
             commands::generate_chat_title::generate_chat_title,
+            commands::list_openrouter_models::list_openrouter_models,
             commands::create_new_window::create_new_window,
         ])
         .run(tauri::generate_context!())

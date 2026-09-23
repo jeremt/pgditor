@@ -10,9 +10,9 @@
     import MultilinesInput from "$lib/widgets/MultilinesInput.svelte";
     import PasswordInput from "$lib/widgets/PasswordInput.svelte";
     import ProgressCircle from "$lib/widgets/ProgressCircle.svelte";
-    import Select from "$lib/widgets/Select.svelte";
+    import ModelSelect from "./ModelSelect.svelte";
     import {writeText} from "@tauri-apps/plugin-clipboard-manager";
-    import {get_query_generator_context, MODELS} from "./query_generator_context.svelte";
+    import {get_query_generator_context} from "./query_generator_context.svelte";
     import {get_scripts_context} from "../scripts_context.svelte";
     import ToolCall from "../ToolCall.svelte";
     import {get_toast_context} from "$lib/widgets/Toaster.svelte";
@@ -34,10 +34,10 @@
         <div class="flex flex-col p-4 gap-4">
             <label class="flex flex-col gap-4">
                 <span class="text-xs text-fg-1">
-                    You must provide your OpenAI api key to generate queries (it only be saved locally on your computer
-                    and never shared)
+                    You must provide your OpenRouter api key to generate queries (it only be saved locally on your
+                    computer and never shared)
                 </span>
-                <PasswordInput placeholder="sk-proj-***" bind:value={api_key} />
+                <PasswordInput placeholder="sk-or-v1-***" bind:value={api_key} />
             </label>
             <button
                 class="btn self-start"
@@ -56,8 +56,8 @@
                 <div class="font-bold">AI Settings</div>
             </div>
             <label class="flex flex-col gap-4">
-                <span class="text-xs text-fg-1">Update your api key </span>
-                <PasswordInput placeholder="sk-proj-***" bind:value={api_key} />
+                <span class="text-xs text-fg-1">Update your OpenRouter api key</span>
+                <PasswordInput placeholder="sk-or-v1-***" bind:value={api_key} />
             </label>
             <div class="flex justify-between w-full">
                 <button
@@ -79,36 +79,8 @@
             </div>
             <label class="flex flex-col gap-4">
                 <span class="text-xs text-fg-1">Model</span>
-                <Select
-                    bind:value={query_generator.model}
-                    onchange={() => {
-                        query_generator.reasoning = query_generator.model.startsWith("gpt-5") ? "low" : undefined;
-                        query_generator.save_model();
-                    }}
-                >
-                    {#each MODELS as model (model)}
-                        <option>{model}</option>
-                    {/each}
-                </Select>
+                <ModelSelect />
             </label>
-
-            {#if query_generator.model.startsWith("gpt-5")}
-                <label class="flex flex-col gap-4">
-                    <span class="text-xs text-fg-1">Reasoning</span>
-                    <div class="flex gap-2">
-                        {#each ["low", "medium", "high"] as const as reasoning (reasoning)}
-                            <button
-                                aria-current={reasoning === query_generator.reasoning}
-                                class="btn ghost"
-                                onclick={() => {
-                                    query_generator.reasoning = reasoning;
-                                    query_generator.save_model();
-                                }}>{reasoning}</button
-                            >
-                        {/each}
-                    </div>
-                </label>
-            {/if}
         </div>
     {:else if mode === "chats"}
         <div class="flex flex-col w-full h-full">
@@ -184,6 +156,11 @@
                     {:else if item.type === "tool_call"}
                         <ToolCall name={item.name} args={item.args} result={item.result} />
                     {:else if item.type === "message"}
+                        {#if item.resolved_model}
+                            <div class="text-[0.65rem] text-fg-1 px-4 pt-2 flex items-center gap-1">
+                                <SparklesIcon --size="0.75rem" /> via {item.resolved_model}
+                            </div>
+                        {/if}
                         {#if item.is_query}
                             {@const sql_query = item.text.slice("SQL_QUERY: ".length).trim()}
                             <div class="flex flex-col gap-2 px-4">
@@ -249,10 +226,11 @@
                     }
                 }}
             />
-            <div class="flex gap-2 w-full">
+            <div class="flex gap-2 w-full items-center">
                 <button class="btn ghost icon" title="Settings" onclick={() => (mode = "settings")}
                     ><CogIcon --size="1.2rem" /></button
                 >
+                <ModelSelect class="text-xs! max-w-40" />
                 <button
                     class="btn ms-auto"
                     title="Trigger with ⌘ ⏎"

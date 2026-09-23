@@ -1,7 +1,7 @@
 use reqwest::Client;
 use serde_json::{json, Value};
 
-use crate::ai::stream::{AgentEvent, ReasoningEffort, stream_completion};
+use crate::ai::stream::{AgentEvent, stream_completion};
 
 const TITLE_SYSTEM_PROMPT: &str = r#"
 You generate short, descriptive chat titles.
@@ -41,11 +41,9 @@ pub async fn generate_chat_title(
     stream_completion(
         &http,
         &api_key,
-        "gpt-5-nano",
+        "openrouter/free",
         &input,
         &json!([]),
-        None,
-        Some(ReasoningEffort::Low),
         &mut |event| {
             if let AgentEvent::Delta { text } = event {
                 full_title.push_str(&text);

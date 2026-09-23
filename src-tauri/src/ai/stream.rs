@@ -1,4 +1,4 @@
-// stream.rs
+// stream.rs — OpenRouter (OpenAI Chat Completions-compatible) streaming client
 
 use futures::StreamExt;
 use reqwest::Client;
@@ -7,21 +7,11 @@ use serde_json::{json, Value};
 
 use super::tool_registry::ToolRegistry;
 
-// ── Reasoning effort ──────────────────────────────────────────────────────────
-
-#[derive(Serialize, Deserialize, Clone, Debug)]
-#[serde(rename_all = "lowercase")]
-pub enum ReasoningEffort {
-    Low,
-    Medium,
-    High,
-}
-
 // ── Events emitted to frontend ────────────────────────────────────────────────
 
 #[derive(Serialize, Clone)]
 #[serde(rename_all = "snake_case")]
-pub struct ToolCallPayload   { #[serde(rename = "type")] pub kind: &'static str, pub name: String, pub args: Value }
+pub struct ToolCallPayload   { #[serde(rename = "type")] pub kind: &'static str, pub call_id: String, pub name: String, pub args: Value }
 
 #[derive(Serialize, Clone)]
 #[serde(rename_all = "snake_case")]
@@ -45,44 +35,44 @@ pub struct ErrorPayload      { #[serde(rename = "type")] pub kind: &'static str,
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum AgentEvent {
     Delta       { text: String },
-    ToolCall    { name: String, args: Value },
+    Model       { model: String },
+    ToolCall    { call_id: String, name: String, args: Value },
     ToolResult  { name: String, result: String },
     Done,
     Error       { message: String },
 }
 
-// ── SSE deserialization types ─────────────────────────────────────────────────
+// ── SSE deserialization types — Chat Completions API ───────────────────────────
 
 #[derive(Deserialize, Debug, Default)]
-struct ResponsesEvent {
-    #[serde(rename = "type")]
-    #[allow(dead_code)] // its used from the frondend
-    kind:         String,
-    delta:        Option<String>,
-    item:         Option<ResponsesItem>,
-    output_index: Option<usize>,
-    response:     Option<ResponsesBody>,
-}
-
-#[derive(Deserialize, Debug, Default, Clone)]
-struct ResponsesItem {
-    #[serde(rename = "type")]
-    kind:    Option<String>,
-    call_id: Option<String>,
-    name:    Option<String>,
+struct ChatCompletionChunk {
+    #[serde(default)]
+    model: Option<String>,
+    #[serde(default)]
+    choices: Vec<ChatCompletionChoice>,
 }
 
 #[derive(Deserialize, Debug, Default)]
-struct ResponsesBody {
-    id:     Option<String>,
-    output: Option<Vec<ResponsesOutputItem>>,
+struct ChatCompletionChoice {
+    #[serde(default)]
+    delta: ChatCompletionDelta,
 }
 
-#[derive(Deserialize, Debug, Clone)]
-struct ResponsesOutputItem {
-    #[serde(rename = "type")]
-    kind:      String,
-    call_id:   Option<String>,
+#[derive(Deserialize, Debug, Default)]
+struct ChatCompletionDelta {
+    content:    Option<String>,
+    tool_calls: Option<Vec<ChatCompletionToolCallDelta>>,
+}
+
+#[derive(Deserialize, Debug, Default)]
+struct ChatCompletionToolCallDelta {
+    index:    usize,
+    id:       Option<String>,
+    function: Option<ChatCompletionFunctionDelta>,
+}
+
+#[derive(Deserialize, Debug, Default)]
+struct ChatCompletionFunctionDelta {
     name:      Option<String>,
     arguments: Option<String>,
 }
@@ -98,40 +88,49 @@ pub struct ToolCall {
 // ── Completion result ─────────────────────────────────────────────────────────
 
 pub struct CompletionResult {
-    pub response_id: Option<String>,
-    pub tool_calls:  Option<Vec<ToolCall>>,
+    pub tool_calls: Option<Vec<ToolCall>>,
 }
 
 // ── stream_completion ─────────────────────────────────────────────────────────
 
 pub async fn stream_completion(
-    http:                &Client,
-    api_key:             &str,
-    model:               &str,
-    input:               &[Value],
-    tools:               &Value,
-    previous_response_id: Option<&str>,
-    reasoning:           Option<ReasoningEffort>,
-    on_event:            &mut impl FnMut(AgentEvent),
+    http:     &Client,
+    api_key:  &str,
+    model:    &str,
+    input:    &[Value],
+    tools:    &Value,
+    on_event: &mut impl FnMut(AgentEvent),
 ) -> Result<CompletionResult, String> {
+    let chat_tools: Vec<Value> = tools
+        .as_array()
+        .cloned()
+        .unwrap_or_default()
+        .into_iter()
+        .map(|tool| json!({
+            "type": "function",
+            "function": {
+                "name":        tool.get("name"),
+                "description": tool.get("description"),
+                "parameters":  tool.get("parameters"),
+            },
+        }))
+        .collect();
+
     let mut body = json!({
-        "model":  model,
-        "stream": true,
-        "tools":  tools,
-        "input":  input,
+        "model":    model,
+        "stream":   true,
+        "messages": input,
     });
 
-    if let Some(effort) = reasoning {
-        body["reasoning"] = json!({ "effort": effort });
-    }
-
-    if let Some(id) = previous_response_id {
-        body["previous_response_id"] = json!(id);
+    if !chat_tools.is_empty() {
+        body["tools"] = json!(chat_tools);
     }
 
     let response = http
-        .post("https://api.openai.com/v1/responses")
+        .post("https://openrouter.ai/api/v1/chat/completions")
         .bearer_auth(api_key)
+        .header("HTTP-Referer", "https://github.com/jeremtab/pgditor")
+        .header("X-Title", "pgditor")
         .json(&body)
         .send()
         .await
@@ -140,16 +139,18 @@ pub async fn stream_completion(
     if !response.status().is_success() {
         let status = response.status();
         let text   = response.text().await.unwrap_or_default();
-        let msg    = format!("OpenAI error {status}: {text}");
+        let msg    = format!("OpenRouter error {status}: {text}");
         on_event(AgentEvent::Error { message: msg.clone() });
         return Err(msg);
     }
 
-    let mut stream                                                             = response.bytes_stream();
-    let mut pending_calls: std::collections::HashMap<usize, (String, String)> = Default::default();
-    let mut completed_response: Option<ResponsesBody>                         = None;
-    let mut line_buffer                                                        = String::new();
-    let mut current_event_name                                                 = String::new();
+    let mut stream         = response.bytes_stream();
+    let mut line_buffer    = String::new();
+    // model routers (e.g. "openrouter/free", "openrouter/auto", ":floor", ":nitro")
+    // resolve to a different underlying model per request — report it once it's known.
+    let mut resolved_model = false;
+    // output_index -> (call_id, name, arguments buffer)
+    let mut tool_calls: std::collections::BTreeMap<usize, (String, String, String)> = Default::default();
 
     while let Some(chunk) = stream.next().await {
         let chunk = chunk.map_err(|e| e.to_string())?;
@@ -159,122 +160,107 @@ pub async fn stream_completion(
             let raw: String = line_buffer.drain(..=pos).collect();
             let line = raw.trim();
 
-            if let Some(name) = line.strip_prefix("event:") {
-                current_event_name = name.trim().to_string();
-                continue;
+            let Some(data) = line.strip_prefix("data:") else { continue };
+            let data = data.trim();
+            if data.is_empty() || data == "[DONE]" { continue; }
+
+            let Ok(chunk_val) = serde_json::from_str::<ChatCompletionChunk>(data) else { continue };
+
+            if !resolved_model {
+                if let Some(actual_model) = &chunk_val.model {
+                    if actual_model != model {
+                        on_event(AgentEvent::Model { model: actual_model.clone() });
+                    }
+                    resolved_model = true;
+                }
             }
 
-            if let Some(data) = line.strip_prefix("data:") {
-                let data = data.trim();
-                if data == "[DONE]" { current_event_name.clear(); continue; }
-
-                let Ok(event) = serde_json::from_str::<ResponsesEvent>(data) else {
-                    current_event_name.clear();
-                    continue;
-                };
-
-                match current_event_name.as_str() {
-                    "response.output_item.added" => {
-                        if let Some(item) = &event.item {
-                            if item.kind.as_deref() == Some("function_call") {
-                                let idx = event.output_index.unwrap_or(0);
-                                pending_calls.insert(idx, (
-                                    item.call_id.clone().unwrap_or_default(),
-                                    item.name.clone().unwrap_or_default(),
-                                ));
-                            }
-                        }
+            for choice in chunk_val.choices {
+                if let Some(content) = choice.delta.content {
+                    if !content.is_empty() {
+                        on_event(AgentEvent::Delta { text: content });
                     }
-                    "response.output_text.delta" => {
-                        if let Some(ref delta) = event.delta {
-                            if !delta.is_empty() {
-                                on_event(AgentEvent::Delta { text: delta.clone() });
-                            }
-                        }
-                    }
-                    "response.completed" => {
-                        if let Some(resp) = event.response {
-                            completed_response = Some(resp);
-                        }
-                    }
-                    _ => {}
                 }
-                current_event_name.clear();
+
+                if let Some(deltas) = choice.delta.tool_calls {
+                    for delta in deltas {
+                        let entry = tool_calls
+                            .entry(delta.index)
+                            .or_insert_with(|| (String::new(), String::new(), String::new()));
+
+                        if let Some(id) = delta.id { entry.0 = id; }
+                        if let Some(function) = delta.function {
+                            if let Some(name) = function.name { entry.1 = name; }
+                            if let Some(arguments) = function.arguments { entry.2.push_str(&arguments); }
+                        }
+                    }
+                }
             }
         }
     }
 
-    let response_id = completed_response.as_ref().and_then(|r| r.id.clone());
-
-    let tool_calls = completed_response
-        .and_then(|r| r.output)
-        .map(|output| {
-            output
-                .into_iter()
-                .filter(|item| item.kind == "function_call")
-                .filter_map(|item| {
-                    let args: Value = serde_json::from_str(
-                        item.arguments.as_deref().unwrap_or("{}")
-                    ).ok()?;
-                    Some(ToolCall {
-                        call_id:   item.call_id.unwrap_or_default(),
-                        name:      item.name.unwrap_or_default(),
-                        arguments: args,
-                    })
-                })
-                .collect::<Vec<_>>()
+    let calls: Vec<ToolCall> = tool_calls
+        .into_iter()
+        .filter_map(|(_, (call_id, name, arguments))| {
+            let arguments: Value = serde_json::from_str(
+                if arguments.is_empty() { "{}" } else { &arguments }
+            ).ok()?;
+            Some(ToolCall { call_id, name, arguments })
         })
-        .filter(|calls: &Vec<ToolCall>| !calls.is_empty());
+        .collect();
 
-    Ok(CompletionResult { response_id, tool_calls })
+    Ok(CompletionResult {
+        tool_calls: if calls.is_empty() { None } else { Some(calls) },
+    })
 }
 
 // ── Agentic loop ──────────────────────────────────────────────────────────────
 
 pub async fn run_agentic_loop(
-    http:                &Client,
-    api_key:             &str,
-    model:               &str,
-    input:               &mut Vec<Value>,
-    registry:            &ToolRegistry,
-    previous_response_id: Option<String>,
-    reasoning:           Option<ReasoningEffort>,
-    on_event:            &mut impl FnMut(AgentEvent),
-) -> Result<Option<String>, String> {
+    http:     &Client,
+    api_key:  &str,
+    model:    &str,
+    input:    &mut Vec<Value>,
+    registry: &ToolRegistry,
+    on_event: &mut impl FnMut(AgentEvent),
+) -> Result<(), String> {
     let tools = registry.to_openai_tools();
-    let mut response_id = previous_response_id;
-    println!("ai > [{}:{:#?}] {:#?}", model, reasoning, input);
+    println!("ai > [{}] {:#?}", model, input);
 
     loop {
-        let result = stream_completion(
-            http, api_key, model, input, &tools,
-            response_id.as_deref(),
-            reasoning.clone(),
-            on_event,
-        ).await?;
-
-        response_id = result.response_id;
+        let result = stream_completion(http, api_key, model, input, &tools, on_event).await?;
 
         match result.tool_calls {
             None => {
                 on_event(AgentEvent::Done);
-                return Ok(response_id);
+                return Ok(());
             }
             Some(calls) => {
                 for tc in calls {
-                    on_event(AgentEvent::ToolCall { name: tc.name.clone(), args: tc.arguments.clone() });
-                    input.push(json!({
-                        "type":      "function_call",
-                        "call_id":   tc.call_id,
-                        "name":      tc.name,
-                        "arguments": tc.arguments.to_string(),
-                    }));
-                    let result = registry.call(&tc.name, tc.arguments).await;
+                    on_event(AgentEvent::ToolCall {
+                        call_id: tc.call_id.clone(),
+                        name:    tc.name.clone(),
+                        args:    tc.arguments.clone(),
+                    });
+                    let result = registry.call(&tc.name, tc.arguments.clone()).await;
                     on_event(AgentEvent::ToolResult { name: tc.name.clone(), result: result.clone() });
+
                     input.push(json!({
-                        "type":    "function_call_output",
-                        "call_id": tc.call_id,
-                        "output":  result,
+                        "role":    "assistant",
+                        "content": Value::Null,
+                        "tool_calls": [{
+                            "id":   tc.call_id,
+                            "type": "function",
+                            "function": {
+                                "name":      tc.name,
+                                "arguments": tc.arguments.to_string(),
+                            },
+                        }],
+                    }));
+                    input.push(json!({
+                        "role":         "tool",
+                        "tool_call_id": tc.call_id,
+                        "content":      result,
                     }));
                 }
             }

@@ -1,13 +1,13 @@
 use futures::lock::Mutex;
 use reqwest::Client;
-use serde_json::json;
+use serde_json::{json, Value};
 use std::sync::Arc;
 use tauri::{AppHandle, Emitter};
 
 use crate::ai::tool_registry::ToolRegistry;
 use crate::ai::tools;
 use crate::pg::pg_connect::{SharedDb, pg_connect};
-use crate::ai::stream::{ReasoningEffort, run_agentic_loop};
+use crate::ai::stream::run_agentic_loop;
 
 const SYSTEM_PROMPT: &str = r#"
 You generate PostgreSQL queries.
@@ -56,14 +56,13 @@ return a short explanation.
 
 #[tauri::command]
 pub async fn generate_query(
-    app:                  AppHandle,
-    connection_string:    String,
-    api_key:              String,
-    model:                String,
-    reasoning:            Option<ReasoningEffort>,
-    prompt:               String,
-    previous_response_id: Option<String>,
-) -> Result<Option<String>, String> {
+    app:               AppHandle,
+    connection_string: String,
+    api_key:           String,
+    model:             String,
+    prompt:            String,
+    history:           Option<Vec<Value>>,
+) -> Result<(), String> {
     let http = Client::new();
 
     let (pg_client, connection) = pg_connect(&connection_string)
@@ -83,16 +82,11 @@ pub async fn generate_query(
     tools::search_tables::register(&mut registry, db.clone());
     tools::select_table_rows::register(&mut registry, db.clone());
 
-    // On first call include the system prompt, on subsequent calls the
-    // Responses API already has the full context via previous_response_id
-    let mut input = if previous_response_id.is_none() {
-        vec![
-            json!({ "role": "system", "content": SYSTEM_PROMPT }),
-            json!({ "role": "user", "content": prompt }),
-        ]
-    } else {
-        vec![json!({ "role": "user", "content": prompt })]
-    };
+    // Chat Completions has no server-side conversation state, so the full
+    // prior conversation is resent as `history` on every call.
+    let mut input = vec![json!({ "role": "system", "content": SYSTEM_PROMPT })];
+    input.extend(history.unwrap_or_default());
+    input.push(json!({ "role": "user", "content": prompt }));
 
     run_agentic_loop(
         &http,
@@ -100,8 +94,6 @@ pub async fn generate_query(
         &model,
         &mut input,
         &registry,
-        previous_response_id,
-        reasoning,
         &mut |event| {
             app.emit("generate-query", event).ok();
         },
