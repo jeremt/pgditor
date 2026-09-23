@@ -56,9 +56,11 @@ function checkPreconditions() {
     // Check for uncommitted changes. CHANGELOG.md is allowed to be dirty: the release
     // skill writes the new entry just before calling this script, and it gets committed
     // together with the version bump.
-    const status = exec("git status --porcelain")
+    // Note: don't use exec()'s trim() here, it would strip the leading status character
+    // off the first line when CHANGELOG.md is the only uncommitted file.
+    const status = execSync("git status --porcelain", {encoding: "utf8"})
         .split("\n")
-        .filter((line) => line && !/^.. CHANGELOG\.md$/.test(line));
+        .filter((line) => line.trim() && !/^.. CHANGELOG\.md$/.test(line));
     if (status.length > 0) {
         console.error("Error: You have uncommitted changes:");
         console.error(status.join("\n"));
