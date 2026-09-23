@@ -138,6 +138,15 @@ const make_commands = (ctx: CommandsContext) =>
         },
         {
             mode: "tables",
+            title: "Delete data",
+            shortcut: undefined,
+            description: "Open the popover to delete filtered rows, the current selection, or all rows.",
+            action: () => {
+                ctx.is_delete_open = true;
+            },
+        },
+        {
+            mode: "tables",
             title: "Insert row",
             shortcut: `${ctx.cmd_or_ctrl} I`,
             description: "Insert a new row in the currently selected table",
@@ -233,6 +242,7 @@ class CommandsContext {
     is_tables_open = $state(false);
     is_insert_open = $state(false);
     is_export_open = $state(false);
+    is_delete_open = $state(false);
 
     // script mode
     is_files_open = $state(false);

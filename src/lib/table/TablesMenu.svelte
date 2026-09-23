@@ -40,16 +40,52 @@
         }, {}) ?? {},
     );
 
-    const delete_rows = async () => {
-        if (
-            pg.selected_rows.length > 0 &&
-            pg.current_table?.type === "BASE TABLE"
-        ) {
-            await pg.delete_selection();
-        } else {
-            await pg.truncate_table();
-        }
+    type DeleteOption = {
+        text: string;
+        confirm: { title: string; description: string };
+        action: () => Promise<void>;
     };
+
+    const delete_options = $derived<DeleteOption[]>([
+        ...(pg.applied_filters > 0
+            ? [
+                  {
+                      text: `Delete ${pg.current_table?.count ?? 0} filtered rows`,
+                      confirm: {
+                          title: "Delete filtered rows",
+                          description:
+                              "Once you delete the filtered rows, it can't be undone.",
+                      },
+                      action: pg.delete_filtered,
+                  },
+              ]
+            : []),
+        ...(pg.selected_rows.length > 0
+            ? [
+                  {
+                      text: `Delete ${pg.selected_rows.length} selected rows`,
+                      confirm: {
+                          title: `Remove ${pg.selected_rows.length} rows`,
+                          description:
+                              "Once you delete the selected rows, it can't be undone.",
+                      },
+                      action: pg.delete_selection,
+                  },
+              ]
+            : []),
+        {
+            text:
+                pg.applied_filters === 0 && pg.current_table
+                    ? `Delete all ${pg.current_table.count} rows`
+                    : "Delete all rows",
+            confirm: {
+                title: "Truncate table and restart identity",
+                description:
+                    "Once you truncate the table, it can't be undone.\nThe identity of the primary key will be automatically restarted.",
+            },
+            action: pg.truncate_table,
+        },
+    ]);
 
     // for refresh
     let refreshing = $state(false);
@@ -139,30 +175,55 @@ ${rows.map((row: PgRow) => `(${pg.current_table!.columns.map((col) => value_to_s
         count={pg.current_table.count}
         onchange={pg.refresh_data}
     />
-    <ActionButton
-        class="btn ghost icon relative"
-        onaction={delete_rows}
-        title="Delete"
-        disabled={pg.current_table.type !== "BASE TABLE"}
-        confirm={{
-            title: pg.selected_rows.length
-                ? `Remove ${pg.selected_rows.length} rows`
-                : `Truncate table and restart identity`,
-            description: pg.selected_rows.length
-                ? "Once you delete the selected rows, it can't be undone."
-                : "Once you truncate the table, it can't be undone.\nThe identity of the primary key will be automatically restarted.",
-            buttonClass: "btn error",
-            buttonText: "Confirm delete",
-        }}
-        ><TrashIcon --size="1.2rem" />
-        {#if pg.selected_rows.length && pg.current_table.type === "BASE TABLE"}<span
-                class="badge absolute top-0"
-                style:right="-0.6rem"
-                >{pg.selected_rows.length > 100
-                    ? "99+"
-                    : pg.selected_rows.length}</span
-            >{/if}
-    </ActionButton>
+    {#if delete_options.length === 1}
+        <ActionButton
+            class="btn ghost icon relative"
+            title="Delete"
+            disabled={pg.current_table?.type !== "BASE TABLE"}
+            onaction={delete_options[0].action}
+            confirm={{
+                ...delete_options[0].confirm,
+                buttonClass: "btn error",
+                buttonText: "Confirm delete",
+            }}><TrashIcon --size="1.2rem" /></ActionButton
+        >
+    {:else}
+        <Popover bind:is_open={commands.is_delete_open} offset_y={10}>
+            {#snippet target()}
+                <button
+                    class="btn ghost icon relative"
+                    title="Delete"
+                    disabled={pg.current_table?.type !== "BASE TABLE"}
+                    onclick={() =>
+                        (commands.is_delete_open = !commands.is_delete_open)}
+                    ><TrashIcon --size="1.2rem" />
+                    {#if pg.selected_rows.length}<span
+                            class="badge absolute top-0"
+                            style:right="-0.6rem"
+                            >{pg.selected_rows.length > 100
+                                ? "99+"
+                                : pg.selected_rows.length}</span
+                        >{/if}
+                </button>
+            {/snippet}
+            <div class="flex flex-col gap-1">
+                {#each delete_options as option}
+                    <ActionButton
+                        class="btn ghost"
+                        onaction={async () => {
+                            await option.action();
+                            commands.is_delete_open = false;
+                        }}
+                        confirm={{
+                            ...option.confirm,
+                            buttonClass: "btn error",
+                            buttonText: "Confirm delete",
+                        }}>{option.text}</ActionButton
+                    >
+                {/each}
+            </div>
+        </Popover>
+    {/if}
     {#snippet export_section(label: string, get_rows: () => Promise<PgRow[]>)}
         <span class="text-xs text-fg-2 px-2 py-1">{label}</span>
         <div class="flex gap-1">

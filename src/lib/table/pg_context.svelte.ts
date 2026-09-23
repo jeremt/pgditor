@@ -541,6 +541,20 @@ where ${pk.column_name} = any(array[${this.selected_rows
         this.reset_filters();
     };
 
+    delete_filtered = async () => {
+        if (!this.current_table) {
+            return;
+        }
+        const query = `delete from ${this.fullname} ${this.where_sql};`;
+        const result = await catch_error(() => this.raw_query(query));
+        if (result instanceof Error) {
+            this.#toast_context.toast(`Failed to delete rows: ${result.message}`, {kind: "error", details: query});
+            return;
+        }
+        this.selected_rows = [];
+        this.reset_filters();
+    };
+
     truncate_table = async () => {
         await this.raw_query(`truncate ${this.fullname} restart identity cascade`, {throwError: false});
         this.reset_filters();
