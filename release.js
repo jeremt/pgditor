@@ -24,6 +24,7 @@ const packageJsonPath = path.join(process.cwd(), "package.json");
 const cargoDir = path.join(process.cwd(), "src-tauri");
 const cargoTomlPath = path.join(cargoDir, "Cargo.toml");
 const cargoLockPath = path.join(cargoDir, "Cargo.lock");
+const changelogPath = path.join(process.cwd(), "CHANGELOG.md");
 
 function exec(command, options = {}) {
     try {
@@ -52,14 +53,18 @@ function checkPreconditions() {
     }
     console.log("✓ On main branch");
 
-    // Check for uncommitted changes
-    const status = exec("git status --porcelain");
-    if (status) {
+    // Check for uncommitted changes. CHANGELOG.md is allowed to be dirty: the release
+    // skill writes the new entry just before calling this script, and it gets committed
+    // together with the version bump.
+    const status = exec("git status --porcelain")
+        .split("\n")
+        .filter((line) => line && !/^.. CHANGELOG\.md$/.test(line));
+    if (status.length > 0) {
         console.error("Error: You have uncommitted changes:");
-        console.error(status);
+        console.error(status.join("\n"));
         process.exit(1);
     }
-    console.log("✓ No uncommitted changes");
+    console.log("✓ No uncommitted changes (besides CHANGELOG.md)");
 
     // Fetch latest changes from origin
     console.log("Fetching from origin...");
@@ -91,6 +96,27 @@ function checkPreconditions() {
         process.exit(1);
     }
     console.log(`✓ Bumping from ${currentVersion} to ${newVersion}`);
+
+    // Check that the changelog documents the version being released
+    if (!fs.existsSync(changelogPath)) {
+        console.error("Error: CHANGELOG.md not found");
+        console.error("Run the `release` skill to write the entry, or create the file manually");
+        process.exit(1);
+    }
+    if (!readChangelogEntry(newVersion)) {
+        console.error(`Error: CHANGELOG.md has no "## ${newVersion}" section`);
+        console.error("Run the `release` skill to write the entry, or add it manually");
+        process.exit(1);
+    }
+    console.log(`✓ CHANGELOG.md documents ${newVersion}`);
+}
+
+// Return the `## <version>` section of the changelog, or null if there is none
+function readChangelogEntry(version) {
+    const sections = fs.readFileSync(changelogPath, "utf8").split(/^## /m).slice(1);
+    const heading = new RegExp(`^${version.replace(/\./g, "\\.")}\\b`);
+    const section = sections.find((section) => heading.test(section));
+    return section ? section.trim() : null;
 }
 
 function readPackageJsonVersion() {
@@ -216,7 +242,7 @@ function createRelease(version) {
     const tag = `v${version}`;
 
     console.log("\nCommitting changes...");
-    exec("git add package.json src-tauri/Cargo.toml src-tauri/Cargo.lock");
+    exec("git add package.json src-tauri/Cargo.toml src-tauri/Cargo.lock CHANGELOG.md");
     exec(`git commit -m "release: ${tag}"`);
     console.log("✓ Changes committed");
 

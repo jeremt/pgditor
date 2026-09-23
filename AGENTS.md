@@ -41,6 +41,9 @@ pnpm test src/lib/foo.test.ts # Run single test file
 
 ### Release
 
+Use the `release` skill (`.claude/skills/release/SKILL.md`): it summarizes the commits since
+the last tag into `CHANGELOG.md`, then runs the release script.
+
 ```bash
 pnpm release <version>  # e.g., pnpm release 0.0.32
 ```
@@ -218,6 +221,7 @@ src-tauri/src/
 - `src-tauri/tauri.conf.json` reads it from `package.json`, so it needs no bump
 - Run `pnpm release <version>` to update all of them
 - The release script verifies every file before committing, tagging and pushing
+- It also requires a `## <version>` section in `CHANGELOG.md` and commits it with the bump
 
 ## Important Notes
 
