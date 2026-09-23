@@ -214,9 +214,10 @@ src-tauri/src/
 
 ## Version Management
 
-- Version is stored in `package.json` and `src-tauri/Cargo.toml`
-- Run `pnpm release <version>` to update both
-- The release script stages and commits both files
+- Version is stored in `package.json`, `src-tauri/Cargo.toml` and `src-tauri/Cargo.lock`
+- `src-tauri/tauri.conf.json` reads it from `package.json`, so it needs no bump
+- Run `pnpm release <version>` to update all of them
+- The release script verifies every file before committing, tagging and pushing
 
 ## Important Notes
 
