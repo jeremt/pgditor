@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.1.5 — 2026-09-23
+
+### Added
+
+- Export the schema graph as a D2 diagram from the graph menu
+- Export the schema graph as a PNG image
+- Refresh a table cell's value from the database
+
+### Changed
+
+- Disable spellcheck on all text inputs
+
+### Fixed
+
+- Match native UI elements like scrollbars to the app's dark/light theme
+
 ## 0.1.1 — 2026-05-21
 
 ### Fixed
