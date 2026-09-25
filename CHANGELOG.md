@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.2.0 — 2026-09-25
+
+### Added
+
+- Select cells in SQL script results by clicking, dragging a rectangle, shift+clicking or clicking column headers
+- Copy or export SQL script results, or just the selected cells, as JSON, CSV or SQL
+- Delete only the filtered rows or the selected rows of a table
+- Pick any OpenRouter model for the AI query builder
+
+### Changed
+
+- Select a SQL script result cell on click instead of copying it; double-click copies a value
+- Use OpenRouter instead of OpenAI for the AI query builder
+
+### Fixed
+
+- Show the filtered row count and pagination when filters are applied
+- Stop duplicating columns of tables with composite foreign keys
+- Escape commas and quotes when copying selected table rows as CSV
+
 ## 0.1.5 — 2026-09-23
 
 ### Added
