@@ -53,6 +53,7 @@ pub async fn list_tables_for_graph(
             fk.foreign_column_name,
 
             pt.typtype AS type_category,
+            pt.oid AS type_oid,
 
             c.ordinal_position
 
@@ -155,7 +156,7 @@ pub async fn list_tables_for_graph(
             let type_category: i8 = row.get("type_category");
 
             let enum_values = if type_category == b'e' as i8 {
-                fetch_enum_values(&client, &data_type).await.ok()
+                fetch_enum_values(&client, row.get("type_oid")).await.ok()
             } else {
                 None
             };
