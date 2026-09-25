@@ -4,6 +4,7 @@ import {writeText} from "@tauri-apps/plugin-clipboard-manager";
 import {save_to_file} from "$lib/helpers/save_to_file";
 import {get_toast_context} from "$lib/widgets/Toaster.svelte";
 import {get_pg_context, type PgColumn, type PgRow} from "./pg_context.svelte";
+import {quote_ident} from "./values";
 
 export const create_context_menu = () => {
     const pg = get_pg_context();
@@ -102,7 +103,7 @@ export const create_context_menu = () => {
                 }
                 case "table_set_all_null":
                     if (lastMenuContext.column && pg.current_table) {
-                        await pg.raw_query(`UPDATE ${pg.fullname} SET ${lastMenuContext.column.column_name} = null;`, {
+                        await pg.raw_query(`UPDATE ${pg.fullname} SET ${quote_ident(lastMenuContext.column.column_name)} = null;`, {
                             throwError: false,
                         });
                         toast(`All values of column ${lastMenuContext.column.column_name} set to NULL`);
@@ -111,7 +112,7 @@ export const create_context_menu = () => {
                 case "table_set_all_default":
                     if (lastMenuContext.column && pg.current_table) {
                         await pg.raw_query(
-                            `UPDATE ${pg.fullname} SET ${lastMenuContext.column.column_name} = ${lastMenuContext.column.column_default};`,
+                            `UPDATE ${pg.fullname} SET ${quote_ident(lastMenuContext.column.column_name)} = ${lastMenuContext.column.column_default};`,
                             {throwError: false},
                         );
                         toast(`All values of column ${lastMenuContext.column.column_name} set to default`);

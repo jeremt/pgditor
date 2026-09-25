@@ -129,6 +129,11 @@ export const value_type_is_date = (data_type: PgType) => {
 };
 
 /**
+ * Wrap the given identifier (column, table, schema...) in double quotes, doubling the quotes it contains.
+ */
+export const quote_ident = (name: string) => `"${name.replace(/"/g, '""')}"`;
+
+/**
  * Wrap the given value in single quotes, doubling the quotes it contains.
  */
 export const quote_literal = (value: unknown) => `'${String(value).replace(/'/g, "''")}'`;

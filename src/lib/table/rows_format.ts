@@ -1,4 +1,4 @@
-import {value_to_sql} from "./values";
+import {quote_ident, value_to_sql} from "./values";
 import type {PgColumn, PgRow} from "./pg_context.svelte";
 
 export const ROWS_FORMATS = ["json", "csv", "sql"] as const;
@@ -24,7 +24,7 @@ export const rows_to_csv = (columns: FormatColumn[], rows: PgRow[]) =>
     rows.map((row) => columns.map((col) => escape_csv_value(row[col.column_name])).join(",")).join("\n");
 
 export const rows_to_sql = (table: string, columns: FormatColumn[], rows: PgRow[]) => `INSERT INTO ${table}
-(${columns.map((col) => col.column_name).join(",")})
+(${columns.map((col) => quote_ident(col.column_name)).join(",")})
 VALUES
 ${rows.map((row) => `(${columns.map((col) => value_to_sql(col, row[col.column_name])).join(",")})`).join(",\n")}
 ;`;

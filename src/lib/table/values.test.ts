@@ -1,5 +1,5 @@
 import {describe, expect, it} from "vitest";
-import {value_to_sql} from "./values";
+import {quote_ident, value_to_sql} from "./values";
 import type {PgColumn} from "./pg_context.svelte";
 
 describe("formatValue", () => {
@@ -521,5 +521,16 @@ describe("formatValue", () => {
         it("should handle strings with tabs", () => {
             expect(value_to_sql(makeColumn("text"), "col1\tcol2")).toBe("'col1\tcol2'");
         });
+    });
+});
+
+describe("quote_ident", () => {
+    it("should quote camelCase and reserved names", () => {
+        expect(quote_ident("userId")).toBe('"userId"');
+        expect(quote_ident("order")).toBe('"order"');
+    });
+
+    it("should double the quotes inside the name", () => {
+        expect(quote_ident('a"b')).toBe('"a""b"');
     });
 });

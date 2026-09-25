@@ -2,7 +2,7 @@ import {get_connections_context} from "$lib/connection/connections_context.svelt
 import {catch_error} from "@les3dev/catch_error";
 import {invoke} from "@tauri-apps/api/core";
 import {getContext, setContext} from "svelte";
-import {quote_literal, value_to_sql, value_type_is_number, type PgType} from "./values";
+import {quote_ident, quote_literal, value_to_sql, value_type_is_number, type PgType} from "./values";
 import {rows_to_csv, rows_to_sql} from "./rows_format";
 import {get_toast_context} from "$lib/widgets/Toaster.svelte";
 import {getCurrentWindow} from "@tauri-apps/api/window";
@@ -73,7 +73,7 @@ export const filters_to_where = (filters: WhereFilter[]) =>
             result +
             "\n" +
             (result === "" ? "where" : "and") +
-            ` ${filter.column} ${filter.operator} ${filter.operator !== "is null" && filter.operator !== "is not null" ? value_for_operator(filter.column_type, filter.operator, filter.value) : ""}`
+            ` ${quote_ident(filter.column)} ${filter.operator} ${filter.operator !== "is null" && filter.operator !== "is not null" ? value_for_operator(filter.column_type, filter.operator, filter.value) : ""}`
         );
     }, "");
 
@@ -171,7 +171,7 @@ class PgContext {
         if (!this.current_table) {
             return undefined;
         }
-        return `"${this.current_table.schema}"."${this.current_table.name}"`;
+        return `${quote_ident(this.current_table.schema)}.${quote_ident(this.current_table.name)}`;
     }
 
     /**
@@ -398,14 +398,14 @@ class PgContext {
                 columns:
                     this.selected_columns.size === 0 || this.selected_columns.size === column_names.length
                         ? "*"
-                        : this.selected_columns.values().toArray().join(", "),
+                        : this.selected_columns.values().toArray().map(quote_ident).join(", "),
                 offset,
                 limit,
                 whereClause: where,
                 orderBy: this.order_by
-                    ? `order by ${this.order_by.column} ${this.order_by.direction}`
+                    ? `order by ${quote_ident(this.order_by.column)} ${this.order_by.direction}`
                     : primary_key !== undefined
-                      ? `order by ${primary_key.column_name} asc`
+                      ? `order by ${quote_ident(primary_key.column_name)} asc`
                       : "",
             }),
         );
@@ -446,7 +446,7 @@ class PgContext {
         if (!primary_key) {
             return;
         }
-        const where = `where ${primary_key.column_name} = ${value_to_sql(primary_key, row[primary_key.column_name])}`;
+        const where = `where ${quote_ident(primary_key.column_name)} = ${value_to_sql(primary_key, row[primary_key.column_name])}`;
         const data = await this.get_table_data(this.current_table, where, 0, 1);
         if (data instanceof Error) {
             console.error(data.message);
@@ -518,7 +518,7 @@ class PgContext {
             return;
         }
         const query = `delete from ${this.fullname}
-where ${pk.column_name} = any(array[${this.selected_rows
+where ${quote_ident(pk.column_name)} = any(array[${this.selected_rows
             .map((index) => value_to_sql(pk, this.current_table!.rows[index][pk.column_name]))
             .join(", ")}]);`;
         const result = await catch_error(() => this.raw_query(query));
@@ -562,9 +562,9 @@ where ${pk.column_name} = any(array[${this.selected_rows
         return `UPDATE ${this.fullname} SET
 ${this.current_table.columns
     .filter(editableColumns)
-    .map((col) => `${col.column_name} = ${value_to_sql(col, row[col.column_name])}`)
+    .map((col) => `${quote_ident(col.column_name)} = ${value_to_sql(col, row[col.column_name])}`)
     .join(",\n  ")}
-WHERE ${pk.column_name} = ${value_to_sql(pk, row[pk.column_name])};
+WHERE ${quote_ident(pk.column_name)} = ${value_to_sql(pk, row[pk.column_name])};
                         `;
     };
 
@@ -596,14 +596,14 @@ WHERE ${pk.column_name} = ${value_to_sql(pk, row[pk.column_name])};
 set
   ${this.current_table.columns
       .filter(editableColumns)
-      .map((col) => `${col.column_name} = ${value_to_sql(col, row[col.column_name])}`)
+      .map((col) => `${quote_ident(col.column_name)} = ${value_to_sql(col, row[col.column_name])}`)
       .join(",\n  ")}
-where ${primary_key!.column_name} = ${value_to_sql(primary_key!, primary_key_value)};`
+where ${quote_ident(primary_key!.column_name)} = ${value_to_sql(primary_key!, primary_key_value)};`
             : // insert
               `insert into ${this.fullname}
 (${this.current_table.columns
                   .filter(editableColumns)
-                  .map(({column_name}) => column_name)
+                  .map(({column_name}) => quote_ident(column_name))
                   .join(", ")})
 values
 (${this.current_table.columns
@@ -622,7 +622,7 @@ values
         const query = `insert into ${this.fullname}
 (${this.current_table.columns
             .filter(editableColumns)
-            .map(({column_name}) => column_name)
+            .map(({column_name}) => quote_ident(column_name))
             .join(", ")})
 values
 (${this.current_table.columns
