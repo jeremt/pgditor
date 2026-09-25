@@ -8,6 +8,7 @@ import {
     quote_literal,
     value_to_sql,
     value_type_is_number,
+    value_type_is_textish,
     type PgType,
 } from "./values";
 import {rows_to_csv, rows_to_sql} from "./rows_format";
@@ -104,16 +105,11 @@ export const operators_for_column = (column: PgColumn | undefined): WhereOperato
     if (column.is_nullable === "YES") {
         operators.push("is null", "is not null");
     }
-    if (
-        column.data_type === "text" ||
-        column.data_type === "varchar" ||
-        column.data_type === "character" ||
-        column.data_type === "character_varying"
-    ) {
-        operators.push("<", "<=", ">", "<=", "like", "ilike", "not like", "~", "~*", "!~", "!~*");
+    if (value_type_is_textish(column.data_type)) {
+        operators.push("<", "<=", ">", ">=", "like", "ilike", "not like", "~", "~*", "!~", "!~*");
     }
     if (value_type_is_number(column.data_type)) {
-        operators.push("<", "<=", ">", "<=");
+        operators.push("<", "<=", ">", ">=");
     }
     return operators;
 };

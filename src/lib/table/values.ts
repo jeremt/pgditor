@@ -19,6 +19,7 @@ export const default_values = {
     // 🔤 Character
     character: "",
     character_varying: "",
+    bpchar: "",
     text: "",
     varchar: "",
 
@@ -169,6 +170,7 @@ export const value_type_is_boolean = (data_type: PgType) => {
 export const value_type_is_textish = (data_type: PgType) => {
     return (
         data_type === "varchar" ||
+        data_type === "bpchar" ||
         data_type === "character" ||
         data_type === "character_varying" ||
         data_type === "text"

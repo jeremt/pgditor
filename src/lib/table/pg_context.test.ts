@@ -31,7 +31,7 @@ vi.mock("@tauri-apps/api/core", () => ({
 vi.mock("@tauri-apps/api/window", () => ({getCurrentWindow: () => ({setTitle: async () => {}})}));
 vi.mock("$lib/widgets/Toaster.svelte", () => ({get_toast_context: () => ({toast: () => {}})}));
 
-const {filters_to_where, set_pg_context, without_untouched_defaults} = await import("./pg_context.svelte");
+const {filters_to_where, operators_for_column, set_pg_context, without_untouched_defaults} = await import("./pg_context.svelte");
 
 const column = (column_name: string, data_type: string, options: Partial<PgColumn> = {}) =>
     ({
@@ -340,5 +340,20 @@ describe("filters_to_where", () => {
                 {column: "id", column_type: "uuid", operator: "=", value: "550e8400-e29b-41d4-a716-446655440000"},
             ]),
         ).toBe(`\nwhere "id" = '550e8400-e29b-41d4-a716-446655440000'::uuid`);
+    });
+});
+
+describe("operators_for_column", () => {
+    it("should offer every comparison once to numbers", () => {
+        expect(operators_for_column(column("n", "int4"))).toEqual(["=", "!=", "<", "<=", ">", ">="]);
+    });
+
+    it("should offer the text operators to every character type", () => {
+        for (const data_type of ["text", "varchar", "bpchar"]) {
+            expect(operators_for_column(column("s", data_type, {is_nullable: "YES"}))).toEqual([
+                "=", "!=", "is null", "is not null", "<", "<=", ">", ">=",
+                "like", "ilike", "not like", "~", "~*", "!~", "!~*",
+            ]);
+        }
     });
 });
