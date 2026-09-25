@@ -31,7 +31,7 @@ vi.mock("@tauri-apps/api/core", () => ({
 vi.mock("@tauri-apps/api/window", () => ({getCurrentWindow: () => ({setTitle: async () => {}})}));
 vi.mock("$lib/widgets/Toaster.svelte", () => ({get_toast_context: () => ({toast: () => {}})}));
 
-const {filters_to_where, set_pg_context} = await import("./pg_context.svelte");
+const {filters_to_where, set_pg_context, without_untouched_defaults} = await import("./pg_context.svelte");
 
 const column = (column_name: string, data_type: string, options: Partial<PgColumn> = {}) =>
     ({
@@ -102,29 +102,19 @@ values
     });
 });
 
-describe("upsert_row", () => {
-    const columns = [
-        column("user_id", "uuid", {...user_fk, is_primary_key: "YES"}),
-        column("id", "int4", {is_primary_key: "YES", column_default: "nextval('projects_id_seq'::regclass)"}),
-        column("name", "text"),
-    ];
-
-    it("should insert when a column of a composite primary key is empty", async () => {
-        const pg = create_pg(columns);
-        await pg.upsert_row({user_id: "00000000-0000-0000-0000-00000000000a", id: null, name: "p"});
-        expect(queries[0]).toMatch(/^insert into/);
-    });
-
+describe("update_row", () => {
     it("should update the row matching every column of the primary key", async () => {
-        const pg = create_pg(columns);
-        await pg.upsert_row({user_id: "00000000-0000-0000-0000-00000000000a", id: 0, name: "p"});
+        const pg = create_pg([
+            column("user_id", "uuid", {...user_fk, is_primary_key: "YES"}),
+            column("id", "int4", {is_primary_key: "YES", column_default: "nextval('projects_id_seq'::regclass)"}),
+            column("name", "text"),
+        ]);
+        await pg.update_row({user_id: "00000000-0000-0000-0000-00000000000a", id: 0, name: "p"});
         expect(queries[0].trim()).toBe(`UPDATE "public"."projects" SET
 "name" = 'p'
 WHERE ("user_id", "id") in (('00000000-0000-0000-0000-00000000000a'::uuid, 0));`);
     });
-});
 
-describe("update_row", () => {
     it("should only set the given columns", async () => {
         const pg = create_pg([
             column("id", "int4", {is_primary_key: "YES"}),
@@ -136,6 +126,28 @@ describe("update_row", () => {
         expect(queries[0].trim()).toBe(`UPDATE "public"."projects" SET
 "userName" = null
 WHERE ("id") in ((7));`);
+    });
+});
+
+describe("int8 primary keys", () => {
+    // get_table_data sends int8 as strings, since 1234567890123456789 isn't a safe JS integer
+    const columns = [column("id", "int8", {is_primary_key: "YES"}), column("amount", "numeric")];
+
+    it("should update the row matching the exact primary key", async () => {
+        const pg = create_pg(columns);
+        await pg.update_row({id: "1234567890123456789", amount: "12345678901234567.89"});
+        expect(queries[0].trim()).toBe(`UPDATE "public"."projects" SET
+"amount" = '12345678901234567.89'::numeric
+WHERE ("id") in ((1234567890123456789));`);
+    });
+
+    it("should delete the rows matching the exact primary keys", async () => {
+        const pg = create_pg(columns);
+        pg.current_table!.rows = [{id: "9007199254740993"}, {id: "9007199254740992"}];
+        pg.selected_rows = [0];
+        await pg.delete_selection();
+        expect(queries[0]).toBe(`delete from "public"."projects"
+where ("id") in ((9007199254740993));`);
     });
 });
 
@@ -179,6 +191,43 @@ values
     });
 });
 
+describe("insert with defaults", () => {
+    const columns = [
+        column("id", "int4", {is_primary_key: "YES", column_default: "nextval('s'::regclass)"}),
+        column("token", "uuid", {column_default: "gen_random_uuid()"}),
+        column("status", "varchar", {column_default: "'draft'::character varying"}),
+        column("name", "text"),
+    ];
+    const initial_row = {id: null, token: "gen_random_uuid()", status: "draft", name: ""};
+
+    it("should let postgres evaluate the defaults the user didn't change", async () => {
+        const pg = create_pg(columns);
+        const row = without_untouched_defaults(columns, initial_row, {...initial_row, name: "p"});
+        await pg.insert_row(row);
+        expect(queries[0]).toBe(`insert into "public"."projects"
+("name")
+values
+('p');`);
+    });
+
+    it("should insert the defaults the user changed", async () => {
+        const pg = create_pg(columns);
+        const token = "00000000-0000-0000-0000-00000000000a";
+        const row = without_untouched_defaults(columns, initial_row, {...initial_row, token, status: "done"});
+        await pg.insert_row(row);
+        expect(queries[0]).toBe(`insert into "public"."projects"
+("token", "status", "name")
+values
+('${token}'::uuid, 'done', '');`);
+    });
+
+    it("should insert default values when every column is left to its default", async () => {
+        const pg = create_pg(columns.slice(0, 3));
+        await pg.insert_row(without_untouched_defaults(columns, initial_row, {id: null, token: "gen_random_uuid()", status: "draft"}));
+        expect(queries[0]).toBe(`insert into "public"."projects" default values;`);
+    });
+});
+
 describe("update_row edge cases", () => {
     const columns = [
         column("id", "int4", {is_primary_key: "YES"}),
@@ -198,20 +247,6 @@ WHERE ("id") in ((1));`);
         const pg = create_pg([column("a", "text")]);
         await pg.update_row({a: "x"});
         expect(queries).toEqual([]);
-    });
-});
-
-describe("upsert_row edge cases", () => {
-    it("should update a row whose primary key is 0", async () => {
-        const pg = create_pg([column("id", "int4", {is_primary_key: "YES"}), column("name", "text")]);
-        await pg.upsert_row({id: 0, name: "p"});
-        expect(queries[0]).toMatch(/^UPDATE/);
-    });
-
-    it("should insert a row without primary key value", async () => {
-        const pg = create_pg([column("id", "int4", {is_primary_key: "YES"}), column("name", "text")]);
-        await pg.upsert_row({id: null, name: "p"});
-        expect(queries[0]).toMatch(/^insert into/);
     });
 });
 

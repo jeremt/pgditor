@@ -156,7 +156,7 @@
         position="right"
         animation="right"
     >
-        <TableUpsert row={pg.row_to_update} onclose={() => (pg.is_update_open = false)} />
+        <TableUpsert row={pg.row_to_update} mode="update" onclose={() => (pg.is_update_open = false)} />
     </Dialog>
 {/if}
 

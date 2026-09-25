@@ -17,7 +17,7 @@
     } from "./pg_context.svelte";
     import FloatValueEditor from "./valueEditors/FloatValueEditor.svelte";
     import IntegerValueEditor from "./valueEditors/IntegerValueEditor.svelte";
-    import {value_type_is_float, value_type_is_integer} from "./values";
+    import {value_type_is_bigint, value_type_is_float, value_type_is_integer} from "./values";
 
     type Props = {
         isOpen: boolean;
@@ -106,7 +106,7 @@
                                 <option>{enum_value}</option>
                             {/each}
                         </Select>
-                    {:else if column && value_type_is_integer(column.data_type)}
+                    {:else if column && value_type_is_integer(column.data_type) && !value_type_is_bigint(column.data_type)}
                         <IntegerValueEditor
                             bind:value={
                                 () => parseInt(filters[i].value, 10),

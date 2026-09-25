@@ -1,15 +1,15 @@
-import type {PgColumn} from "./pg_context.svelte";
+import type {PgColumn, PgValue} from "./pg_context.svelte";
 
 export const default_values = {
     smallint: 0,
     integer: 0,
-    bigint: 0n, // BigInt for 64-bit integers
+    bigint: "0", // string, like get_table_data sends 64-bit integers
     int2: 0,
     int4: 0,
-    int8: 0n, // BigInt for 64-bit integers
+    int8: "0",
     smallserial: 1,
     serial: 1,
-    bigserial: 1n,
+    bigserial: "1",
 
     float4: 0.0, // float
     float8: 0.0, // double
@@ -71,6 +71,54 @@ export const default_values = {
 
 export type PgType = keyof typeof default_values;
 
+/**
+ * Array columns are named `_<element type>` in pg_type (e.g. `_text` for `text[]`).
+ */
+export const value_type_is_array = (data_type: PgType) => data_type.startsWith("_");
+
+/**
+ * The value to start from when the user sets a column that has no value.
+ */
+export const default_value = (column: Pick<PgColumn, "data_type">): PgValue =>
+    value_type_is_array(column.data_type) ? [] : ((default_values[column.data_type] as PgValue) ?? "");
+
+/**
+ * Parse a postgres array literal (e.g. `{a,"b c",NULL,{1,2}}`), or return undefined if it isn't one.
+ */
+export const parse_array_literal = (text: string): unknown[] | undefined => {
+    if (!text.startsWith("{")) {
+        return undefined;
+    }
+    let i = 0;
+    const parse_array = (): unknown[] => {
+        const items: unknown[] = [];
+        i++; // opening brace
+        while (i < text.length && text[i] !== "}") {
+            if (text[i] === "{") {
+                items.push(parse_array());
+            } else if (text[i] === '"') {
+                let item = "";
+                for (i++; i < text.length && text[i] !== '"'; i++) {
+                    if (text[i] === "\\") i++;
+                    item += text[i];
+                }
+                i++; // closing quote
+                items.push(item);
+            } else {
+                let item = "";
+                for (; i < text.length && text[i] !== "," && text[i] !== "}"; i++) {
+                    item += text[i];
+                }
+                items.push(item.trim().toUpperCase() === "NULL" ? null : item.trim());
+            }
+            if (text[i] === ",") i++;
+        }
+        i++; // closing brace
+        return items;
+    };
+    return parse_array();
+};
+
 export const sql_to_value = (column: Pick<PgColumn, "data_type">, sql: string): unknown => {
     // unwrap quoted literals and their cast, which postgres doesn't always name like pg_type
     // (e.g. `'draft'::character varying` for a varchar or `'{}'::text[]` for a _text)
@@ -78,6 +126,9 @@ export const sql_to_value = (column: Pick<PgColumn, "data_type">, sql: string): 
     const value = literal ? literal[1].replace(/''/g, "'") : sql;
     if (column.data_type === "json" || column.data_type === "jsonb") {
         return JSON.parse(value);
+    }
+    if (literal && value_type_is_array(column.data_type)) {
+        return parse_array_literal(value) ?? value;
     }
     return value;
 };
@@ -94,6 +145,13 @@ export const value_type_is_integer = (data_type: PgType) => {
         data_type === "serial" ||
         data_type === "bigserial"
     );
+};
+
+/**
+ * Integers that JavaScript numbers can't hold exactly, so `get_table_data` sends them as strings.
+ */
+export const value_type_is_bigint = (data_type: PgType) => {
+    return data_type === "bigint" || data_type === "int8" || data_type === "bigserial";
 };
 
 export const value_type_is_float = (data_type: PgType) => {
@@ -207,9 +265,10 @@ export const value_to_sql = (column: Pick<PgColumn, "data_type">, value: any): s
         return quote_literal(`\\x${String(value).replace(/^\\x/, "")}`);
     }
 
-    // Remove JS n anotation to send numbers to PG
-    if (type === "bigint" || type === "int8" || type === "bigserial") {
-        return String(value).replace("n", "");
+    // typed in a text input, so quote anything that isn't an integer to get a postgres error instead of broken SQL
+    if (value_type_is_bigint(type)) {
+        const text = String(value).trim();
+        return /^-?\d+$/.test(text) ? text : `${quote_literal(value)}::int8`;
     }
 
     // 📚 Array types (named `_<element type>` in pg_type, e.g. `_int4`)

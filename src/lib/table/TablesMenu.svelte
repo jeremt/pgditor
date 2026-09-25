@@ -7,7 +7,7 @@
     import PlusIcon from "$lib/icons/PlusIcon.svelte";
     import Dialog from "$lib/widgets/Dialog.svelte";
     import RefreshIcon from "$lib/icons/RefreshIcon.svelte";
-    import { default_values, sql_to_value } from "$lib/table/values";
+    import { default_value, sql_to_value } from "$lib/table/values";
     import {
         ROWS_FORMATS,
         rows_to_format,
@@ -34,9 +34,9 @@
                     column.column_default && column.is_primary_key === "NO"
                         ? sql_to_value(column, column.column_default)
                         : column.is_nullable === "YES" ||
-                            column.is_primary_key === "YES"
+                            (column.is_primary_key === "YES" && column.column_default)
                           ? null
-                          : (default_values[column.data_type] ?? ""),
+                          : default_value(column),
             };
         }, {}) ?? {},
     );
@@ -264,6 +264,7 @@
     >
         <TableUpsert
             row={row_to_insert}
+            mode="insert"
             onclose={() => (commands.is_insert_open = false)}
         />
     </Dialog>

@@ -4,8 +4,8 @@
     import KeyIcon from "$lib/icons/KeyIcon.svelte";
     import LinkIcon from "$lib/icons/LinkIcon.svelte";
     import CheckboxInput from "$lib/widgets/CheckboxInput.svelte";
-    import {default_values} from "./values";
-    import {get_pg_context, type PgRow} from "./pg_context.svelte";
+    import {default_value} from "./values";
+    import {get_pg_context, without_untouched_defaults, type PgRow} from "./pg_context.svelte";
     import TableValueEditor from "./TableValueEditor.svelte";
     import {catch_error} from "@les3dev/catch_error";
     import ActionButton from "$lib/widgets/ActionButton.svelte";
@@ -13,10 +13,11 @@
 
     type Props = {
         row: PgRow;
+        mode: "insert" | "update";
         onclose: () => void;
     };
 
-    let {row, onclose}: Props = $props();
+    let {row, mode, onclose}: Props = $props();
 
     const pg = get_pg_context();
 
@@ -30,10 +31,6 @@
 
     const primary_keys = $derived(pg.current_table?.columns.filter((column) => column.is_primary_key === "YES") ?? []);
 
-    const hasPkValue = $derived(
-        primary_keys.length > 0 && primary_keys.every((column) => localRow[column.column_name] !== null),
-    );
-
     $effect(() => {
         if (localRow) {
             errorMessage = ""; // reset error message whenever row changes
@@ -41,7 +38,9 @@
     });
 
     const insertOrUpdate = async () => {
-        const error = await catch_error(() => hasPkValue === false ? pg.insert_row(localRow) : pg.upsert_row(localRow));
+        const error = await catch_error(() =>
+            mode === "insert" ? pg.insert_row(without_untouched_defaults(pg.current_table?.columns ?? [], row, localRow)) : pg.update_row(localRow),
+        );
         if (error instanceof Error) {
             errorMessage = error.message;
         } else {
@@ -55,7 +54,7 @@
         <div class="flex gap-2 items-center pb-4">
             <button class="btn icon ghost" type="button" aria-label="Cancel" onclick={onclose}><CrossIcon /></button>
             <h2>
-                {hasPkValue ? "Update set" : "Insert into"}
+                {mode === "update" ? "Update set" : "Insert into"}
                 {#if pg.current_table}
                     <span class="font-mono text-sm bg-bg-1 py-0.5 px-2 rounded-md ml-1">
                         {pg.current_table.schema}.{pg.current_table.name}
@@ -64,7 +63,7 @@
             </h2>
             <ActionButton class="btn ml-auto" onaction={insertOrUpdate}>
                 <CheckIcon --size="1.2rem" />
-                {hasPkValue ? "Update" : "Insert"}
+                {mode === "update" ? "Update" : "Insert"}
             </ActionButton>
         </div>
     </header>
@@ -96,14 +95,14 @@
                                 if (localRow[column.column_name] !== null) {
                                     localRow[column.column_name] = null;
                                 } else {
-                                    localRow[column.column_name] = default_values[column.data_type];
+                                    localRow[column.column_name] = default_value(column);
                                 }
                             }}
                         />
                     </label>
                 {/if}
             </label>
-            <TableValueEditor bind:row={localRow} {column} inlined={true} />
+            <TableValueEditor bind:row={localRow} {column} inlined={true} is_insert={mode === "insert"} />
         {/each}
     </div>
 </div>

@@ -10,7 +10,7 @@
     import Dialog from "$lib/widgets/Dialog.svelte";
     import {get_pg_context, type PgColumn, type PgRow} from "./pg_context.svelte";
     import TableValueEditor from "./TableValueEditor.svelte";
-    import {default_values} from "./values";
+    import {default_value} from "./values";
     import {create_table_value_actions} from "./table_value_actions.svelte";
     import CollapseIcon from "$lib/icons/CollapseIcon.svelte";
     import RefreshIcon from "$lib/icons/RefreshIcon.svelte";
@@ -68,7 +68,7 @@
                                             target!.row[target!.column.column_name] = null;
                                         } else {
                                             target!.row[target!.column.column_name] =
-                                                default_values[target!.column.data_type] ?? "";
+                                                default_value(target!.column);
                                         }
                                     }}
                                 />
