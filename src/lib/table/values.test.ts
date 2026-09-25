@@ -582,3 +582,90 @@ describe("sql_to_value", () => {
         expect(sql_to_value(column("int4"), "42")).toBe("42");
     });
 });
+
+// values as row_to_json returns them, each output was checked to write the same value back in postgres 16
+describe("value_to_sql with values read from postgres", () => {
+    const sql = (data_type: string, value: unknown) => value_to_sql({data_type} as PgColumn, value);
+
+    it("should keep backslashes, double quotes and newlines of text as is", () => {
+        expect(sql("text", 'it\'s a "test", with \\ backslash\nand newline')).toBe(
+            `'it''s a "test", with \\ backslash\nand newline'`,
+        );
+    });
+
+    it("should keep the padding of bpchar", () => {
+        expect(sql("bpchar", "ab'c ")).toBe("'ab''c '");
+        expect(sql("bpchar", "     ")).toBe("'     '");
+    });
+
+    it("should format numbers at their limits", () => {
+        expect(sql("int2", -32768)).toBe("-32768");
+        expect(sql("int8", 9007199254740991)).toBe("9007199254740991");
+        expect(sql("float8", -0.5)).toBe("-0.5");
+        expect(sql("numeric", 123456.789)).toBe("123456.789");
+        expect(sql("numeric", 0)).toBe("0");
+    });
+
+    it("should format special dates", () => {
+        expect(sql("timestamp", "infinity")).toBe("'infinity'");
+        expect(sql("timestamptz", "-infinity")).toBe("'-infinity'");
+        expect(sql("date", "0001-01-01 BC")).toBe("'0001-01-01 BC'");
+    });
+
+    it("should format types without a dedicated case with a cast", () => {
+        expect(sql("money", "$1,234.56")).toBe("'$1,234.56'::money");
+        expect(sql("point", "(1.5,-2)")).toBe("'(1.5,-2)'::point");
+        expect(sql("inet", "::1")).toBe("'::1'::inet");
+        expect(sql("int4range", "empty")).toBe("'empty'::int4range");
+        expect(sql("tsrange", "(,)")).toBe("'(,)'::tsrange");
+        expect(sql("mood", "it's ok")).toBe("'it''s ok'::mood");
+    });
+
+    it("should escape xml and tsvector", () => {
+        expect(sql("xml", `<root a="1">it's</root>`)).toBe(`'<root a="1">it''s</root>'`);
+        expect(sql("tsvector", "'cat':3 'fat':2")).toBe("'''cat'':3 ''fat'':2'");
+    });
+
+    it("should format an empty bytea", () => {
+        expect(sql("bytea", "\\x")).toBe("'\\x'");
+    });
+
+    it("should tell NULL elements from 'NULL' strings in arrays", () => {
+        expect(sql("_text", ["a,b", "l'x", 'q"q', "back\\slash", null, "", "NULL", " spaced "])).toBe(
+            `'{"a,b","l''x","q\\"q","back\\\\slash",NULL,"","NULL"," spaced "}'`,
+        );
+    });
+
+    it("should format empty, boolean, uuid and jsonb arrays", () => {
+        expect(sql("_int4", [])).toBe("'{}'");
+        expect(sql("_bool", [true, false, null])).toBe("'{true,false,NULL}'");
+        expect(sql("_uuid", ["550e8400-e29b-41d4-a716-446655440000"])).toBe(
+            `'{"550e8400-e29b-41d4-a716-446655440000"}'`,
+        );
+        expect(sql("_jsonb", [{k: "v's"}])).toBe(`'{"{\\"k\\":\\"v''s\\"}"}'`);
+    });
+
+    it("should keep json values as json", () => {
+        expect(sql("json", [])).toBe("'[]'");
+        expect(sql("jsonb", {nested: {q: `x'y"z`}, n: null})).toBe(`'{"nested":{"q":"x''y\\"z"},"n":null}'`);
+    });
+});
+
+describe("quote_ident edge cases", () => {
+    it("should keep spaces, unicode and case", () => {
+        expect(quote_ident("Mixed Case")).toBe('"Mixed Case"');
+        expect(quote_ident("prénom")).toBe('"prénom"');
+    });
+});
+
+describe("primary_key_condition edge cases", () => {
+    const column = (column_name: string, data_type: string) => ({column_name, data_type}) as PgColumn;
+
+    it("should escape text keys and quote key names", () => {
+        expect(primary_key_condition([column("Code", "text")], [{Code: "l'x"}])).toBe(`("Code") in (('l''x'))`);
+    });
+
+    it("should keep a key equal to 0", () => {
+        expect(primary_key_condition([column("id", "int4")], [{id: 0}])).toBe(`("id") in ((0))`);
+    });
+});
