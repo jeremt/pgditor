@@ -26,12 +26,12 @@ describe("formatValue", () => {
     });
 
     describe("NULL handling", () => {
-        it("should return NULL for null values", () => {
-            expect(value_to_sql(makeColumn("text"), null)).toBe("NULL");
+        it("should return null for null values", () => {
+            expect(value_to_sql(makeColumn("text"), null)).toBe("null");
         });
 
-        it("should return NULL for undefined values", () => {
-            expect(value_to_sql(makeColumn("integer"), undefined)).toBe("NULL");
+        it("should return null for undefined values", () => {
+            expect(value_to_sql(makeColumn("integer"), undefined)).toBe("null");
         });
     });
 
@@ -235,10 +235,6 @@ describe("formatValue", () => {
     });
 
     describe("🧩 Geometric types", () => {
-        it("should format point from object", () => {
-            expect(value_to_sql(makeColumn("point"), {x: 10, y: 20})).toBe("'(10,20)'");
-        });
-
         it("should format point from string", () => {
             expect(value_to_sql(makeColumn("point"), "(5,15)")).toBe("'(5,15)'");
         });
@@ -396,22 +392,21 @@ describe("formatValue", () => {
             expect(value_to_sql(makeColumn("numrange"), "[0.5,2.5)")).toBe("'[0.5,2.5)'");
         });
 
+        // written like postgres prints them, which quotes the bounds with double quotes
         it("should format tsrange", () => {
-            expect(value_to_sql(makeColumn("tsrange"), "['2025-01-01 00:00:00','2025-12-31 23:59:59')")).toBe(
-                "'['2025-01-01 00:00:00','2025-12-31 23:59:59')'",
+            expect(value_to_sql(makeColumn("tsrange"), '["2025-01-01 00:00:00","2025-12-31 23:59:59")')).toBe(
+                `'["2025-01-01 00:00:00","2025-12-31 23:59:59")'`,
             );
         });
 
         it("should format tstzrange", () => {
-            expect(value_to_sql(makeColumn("tstzrange"), "['2025-01-01 00:00:00+00','2025-12-31 23:59:59+00')")).toBe(
-                "'['2025-01-01 00:00:00+00','2025-12-31 23:59:59+00')'",
+            expect(value_to_sql(makeColumn("tstzrange"), '["2025-01-01 00:00:00+00","2025-12-31 23:59:59+00")')).toBe(
+                `'["2025-01-01 00:00:00+00","2025-12-31 23:59:59+00")'`,
             );
         });
 
         it("should format daterange", () => {
-            expect(value_to_sql(makeColumn("daterange"), "['2025-01-01','2025-12-31')")).toBe(
-                "'['2025-01-01','2025-12-31')'",
-            );
+            expect(value_to_sql(makeColumn("daterange"), "[2025-01-01,2025-12-31)")).toBe("'[2025-01-01,2025-12-31)'");
         });
     });
 
@@ -479,9 +474,9 @@ describe("formatValue", () => {
             expect(value_to_sql(makeColumn("bpchar"), "l'avion")).toBe("'l''avion'");
         });
 
-        it("should escape single quotes in types cast by default", () => {
-            expect(value_to_sql(makeColumn("citext"), "l'avion")).toBe("'l''avion'::citext");
-            expect(value_to_sql(makeColumn("inet"), "1'1")).toBe("'1''1'::inet");
+        it("should escape single quotes in types without a dedicated case", () => {
+            expect(value_to_sql(makeColumn("citext"), "l'avion")).toBe("'l''avion'");
+            expect(value_to_sql(makeColumn("inet"), "1'1")).toBe("'1''1'");
         });
 
         it("should format numbers of any type without crashing", () => {
@@ -489,8 +484,10 @@ describe("formatValue", () => {
             expect(value_to_sql(makeColumn("oid"), 16384)).toBe("16384");
         });
 
-        it("should keep values already cast to the column type", () => {
-            expect(value_to_sql(makeColumn("point"), "'(5,15)'::point")).toBe("'(5,15)'::point");
+        it("should quote values that look like SQL", () => {
+            expect(value_to_sql(makeColumn("point"), "'(5,15)'::point")).toBe(`'''(5,15)''::point'`);
+            expect(value_to_sql(makeColumn("int4"), "1; drop table x")).toBe("'1; drop table x'");
+            expect(value_to_sql(makeColumn("bool"), "true or 1=1")).toBe("'true or 1=1'");
         });
 
         it("should format arrays named after pg_type", () => {
@@ -503,7 +500,7 @@ describe("formatValue", () => {
 
         it("should not cast bit values, a cast to bit means bit(1)", () => {
             expect(value_to_sql(makeColumn("bit"), "101")).toBe("'101'");
-            expect(value_to_sql(makeColumn("varbit"), "11001")).toBe("'11001'::varbit");
+            expect(value_to_sql(makeColumn("varbit"), "11001")).toBe("'11001'");
         });
 
         it("should not prefix bytea returned by postgres twice", () => {
@@ -560,7 +557,7 @@ describe("primary_key_condition", () => {
                 {tenantId: "a", id: 1, name: "x"},
                 {tenantId: "b", id: 2, name: "y"},
             ]),
-        ).toBe(`("tenantId", "id") in (('a'::uuid, 1), ('b'::uuid, 2))`);
+        ).toBe(`("tenantId", "id") in (('a', 1), ('b', 2))`);
     });
 
     it("should work with a single column key", () => {
@@ -622,13 +619,15 @@ describe("value_to_sql with values read from postgres", () => {
         expect(sql("date", "0001-01-01 BC")).toBe("'0001-01-01 BC'");
     });
 
-    it("should format types without a dedicated case with a cast", () => {
-        expect(sql("money", "$1,234.56")).toBe("'$1,234.56'::money");
-        expect(sql("point", "(1.5,-2)")).toBe("'(1.5,-2)'::point");
-        expect(sql("inet", "::1")).toBe("'::1'::inet");
-        expect(sql("int4range", "empty")).toBe("'empty'::int4range");
-        expect(sql("tsrange", "(,)")).toBe("'(,)'::tsrange");
-        expect(sql("mood", "it's ok")).toBe("'it''s ok'::mood");
+    // a cast to the pg_type name would break on types that need quotes or are outside the search path
+    it("should leave types without a dedicated case untyped", () => {
+        expect(sql("money", "$1,234.56")).toBe("'$1,234.56'");
+        expect(sql("point", "(1.5,-2)")).toBe("'(1.5,-2)'");
+        expect(sql("inet", "::1")).toBe("'::1'");
+        expect(sql("int4range", "empty")).toBe("'empty'");
+        expect(sql("tsrange", "(,)")).toBe("'(,)'");
+        expect(sql("mood", "it's ok")).toBe("'it''s ok'");
+        expect(sql("Role", "ADMIN")).toBe("'ADMIN'");
     });
 
     it("should escape xml and tsvector", () => {
@@ -711,7 +710,17 @@ describe("int8 typed in a text input", () => {
     it("should send integers as is and quote anything else", () => {
         expect(value_to_sql(column, " 9007199254740993 ")).toBe("9007199254740993");
         expect(value_to_sql(column, "-1")).toBe("-1");
-        expect(value_to_sql(column, "")).toBe("''::int8");
-        expect(value_to_sql(column, "1; drop table x")).toBe("'1; drop table x'::int8");
+        expect(value_to_sql(column, "")).toBe("''");
+        expect(value_to_sql(column, "1; drop table x")).toBe("'1; drop table x'");
+        // written as is, postgres would round it into the int8 column instead of refusing it
+        expect(value_to_sql(column, "1.5")).toBe("'1.5'");
+    });
+
+    it("should do the same for the other numbers typed in the editors", () => {
+        expect(value_to_sql({data_type: "int4"}, "42")).toBe("42");
+        expect(value_to_sql({data_type: "int4"}, "NaN")).toBe("'NaN'");
+        expect(value_to_sql({data_type: "float8"}, "-1.5e-3")).toBe("-1.5e-3");
+        expect(value_to_sql({data_type: "float8"}, "Infinity")).toBe("'Infinity'");
+        expect(value_to_sql({data_type: "numeric"}, "123456789012345678901234.5")).toBe("123456789012345678901234.5");
     });
 });

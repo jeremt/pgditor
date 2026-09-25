@@ -14,8 +14,11 @@ Toute la génération du SQL côté front passe maintenant par des helpers de
   Toujours l'utiliser, jamais `${column_name}` en brut ;
 - `quote_literal(value)` : met une chaîne entre apostrophes et double celles qu'elle contient ;
 - `value_to_sql(column, value)` : convertit une valeur lue par `row_to_json` en littéral SQL.
-  Le cas par défaut ajoute un cast sur le nom `pg_type` (`'x'::inet`) ; `bit` n'est jamais
-  casté (`::bit` veut dire `bit(1)`) ;
+  Il ne met jamais de cast (`'x'` et pas `'x'::inet`) : la valeur est toujours affectée ou
+  comparée à une colonne, dont Postgres prend le type. Un cast sur le nom `pg_type` casse les
+  types qui demandent des guillemets (enum Prisma `"Role"`) ou hors du search path. Seuls les
+  composites passent par `jsonb_populate_record(null::<type>, …)`. Les nombres en chaîne ne
+  sont écrits tels quels que s'ils ont la forme d'un nombre, sinon ils sont quotés ;
 - `sql_to_value(column, sql)` : retire les apostrophes et le cast d'un `column_default`
   (`'draft'::character varying` donne `draft`) ;
 - `primary_key_condition(pks, rows)` : construit `("a", "b") in ((1, 2), …)` et gère les PK
@@ -28,8 +31,7 @@ partiel. `data_type` contient le `typname` Postgres (`varchar`, `bpchar`, `int4`
 
 ### Vérifier qu'une correction ne casse rien
 
-1. `pnpm test` : 30 tests échouent déjà, tous dans les anciens blocs de `values.test.ts` (voir
-   plus bas). Tout nouvel échec est une régression.
+1. `pnpm test` : tous les tests passent, tout échec est une régression.
 2. `src/lib/table/pg_context.test.ts` fait tourner le vrai `PgContext` avec `svelte` et
    `@tauri-apps/api/core` mockés, et vérifie le SQL envoyé à `raw_query` et les arguments de
    `get_table_data`. Y ajouter un cas pour chaque flux modifié.
@@ -62,11 +64,6 @@ Façon de travailler : une branche, un commit par problème, puis une PR.
 
 ## Qualité et robustesse
 
-- [ ] **`pnpm test` : 30 anciens tests de `values.test.ts` échouent.** Ils sont dans les blocs
-      d'origine (`NULL handling`, types géométriques, réseau, range, bit, composites, types
-      système…) et décrivent un comportement que le code n'a jamais eu : `NULL` au lieu de
-      `null`, pas de cast sur les types sans cas dédié, `point` depuis un objet. Il faut décider
-      pour chacun du bon comportement, puis aligner le code ou le test. Les blocs ajoutés depuis passent tous.
 - [ ] **Tableaux de composites impossibles à mettre à jour.** Les colonnes composites passent
       par `jsonb_populate_record(null::<type>, '<json>')` (`value_to_sql`, grâce à
       `composite_type` renvoyé par `list_table_columns`), mais un `pair[]` (`_pair`) est encore

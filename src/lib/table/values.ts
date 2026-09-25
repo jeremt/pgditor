@@ -222,105 +222,78 @@ const to_array_literal = (value: unknown[]): string =>
         })
         .join(",")}}`;
 
-// `character` and `character varying` are named `bpchar` and `varchar` in pg_type
-const TEXT_TYPES = ["character", "character_varying", "bpchar", "varchar", "text", "xml", "tsquery", "tsvector"];
+// numbers typed in the editors or sent as strings by `get_table_data` (int8, numeric), written as is only when they
+// are numbers, so anything else gives a postgres error instead of broken SQL
+const INTEGER = /^-?\d+$/;
+const DECIMAL = /^-?(\d+\.?\d*|\.\d+)(e[-+]?\d+)?$/i;
 
+/**
+ * Write the value as an SQL literal, for the column it is assigned to or compared with.
+ *
+ * Values are left untyped (`'x'` rather than `'x'::inet`) so that postgres reads them as the column's type: casting to
+ * the pg_type name breaks on types that need quotes (e.g. a Prisma enum `"Role"`) or that are outside the search path,
+ * and a cast can change the value (`'101'::bit` is `bit(1)`). The one exception is composites, which go through a
+ * function that has to be told their type.
+ */
 export const value_to_sql = (column: ValueColumn, value: any): string => {
-    // Handle NULL values
     if (value === null || value === undefined) {
         return "null";
     }
+
+    const type = column.data_type;
 
     // row_to_json sends composites as objects, which postgres converts back field by field
     if (column.composite_type) {
         return `jsonb_populate_record(null::${column.composite_type}, ${quote_literal(JSON.stringify(value))})`;
     }
 
-    const type = column.data_type;
-
-    // 🧠 Vector type (pgvector) - MUST be checked before array types
+    // 🧠 pgvector is sent as a JSON array, and must be checked before the other arrays
     if (type === "vector") {
-        if (Array.isArray(value)) {
-            return `'[${value.join(",")}]'`;
-        }
-        return `'${value}'`;
+        return quote_literal(Array.isArray(value) ? `[${value.join(",")}]` : value);
     }
 
-    // Interval (preserve ISO 8601 duration T separator)
-    if (type === "interval") {
-        return quote_literal(value);
-    }
-
-    // Date/Time types Convert ISO 8601 format to PostgreSQL format (replace T with space)
-    if (value_type_is_date(type)) {
-        return quote_literal(String(value).replace("T", " "));
-    }
-
-    // String types (need quoting and escaping)
-    if (type === "uuid") {
-        return `${quote_literal(value)}::uuid`;
-    }
-    if (TEXT_TYPES.includes(type)) {
-        return quote_literal(value);
-    }
-
-    // 🧬 JSON types
+    // 🧬 JSON, including the strings, numbers and arrays it can hold
     if (type === "json" || type === "jsonb") {
         return quote_literal(JSON.stringify(value));
     }
 
-    // 💾 Binary data
+    // 📚 Arrays (named `_<element type>` in pg_type, e.g. `_int4`)
+    if (Array.isArray(value)) {
+        return quote_literal(to_array_literal(value));
+    }
+
+    // 💾 Binary data, which postgres returns already prefixed with \x
     if (type === "bytea") {
         if (value instanceof Uint8Array) {
             const hex = Array.from(value)
                 .map((b) => b.toString(16).padStart(2, "0"))
                 .join("");
-            return `'\\x${hex}'`;
+            return quote_literal(`\\x${hex}`);
         }
-        // postgres returns bytea already prefixed with \x
         return quote_literal(`\\x${String(value).replace(/^\\x/, "")}`);
     }
 
-    // typed in a text input, so quote anything that isn't an integer to get a postgres error instead of broken SQL
-    if (value_type_is_bigint(type)) {
-        const text = String(value).trim();
-        return /^-?\d+$/.test(text) ? text : `${quote_literal(value)}::int8`;
+    // 📅 ISO 8601 dates use a T where postgres prints a space
+    if (value_type_is_date(type)) {
+        return quote_literal(String(value).replace("T", " "));
     }
 
-    // 📚 Array types (named `_<element type>` in pg_type, e.g. `_int4`)
-    if (Array.isArray(value)) {
-        return quote_literal(to_array_literal(value));
-    }
-    if (type.startsWith("_")) {
-        return quote_literal(value);
-    }
-
-    // ✅ Boolean
-    if (value_type_is_boolean(type)) {
-        return value === true ? "true" : value === false ? "false" : value;
-    }
-
-    // Numeric types (no quoting needed), `numeric` is also returned as a number by row_to_json
-    if (value_type_is_number(type) || typeof value === "number" || typeof value === "bigint") {
+    // ✅ Booleans and numbers
+    if (typeof value === "boolean" || typeof value === "number" || typeof value === "bigint") {
         return String(value);
     }
-
-    // a cast to `bit` means `bit(1)`, without cast the literal takes the length of the column
-    if ((type as string) === "bit") {
-        return quote_literal(value);
+    if (typeof value === "string") {
+        const text = value.trim();
+        if (value_type_is_integer(type) && INTEGER.test(text)) {
+            return text;
+        }
+        if ((value_type_is_float(type) || type === "numeric") && DECIMAL.test(text)) {
+            return text;
+        }
     }
 
-    // check if already using explicit cast
-    if (typeof value === "string" && value.endsWith(`::${type}`)) {
-        return value;
-    }
-    // Handle objects (JSON stringify for any unknown object types)
-    if (typeof value === "object") {
-        return `${quote_literal(JSON.stringify(value))}::${type}`;
-    }
-
-    // otherwise, explicitly cast and wrap in quote special types
-    return `${quote_literal(value)}::${type}`;
+    // anything else is quoted and left for postgres to parse as the column's type
+    return quote_literal(typeof value === "object" ? JSON.stringify(value) : value);
 };
 
 /**

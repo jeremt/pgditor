@@ -3,7 +3,6 @@
     import JsonValueEditor from "./valueEditors/JsonValueEditor.svelte";
     import type {PgColumn, PgRow} from "./pg_context.svelte";
     import {
-        value_to_sql,
         value_type_is_array,
         value_type_is_bigint,
         value_type_is_float,
@@ -68,7 +67,7 @@
     <Select
         class="font-mono font-normal! w-full"
         id={column.column_name}
-        bind:value={() => value_to_sql(column, row[column.column_name]), (value) => (row[column.column_name] = value)}
+        bind:value={() => String(row[column.column_name]), (value) => (row[column.column_name] = value === "true")}
     >
         <option>true</option>
         <option>false</option>

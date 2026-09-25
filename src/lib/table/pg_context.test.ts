@@ -94,7 +94,7 @@ describe("insert_row", () => {
             `insert into "public"."projects"
 ("user_id", "name")
 values
-('00000000-0000-0000-0000-00000000000a'::uuid, 'p');`,
+('00000000-0000-0000-0000-00000000000a', 'p');`,
         ]);
     });
 
@@ -109,7 +109,7 @@ values
             `insert into "public"."projects"
 ("user_id", "name")
 values
-('00000000-0000-0000-0000-00000000000a'::uuid, 'p');`,
+('00000000-0000-0000-0000-00000000000a', 'p');`,
         ]);
     });
 });
@@ -124,7 +124,7 @@ describe("update_row", () => {
         await pg.update_row({user_id: "00000000-0000-0000-0000-00000000000a", id: 0, name: "p"});
         expect(queries[0].trim()).toBe(`UPDATE "public"."projects" SET
 "name" = 'p'
-WHERE ("user_id", "id") in (('00000000-0000-0000-0000-00000000000a'::uuid, 0));`);
+WHERE ("user_id", "id") in (('00000000-0000-0000-0000-00000000000a', 0));`);
     });
 
     it("should only set the given columns", async () => {
@@ -160,7 +160,7 @@ describe("int8 primary keys", () => {
         const pg = create_pg(columns);
         await pg.update_row({id: "1234567890123456789", amount: "12345678901234567.89"});
         expect(queries[0].trim()).toBe(`UPDATE "public"."projects" SET
-"amount" = '12345678901234567.89'::numeric
+"amount" = 12345678901234567.89
 WHERE ("id") in ((1234567890123456789));`);
     });
 
@@ -241,7 +241,7 @@ values
         expect(queries[0]).toBe(`insert into "public"."projects"
 ("token", "status", "name")
 values
-('${token}'::uuid, 'done', '');`);
+('${token}', 'done', '');`);
     });
 
     it("should insert default values when every column is left to its default", async () => {
@@ -280,7 +280,7 @@ describe("delete_selection edge cases", () => {
         pg.selected_rows = [1];
         await pg.delete_selection();
         expect(queries[0]).toBe(`delete from "public"."projects"
-where ("id") in (('00000000-0000-0000-0000-000000000002'::uuid));`);
+where ("id") in (('00000000-0000-0000-0000-000000000002'));`);
     });
 
     it("should not delete anything on a table without primary key", async () => {
@@ -372,12 +372,12 @@ describe("filters_to_where", () => {
         ).toBe(`\nwhere "jb" = '{"name": "l''a"}'\nand "j"::jsonb != '{"a": 1}'`);
     });
 
-    it("should cast uuid values", () => {
+    it("should leave uuid values untyped, postgres reads them as the column's type", () => {
         expect(
             filters_to_where([
                 {column: "id", column_type: "uuid", operator: "=", value: "550e8400-e29b-41d4-a716-446655440000"},
             ]),
-        ).toBe(`\nwhere "id" = '550e8400-e29b-41d4-a716-446655440000'::uuid`);
+        ).toBe(`\nwhere "id" = '550e8400-e29b-41d4-a716-446655440000'`);
     });
 });
 
