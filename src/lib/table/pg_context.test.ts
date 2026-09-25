@@ -1,24 +1,31 @@
 import {beforeEach, describe, expect, it, vi} from "vitest";
-import type {PgColumn, PgRow} from "./pg_context.svelte";
+import type {PgColumn, PgRow, PgTable} from "./pg_context.svelte";
 
 const queries: string[] = [];
 const calls: {command: string; args: Record<string, unknown>}[] = [];
+const toasts: string[] = [];
+// lets a test answer a command itself, e.g. to delay or fail it
+let respond: ((command: string, args: Record<string, unknown>) => Promise<unknown> | undefined) | undefined;
 
 // PgContext reads its dependencies from svelte contexts and runs its queries through tauri
 vi.mock("svelte", async (original) => ({
     ...(await original<typeof import("svelte")>()),
     setContext: (_key: unknown, value: unknown) => value,
     getContext: () => ({
-        toast: () => {},
         current: {name: "test", connectionString: "postgres://test"},
         hide_system_tables: true,
         hide_views: true,
         save_selected_table: () => {},
+        get_selected_table: async () => undefined,
     }),
 }));
 vi.mock("@tauri-apps/api/core", () => ({
     invoke: async (command: string, args: Record<string, unknown>) => {
         calls.push({command, args});
+        const response = respond?.(command, args);
+        if (response) {
+            return response;
+        }
         if (command === "raw_query") {
             queries.push(args.sql as string);
         }
@@ -29,7 +36,9 @@ vi.mock("@tauri-apps/api/core", () => ({
     },
 }));
 vi.mock("@tauri-apps/api/window", () => ({getCurrentWindow: () => ({setTitle: async () => {}})}));
-vi.mock("$lib/widgets/Toaster.svelte", () => ({get_toast_context: () => ({toast: () => {}})}));
+vi.mock("$lib/widgets/Toaster.svelte", () => ({
+    get_toast_context: () => ({toast: (message: string) => toasts.push(message)}),
+}));
 
 const {filters_to_where, operators_for_column, set_pg_context, without_untouched_defaults} = await import("./pg_context.svelte");
 
@@ -68,6 +77,8 @@ const create_pg = (columns: PgColumn[]) => {
 beforeEach(() => {
     queries.length = 0;
     calls.length = 0;
+    toasts.length = 0;
+    respond = undefined;
 });
 
 describe("insert_row", () => {
@@ -355,5 +366,80 @@ describe("operators_for_column", () => {
                 "like", "ilike", "not like", "~", "~*", "!~", "!~*",
             ]);
         }
+    });
+});
+
+describe("loading", () => {
+    const users = {schema: "public", name: "users", type: "BASE TABLE", column_names: ["id"], size_mb: 0} satisfies PgTable;
+    const posts = {schema: "public", name: "posts", type: "BASE TABLE", column_names: ["id"], size_mb: 0} satisfies PgTable;
+    const later = <T>(value: T) => {
+        let resolve!: () => void;
+        const promise = new Promise<T>((r) => (resolve = () => r(value)));
+        return {promise, resolve};
+    };
+
+    it("should stop loading when the tables can't be listed", async () => {
+        respond = (command) => (command === "list_tables" ? Promise.reject(new Error("down")) : undefined);
+        const pg = create_pg([]);
+        await pg.load_tables();
+        expect(pg.is_loading).toBe(false);
+        expect(pg.current_table).toBeUndefined();
+    });
+
+    it("should stop loading when the columns can't be listed", async () => {
+        respond = (command) => (command === "list_table_columns" ? Promise.reject(new Error("down")) : undefined);
+        const pg = create_pg([]);
+        pg.tables = [users];
+        await pg.select_table(users);
+        expect(pg.is_loading).toBe(false);
+    });
+
+    it("should only say it is connected when the connection changes", async () => {
+        respond = (command) => (command === "list_tables" ? Promise.resolve([users]) : undefined);
+        const pg = create_pg([]);
+        await pg.load_tables();
+        await pg.load_tables(false);
+        await pg.load_tables();
+        expect(toasts).toEqual(["Connected to test"]);
+        expect(pg.is_loading).toBe(false);
+    });
+
+    it("should keep the last selected table when a previous one answers later", async () => {
+        const users_columns = later([column("user_id", "int4")]);
+        respond = (command, args) => {
+            if (command === "list_table_columns") {
+                return args.table === "users" ? users_columns.promise : Promise.resolve([column("post_id", "int4")]);
+            }
+            if (command === "get_table_data") {
+                return Promise.resolve({rows: [{table: args.table}], count: 1});
+            }
+        };
+        const pg = create_pg([]);
+        pg.tables = [users, posts];
+        const selecting_users = pg.select_table(users);
+        await pg.select_table(posts);
+        users_columns.resolve();
+        await selecting_users;
+        expect(pg.current_table?.name).toBe("posts");
+        expect(pg.current_table?.columns.map((col) => col.column_name)).toEqual(["post_id"]);
+        expect(pg.current_table?.rows).toEqual([{table: "posts", __index: 0}]);
+        expect(pg.is_loading).toBe(false);
+    });
+
+    it("should keep the rows of the last load when a previous one answers later", async () => {
+        const first_page = later({rows: [{page: 0}], count: 2});
+        respond = (command, args) =>
+            command === "get_table_data"
+                ? args.offset === 0
+                    ? first_page.promise
+                    : Promise.resolve({rows: [{page: 1}], count: 2})
+                : undefined;
+        const pg = create_pg([column("id", "int4")]);
+        const loading_first_page = pg.update_data("", 0, 1);
+        await pg.update_data("", 1, 1);
+        first_page.resolve();
+        await loading_first_page;
+        expect(pg.current_table?.rows).toEqual([{page: 1, __index: 0}]);
+        expect(pg.is_loading).toBe(false);
     });
 });

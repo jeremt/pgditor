@@ -124,6 +124,13 @@ class PgContext {
     last_query_time = $state<number>();
     is_loading = $state(false);
 
+    // only the latest tables list, table selection and data load are applied, a slower previous one is dropped
+    #tables_request = 0;
+    #table_request = 0;
+    #data_request = 0;
+    // the connection of the last successful `load_tables`, to only say "Connected to" when it changes
+    #connected_to: string | undefined;
+
     selected_columns = $state<Set<string>>(new Set([]));
     get_selected_columns = () => {
         return (
@@ -201,10 +208,14 @@ class PgContext {
             return;
         }
         const connectionString = this.connections.current.connectionString;
+        const request = ++this.#tables_request;
         this.is_loading = true;
         const unsortedTables = await catch_error(() =>
             invoke<PgTable[]>("list_tables", {connectionString, hideSystemTables: this.#settings.hide_system_tables, hideViews: this.#settings.hide_views}),
         );
+        if (request !== this.#tables_request) {
+            return;
+        }
         if (unsortedTables instanceof Error) {
             console.error(unsortedTables.message);
             this.#toast_context.toast(`Server error: ${unsortedTables.message} (${this.connections.current.name})`, {
@@ -212,8 +223,12 @@ class PgContext {
             });
             this.tables = [];
             this.current_table = undefined;
+            this.#connected_to = undefined;
+            this.is_loading = false;
             return;
-        } else {
+        }
+        if (this.#connected_to !== connectionString) {
+            this.#connected_to = connectionString;
             this.#toast_context.toast(`Connected to ${this.connections.current.name}`, {
                 kind: "success",
                 timeout: 2000,
@@ -222,8 +237,13 @@ class PgContext {
         this.tables = unsortedTables;
         if (autoUse && this.tables[0]) {
             const selectedTable = await this.connections.get_selected_table();
+            if (request !== this.#tables_request) {
+                return;
+            }
             const index = this.tables.findIndex((table) => `${table.schema}.${table.name}` === selectedTable);
-            this.select_table(this.tables[index === -1 ? 0 : index]);
+            // it stops loading once the rows are there
+            await this.select_table(this.tables[index === -1 ? 0 : index]);
+            return;
         }
         this.is_loading = false;
     };
@@ -267,6 +287,7 @@ class PgContext {
             return;
         }
         const connectionString = this.connections.current.connectionString;
+        const request = ++this.#table_request;
         this.is_loading = true;
         const columns = await catch_error(() =>
             invoke<PgColumn[]>("list_table_columns", {
@@ -275,15 +296,20 @@ class PgContext {
                 table: table.name,
             }),
         );
+        if (request !== this.#table_request) {
+            return;
+        }
         if (columns instanceof Error) {
             console.error(columns.message);
             this.#toast_context.toast(`Server error: ${columns.message}`, {kind: "error"});
+            this.is_loading = false;
             return;
         }
         const t = this.tables.find((item) => item.schema === table.schema && item.name === table.name);
         if (!t) {
             console.error(`Table ${table.schema}.${table.name} not found`);
             this.#toast_context.toast(`Table ${table.schema}.${table.name} not found`);
+            this.is_loading = false;
             return;
         }
         this.current_table = {...t, columns, rows: [], count: 0};
@@ -291,6 +317,9 @@ class PgContext {
         this.connections.save_selected_table(this.current_table);
         this.reset_filters();
         await this.refresh_data();
+        if (request !== this.#table_request) {
+            return;
+        }
         await getCurrentWindow().setTitle(`${this.connections.current.name} - ${this.current_table.name}`);
         this.is_loading = false;
     };
@@ -402,6 +431,7 @@ class PgContext {
             return;
         }
         const connectionString = this.connections.current.connectionString;
+        const request = ++this.#data_request;
         this.is_loading = true;
         const primary_keys = this.current_table.columns.filter((col) => col.is_primary_key === "YES");
         const {schema, name: table, column_names} = this.current_table;
@@ -424,6 +454,9 @@ class PgContext {
                       : "",
             }),
         );
+        if (request !== this.#data_request) {
+            return;
+        }
         if (data instanceof Error) {
             console.error(data.message);
             this.#toast_context.toast(`SQL error: ${data.message}`, {kind: "error"});
