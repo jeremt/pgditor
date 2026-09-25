@@ -68,6 +68,12 @@ Façon de travailler : une branche, un commit par problème, puis une PR.
       `null`, pas de cast sur les types sans cas dédié, `ROW(...)` pour les composites, `point`
       depuis un objet. Il faut décider pour chacun du bon comportement, puis aligner le code ou
       le test. Les blocs ajoutés depuis passent tous.
+- [ ] **Colonnes de type composite impossibles à mettre à jour.** `row_to_json` les renvoie en
+      objet (`{"a":1,"b":"x"}`), que `value_to_sql` envoie en `'{"a":1,"b":"x"}'::pair` :
+      Postgres refuse (`malformed record literal`). Le formulaire d'update envoyant toutes les
+      colonnes, aucune colonne d'une telle table ne peut être modifiée depuis le panneau. L'éditeur
+      affiche aussi `[object Object]`. Piste : exposer `typtype = 'c'` dans `list_table_columns`
+      et générer `row(1, 'x')::pair` (lié aux tests `ROW(...)` du point précédent).
 - [ ] **`pnpm check` échoue** sur `vite.config.js:5` : `process` n'est pas typé. Ajouter
       `@types/node` en devDependency.
 - [ ] **Filtres `=` qui ne trouvent jamais la ligne** (`value_for_operator`,
