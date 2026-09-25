@@ -3,13 +3,13 @@ import type {PgColumn} from "./pg_context.svelte";
 export const default_values = {
     smallint: 0,
     integer: 0,
-    bigint: 0n, // BigInt for 64-bit integers
+    bigint: "0", // string, like get_table_data sends 64-bit integers
     int2: 0,
     int4: 0,
-    int8: 0n, // BigInt for 64-bit integers
+    int8: "0",
     smallserial: 1,
     serial: 1,
-    bigserial: 1n,
+    bigserial: "1",
 
     float4: 0.0, // float
     float8: 0.0, // double
@@ -94,6 +94,13 @@ export const value_type_is_integer = (data_type: PgType) => {
         data_type === "serial" ||
         data_type === "bigserial"
     );
+};
+
+/**
+ * Integers that JavaScript numbers can't hold exactly, so `get_table_data` sends them as strings.
+ */
+export const value_type_is_bigint = (data_type: PgType) => {
+    return data_type === "bigint" || data_type === "int8" || data_type === "bigserial";
 };
 
 export const value_type_is_float = (data_type: PgType) => {

@@ -51,11 +51,6 @@ Façon de travailler : une branche, un commit par problème, puis une PR.
 
 ## Bugs qui touchent aux données
 
-- [ ] **Perte de précision des `bigint` > 2^53.** `get_table_data`
-      (`src-tauri/src/commands/get_table_data.rs`) renvoie `row_to_json(t)::text`, que le
-      webview relit avec `JSON.parse`. Avec des IDs de type snowflake, un update ou un delete par
-      PK peut viser une autre ligne, ou aucune. Piste : caster les `int8` et `numeric` en texte
-      côté SQL, ou parser côté Rust et envoyer ces valeurs en chaînes.
 - [ ] **Impossible de saisir une PK sans valeur par défaut à l'insert.** `insert_row` insère
       bien les colonnes de PK qui ont une valeur, mais `TableValueEditor.svelte` (branche
       `is_primary_key === "YES"`, ligne 30) affiche une PK vide comme « générée par Postgres »,

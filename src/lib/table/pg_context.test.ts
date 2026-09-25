@@ -139,6 +139,28 @@ WHERE ("id") in ((7));`);
     });
 });
 
+describe("int8 primary keys", () => {
+    // get_table_data sends int8 as strings, since 1234567890123456789 isn't a safe JS integer
+    const columns = [column("id", "int8", {is_primary_key: "YES"}), column("amount", "numeric")];
+
+    it("should update the row matching the exact primary key", async () => {
+        const pg = create_pg(columns);
+        await pg.update_row({id: "1234567890123456789", amount: "12345678901234567.89"});
+        expect(queries[0].trim()).toBe(`UPDATE "public"."projects" SET
+"amount" = '12345678901234567.89'::numeric
+WHERE ("id") in ((1234567890123456789));`);
+    });
+
+    it("should delete the rows matching the exact primary keys", async () => {
+        const pg = create_pg(columns);
+        pg.current_table!.rows = [{id: "9007199254740993"}, {id: "9007199254740992"}];
+        pg.selected_rows = [0];
+        await pg.delete_selection();
+        expect(queries[0]).toBe(`delete from "public"."projects"
+where ("id") in ((9007199254740993));`);
+    });
+});
+
 describe("delete_selection", () => {
     it("should only delete the selected rows of a composite primary key", async () => {
         const pg = create_pg([

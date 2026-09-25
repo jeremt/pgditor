@@ -2,7 +2,7 @@
     import Select from "$lib/widgets/Select.svelte";
     import JsonValueEditor from "./valueEditors/JsonValueEditor.svelte";
     import type {PgColumn, PgRow} from "./pg_context.svelte";
-    import {value_to_sql, value_type_is_float, value_type_is_integer} from "./values";
+    import {value_to_sql, value_type_is_bigint, value_type_is_float, value_type_is_integer} from "./values";
     import TextValueEditor from "./valueEditors/TextValueEditor.svelte";
     import EnumValueEditor from "./valueEditors/EnumValueEditor.svelte";
     import FKEditor from "./valueEditors/FKEditor.svelte";
@@ -66,6 +66,18 @@
         }
         {column}
         {inlined}
+    />
+{:else if value_type_is_bigint(column.data_type)}
+    <input
+        id={column.column_name}
+        type="text"
+        inputmode="numeric"
+        class="font-mono! w-full"
+        autocorrect="off"
+        autocomplete="off"
+        autocapitalize="off"
+        spellcheck="false"
+        bind:value={row[column.column_name] as string}
     />
 {:else if value_type_is_integer(column.data_type)}
     <IntegerValueEditor
