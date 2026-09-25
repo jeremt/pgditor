@@ -16,6 +16,11 @@
     import ActionButton from "$lib/widgets/ActionButton.svelte";
     import AIChatIcon from "$lib/icons/AIChatIcon.svelte";
     import {get_query_generator_context} from "./query_generator/query_generator_context.svelte";
+    import Popover from "$lib/widgets/Popover.svelte";
+    import CopyIcon from "$lib/icons/CopyIcon.svelte";
+    import DownloadIcon from "$lib/icons/DownloadIcon.svelte";
+    import {ROWS_FORMATS, type RowsFormat} from "$lib/table/rows_format";
+    import type {ResultScope} from "./scripts_context.svelte";
 
     const scripts = get_scripts_context();
     const pg = get_pg_context();
@@ -65,6 +70,20 @@
     };
     const filename = (path: string) => path.slice(last_slash(path) + 1);
     const folderpath = (path: string) => path.slice(0, last_slash(path));
+
+    let is_copy_open = $state(false);
+    let is_export_open = $state(false);
+
+    const has_result = $derived(scripts.result_columns.length > 0);
+    const selection_label = $derived.by(() => {
+        const bounds = scripts.selection_bounds;
+        if (!bounds) {
+            return "";
+        }
+        const rows = bounds.row_end - bounds.row_start + 1;
+        const columns = bounds.column_end - bounds.column_start + 1;
+        return `Selection (${rows} row${rows > 1 ? "s" : ""} × ${columns} column${columns > 1 ? "s" : ""})`;
+    });
 </script>
 
 <button
@@ -115,13 +134,58 @@
 
 <!-- <GenerateQuery /> -->
 
+{#snippet result_section(label: string, scope: ResultScope, action: (scope: ResultScope, format: RowsFormat) => void)}
+    <span class="text-xs text-fg-2 px-2 py-1">{label}</span>
+    <div class="flex gap-1">
+        {#each ROWS_FORMATS as format}
+            <button class="btn secondary flex-1" onclick={() => action(scope, format)}>{format.toUpperCase()}</button>
+        {/each}
+    </div>
+{/snippet}
+
+{#snippet result_sections(action: (scope: ResultScope, format: RowsFormat) => void)}
+    <div class="flex flex-col gap-1">
+        {#if scripts.selection}
+            {@render result_section(selection_label, "selection", action)}
+        {/if}
+        {@render result_section(`All results (${scripts.last_result?.length ?? 0} rows)`, "all", action)}
+    </div>
+{/snippet}
+
+<Popover bind:is_open={is_copy_open} offset_y={10}>
+    {#snippet target()}
+        <button
+            class="btn ghost icon"
+            title="Copy results"
+            disabled={!has_result}
+            onclick={() => (is_copy_open = !is_copy_open)}><CopyIcon --size="1.2rem" /></button
+        >
+    {/snippet}
+    {@render result_sections(async (scope, format) => {
+        await scripts.copy_result(scope, format);
+        is_copy_open = false;
+    })}
+</Popover>
+
+<Popover bind:is_open={is_export_open} offset_y={10}>
+    {#snippet target()}
+        <button
+            class="btn ghost icon"
+            title="Export results"
+            disabled={!has_result}
+            onclick={() => (is_export_open = !is_export_open)}><DownloadIcon --size="1.2rem" /></button
+        >
+    {/snippet}
+    {@render result_sections(async (scope, format) => {
+        is_export_open = false;
+        await scripts.export_result(scope, format);
+    })}
+</Popover>
+
 <button
     class="btn ghost"
     disabled={scripts.error_message === "" && scripts.last_result === undefined}
-    onclick={() => {
-        scripts.error_message = "";
-        scripts.last_result = undefined;
-    }}><ClearIcon --size="1.2rem" /> Clear output</button
+    onclick={scripts.clear_result}><ClearIcon --size="1.2rem" /> Clear output</button
 >
 <button class="btn" onclick={scripts.run} title="{commands.cmd_or_ctrl} ↵"
     ><PlayIcon --size="1rem" /> Run{scripts.current_selection ? " selection" : ""}</button

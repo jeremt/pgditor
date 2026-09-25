@@ -17,7 +17,74 @@
 
     const settings = get_settings_context();
     const query_generator = get_query_generator_context();
+
+    // what the current drag extends: a rectangle of cells, or whole columns from the header
+    let drag_mode = $state<"cells" | "columns">();
+    // clicking an already selected cell (or column) without dragging clears the selection
+    let deselect_on_release = false;
+
+    const start_selection = (event: MouseEvent, row: number, column: number) => {
+        if (event.button !== 0) {
+            return;
+        }
+        // prevent the native text selection while dragging
+        event.preventDefault();
+        if (event.shiftKey && scripts.selection) {
+            scripts.selection.focus = {row, column};
+        } else {
+            deselect_on_release = scripts.is_cell_selected(row, column);
+            scripts.selection = {anchor: {row, column}, focus: {row, column}};
+        }
+        drag_mode = "cells";
+    };
+
+    const start_column_selection = (event: MouseEvent, column: number) => {
+        if (event.button !== 0 || !scripts.last_result) {
+            return;
+        }
+        event.preventDefault();
+        const last_row = scripts.last_result.length - 1;
+        if (event.shiftKey && scripts.selection) {
+            scripts.selection = {
+                anchor: {row: 0, column: scripts.selection.anchor.column},
+                focus: {row: last_row, column},
+            };
+        } else {
+            deselect_on_release = scripts.is_cell_selected(0, column) && scripts.is_cell_selected(last_row, column);
+            scripts.selection = {anchor: {row: 0, column}, focus: {row: last_row, column}};
+        }
+        drag_mode = "columns";
+    };
+
+    const extend_selection = (row: number, column: number) => {
+        if (drag_mode === "cells" && scripts.selection) {
+            deselect_on_release = false;
+            scripts.selection.focus = {row, column};
+        }
+    };
+
+    const extend_column_selection = (column: number) => {
+        if (drag_mode === "columns" && scripts.selection) {
+            deselect_on_release = false;
+            scripts.selection.focus.column = column;
+        }
+    };
 </script>
+
+<svelte:window
+    onmouseup={() => {
+        if (drag_mode !== undefined && deselect_on_release) {
+            scripts.selection = undefined;
+        }
+        deselect_on_release = false;
+        drag_mode = undefined;
+    }}
+    onkeydown={(event) => {
+        if (event.key === "Escape" && !event.defaultPrevented) {
+            scripts.selection = undefined;
+        }
+    }}
+/>
 
 {#snippet main()}
     <SplitPane type="rows" id="main" min="100px" max="-100px" pos="50%">
@@ -61,23 +128,28 @@
                 {:else if scripts.last_result.length === 0}
                     <div class="text-fg-1 m-auto p-4 text-center">No result, succesfully executed.</div>
                 {:else}
-                    {@const columns = Object.keys(scripts.last_result[0])}
                     <div class="overflow-auto">
                         <table class="h-fit">
                             <thead class="sticky top-0 bg-bg">
                                 <tr>
-                                    {#each columns.filter((col) => col !== "__index") as column}
-                                        <th>{column}</th>
+                                    {#each scripts.result_columns as column, column_index}
+                                        <th
+                                            onmousedown={(event) => start_column_selection(event, column_index)}
+                                            onmouseenter={() => extend_column_selection(column_index)}>{column}</th
+                                        >
                                     {/each}
                                 </tr>
                             </thead>
                             <tbody>
-                                {#each scripts.last_result as row (row.__index)}
+                                {#each scripts.last_result as row, row_index (row.__index)}
                                     <tr>
-                                        {#each columns.filter((col) => col !== "__index") as column}
+                                        {#each scripts.result_columns as column, column_index}
                                             <td
                                                 title={row[column]}
-                                                onclick={async () => {
+                                                class:selected={scripts.is_cell_selected(row_index, column_index)}
+                                                onmousedown={(event) => start_selection(event, row_index, column_index)}
+                                                onmouseenter={() => extend_selection(row_index, column_index)}
+                                                ondblclick={async () => {
                                                     await writeText(row[column] === null ? "null" : row[column]);
                                                     toast(`Copied ${column}[${row.__index}] to clipboard`);
                                                 }}>{row[column] === null ? "null" : row[column].slice(0, 50)}</td
@@ -110,11 +182,17 @@
 </div>
 
 <style>
+    th,
     td {
-        cursor: pointer;
-        transition: 0.1s all;
+        cursor: cell;
+        user-select: none;
+    }
+    td {
         &:hover {
             background-color: var(--color-bg-1);
+        }
+        &.selected {
+            background-color: color-mix(in srgb, var(--color-primary) 20%, transparent);
         }
     }
 </style>

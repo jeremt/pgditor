@@ -6,10 +6,21 @@ import {StoreContext} from "$lib/helpers/StoreContext";
 import {get_connections_context} from "$lib/connection/connections_context.svelte";
 import {readFile, writeTextFile} from "@tauri-apps/plugin-fs";
 import {save} from "@tauri-apps/plugin-dialog";
+import {writeText} from "@tauri-apps/plugin-clipboard-manager";
+import {save_to_file} from "$lib/helpers/save_to_file";
+import {rows_to_format, type RowsFormat} from "$lib/table/rows_format";
 
 const store_path = "scripts.json";
 
 export type ScriptFile = {path: string; updated_at: string};
+export type ResultCell = {row: number; column: number};
+export type ResultSelection = {anchor: ResultCell; focus: ResultCell};
+export type ResultScope = "selection" | "all";
+
+/**
+ * Query results have no source table, so the generated `INSERT` targets a placeholder name.
+ */
+const RESULT_TABLE_NAME = "query_result";
 class ScriptsContext extends StoreContext {
     #connections = get_connections_context();
     #pg = get_pg_context();
@@ -29,6 +40,82 @@ class ScriptsContext extends StoreContext {
     current_selection = $state("");
     last_result = $state<Record<string, string | null>[]>();
     error_message = $state("");
+    selection = $state<ResultSelection>();
+
+    result_columns = $derived(
+        this.last_result?.length ? Object.keys(this.last_result[0]).filter((col) => col !== "__index") : [],
+    );
+
+    /**
+     * Normalized bounds of the rectangular selection, whatever direction it was dragged in.
+     */
+    selection_bounds = $derived.by(() => {
+        if (!this.selection) {
+            return undefined;
+        }
+        const {anchor, focus} = this.selection;
+        return {
+            row_start: Math.min(anchor.row, focus.row),
+            row_end: Math.max(anchor.row, focus.row),
+            column_start: Math.min(anchor.column, focus.column),
+            column_end: Math.max(anchor.column, focus.column),
+        };
+    });
+
+    is_cell_selected = (row: number, column: number) => {
+        const bounds = this.selection_bounds;
+        return (
+            bounds !== undefined &&
+            row >= bounds.row_start &&
+            row <= bounds.row_end &&
+            column >= bounds.column_start &&
+            column <= bounds.column_end
+        );
+    };
+
+    clear_result = () => {
+        this.error_message = "";
+        this.last_result = undefined;
+        this.selection = undefined;
+    };
+
+    #result_scope_data = (scope: ResultScope) => {
+        const rows = this.last_result ?? [];
+        const bounds = this.selection_bounds;
+        if (scope === "all" || bounds === undefined) {
+            return {columns: this.result_columns, rows};
+        }
+        return {
+            columns: this.result_columns.slice(bounds.column_start, bounds.column_end + 1),
+            rows: rows.slice(bounds.row_start, bounds.row_end + 1),
+        };
+    };
+
+    #format_result = (scope: ResultScope, format: RowsFormat) => {
+        const {columns, rows} = this.#result_scope_data(scope);
+        // results are returned as text by the backend, so every value is quoted as text
+        return rows_to_format(
+            format,
+            RESULT_TABLE_NAME,
+            columns.map((column_name) => ({column_name, data_type: "text" as const})),
+            rows,
+        );
+    };
+
+    copy_result = async (scope: ResultScope, format: RowsFormat) => {
+        await writeText(this.#format_result(scope, format));
+        this.#toaster.toast(`Copied ${scope === "all" ? "all results" : "selection"} as ${format.toUpperCase()}`);
+    };
+
+    export_result = async (scope: ResultScope, format: RowsFormat) => {
+        if (await save_to_file(this.#format_result(scope, format), [format])) {
+            this.#toaster.toast(`Exported ${scope === "all" ? "all results" : "selection"} to ${format.toUpperCase()}`, {
+                kind: "success",
+            });
+        } else {
+            this.#toaster.toast(`Failed to export ${format.toUpperCase()}`, {kind: "error"});
+        }
+    };
 
     constructor(store_path: string) {
         super(store_path);
@@ -127,6 +214,7 @@ class ScriptsContext extends StoreContext {
         if (result instanceof Error) {
             this.error_message = result.message;
         } else {
+            this.selection = undefined;
             this.last_result = result;
             if (this.last_result !== undefined) {
                 for (let i = 0; i < this.last_result.length; i++) {

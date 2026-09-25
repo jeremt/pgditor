@@ -7,11 +7,12 @@
     import PlusIcon from "$lib/icons/PlusIcon.svelte";
     import Dialog from "$lib/widgets/Dialog.svelte";
     import RefreshIcon from "$lib/icons/RefreshIcon.svelte";
+    import { default_values, sql_to_value } from "$lib/table/values";
     import {
-        default_values,
-        sql_to_value,
-        value_to_sql,
-    } from "$lib/table/values";
+        ROWS_FORMATS,
+        rows_to_format,
+        type RowsFormat,
+    } from "$lib/table/rows_format";
     import ActionButton from "$lib/widgets/ActionButton.svelte";
     import DownloadIcon from "$lib/icons/DownloadIcon.svelte";
     import Popover from "$lib/widgets/Popover.svelte";
@@ -98,47 +99,16 @@
         await pg.refresh_data();
     };
 
-    const escape_csv_value = (val: unknown) => {
-        const str =
-            typeof val === "object"
-                ? JSON.stringify(val)
-                : val === null || val === undefined
-                  ? ""
-                  : String(val);
-        return str.includes(",") || str.includes('"') || str.includes("\n")
-            ? `"${str.replace(/"/g, '""')}"`
-            : str;
-    };
-
-    const rows_to_csv = (rows: PgRow[]) => {
-        const headers = pg.current_table!.columns.map((col) => col.column_name);
-        return (
-            headers.join(",") +
-            "\n" +
-            rows
-                .map((row: PgRow) =>
-                    headers.map((h) => escape_csv_value(row[h])).join(","),
-                )
-                .join("\n")
-        );
-    };
-
-    const rows_to_sql = (rows: PgRow[]) => `INSERT INTO ${pg.fullname}
-(${pg.current_table!.columns.map((col) => col.column_name).join(",")})
-VALUES
-${rows.map((row: PgRow) => `(${pg.current_table!.columns.map((col) => value_to_sql(col, row[col.column_name])).join(",")})`).join(",\n")}
-;`;
-
     const export_rows = async (
         rows: PgRow[],
-        format: "json" | "csv" | "sql",
+        format: RowsFormat,
     ) => {
-        const content =
-            format === "json"
-                ? JSON.stringify(rows)
-                : format === "csv"
-                  ? rows_to_csv(rows)
-                  : rows_to_sql(rows);
+        const content = rows_to_format(
+            format,
+            pg.fullname!,
+            pg.current_table!.columns,
+            rows,
+        );
         const success = await save_to_file(content, [format]);
         if (success) {
             toast(`Exported ${rows.length} rows to ${format.toUpperCase()}`, {
@@ -227,15 +197,12 @@ ${rows.map((row: PgRow) => `(${pg.current_table!.columns.map((col) => value_to_s
     {#snippet export_section(label: string, get_rows: () => Promise<PgRow[]>)}
         <span class="text-xs text-fg-2 px-2 py-1">{label}</span>
         <div class="flex gap-1">
-            {#each ["json", "csv", "sql"] as format}
+            {#each ROWS_FORMATS as format}
                 <button
                     class="btn secondary flex-1"
                     onclick={async () => {
                         const rows = await get_rows();
-                        await export_rows(
-                            rows,
-                            format as "json" | "csv" | "sql",
-                        );
+                        await export_rows(rows, format);
                     }}>{format.toUpperCase()}</button
                 >
             {/each}

@@ -3,6 +3,7 @@ import {catch_error} from "@les3dev/catch_error";
 import {invoke} from "@tauri-apps/api/core";
 import {getContext, setContext} from "svelte";
 import {value_to_sql, value_type_is_number, type PgType} from "./values";
+import {rows_to_csv, rows_to_sql} from "./rows_format";
 import {get_toast_context} from "$lib/widgets/Toaster.svelte";
 import {getCurrentWindow} from "@tauri-apps/api/window";
 import {get_settings_context} from "$lib/settings/settings_context.svelte";
@@ -155,25 +156,13 @@ class PgContext {
         if (!this.current_table) {
             return "";
         }
-        return (
-            this.current_table.columns.map((col) => col.column_name).join(",") +
-            "\n" +
-            this.selected_rows_json
-                .map((row) => this.current_table!.columns.map((col) => row[col.column_name]).join(","))
-                .join("\n")
-        );
+        return rows_to_csv(this.current_table.columns, this.selected_rows_json);
     }
     get selected_rows_sql() {
         if (!this.current_table) {
             return "";
         }
-        return `INSERT INTO ${this.fullname}
-(${this.current_table.columns.map((col) => col.column_name).join(",")})
-VALUES
-${this.selected_rows_json
-    .map((row) => `(${this.current_table!.columns.map((col) => value_to_sql(col, row[col.column_name])).join(",")})`)
-    .join(",\n")}
-;`;
+        return rows_to_sql(this.fullname!, this.current_table.columns, this.selected_rows_json);
     }
 
     private connections = get_connections_context();
