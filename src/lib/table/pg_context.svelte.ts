@@ -611,7 +611,10 @@ WHERE ${primary_key_condition(primary_keys, [row])};
         if (!this.current_table) {
             return;
         }
-        const editableColumns = (column: PgColumn) => column.is_primary_key === "NO" && column.data_type !== "tsvector";
+        // a primary key column without value is left to its default, but one that has a value (e.g. a foreign
+        // key that is part of a composite key) must be inserted
+        const editableColumns = (column: PgColumn) =>
+            column.data_type !== "tsvector" && (column.is_primary_key === "NO" || row[column.column_name] != null);
         const query = `insert into ${this.fullname}
 (${this.current_table.columns
             .filter(editableColumns)
