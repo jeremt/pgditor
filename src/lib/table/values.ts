@@ -230,6 +230,11 @@ export const value_to_sql = (column: Pick<PgColumn, "data_type">, value: any): s
         return String(value);
     }
 
+    // a cast to `bit` means `bit(1)`, without cast the literal takes the length of the column
+    if ((type as string) === "bit") {
+        return quote_literal(value);
+    }
+
     // check if already using explicit cast
     if (typeof value === "string" && value.endsWith(`::${type}`)) {
         return value;

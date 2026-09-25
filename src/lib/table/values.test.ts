@@ -491,6 +491,11 @@ describe("formatValue", () => {
             expect(value_to_sql(makeColumn("_text"), "{a,b}")).toBe("'{a,b}'");
         });
 
+        it("should not cast bit values, a cast to bit means bit(1)", () => {
+            expect(value_to_sql(makeColumn("bit"), "101")).toBe("'101'");
+            expect(value_to_sql(makeColumn("varbit"), "11001")).toBe("'11001'::varbit");
+        });
+
         it("should not prefix bytea returned by postgres twice", () => {
             expect(value_to_sql(makeColumn("bytea"), "\\x48656c6c6f")).toBe("'\\x48656c6c6f'");
         });
