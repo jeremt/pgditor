@@ -498,6 +498,12 @@ describe("formatValue", () => {
             expect(value_to_sql(makeColumn("_text"), "{a,b}")).toBe("'{a,b}'");
         });
 
+        it("should write each json item of an array as its JSON text, even when it is an array", () => {
+            expect(value_to_sql(makeColumn("_jsonb"), [{a: 1}, [2], "x", null])).toBe(
+                `'{"{\\"a\\":1}","[2]","\\"x\\"",NULL}'`,
+            );
+        });
+
         it("should not cast bit values, a cast to bit means bit(1)", () => {
             expect(value_to_sql(makeColumn("bit"), "101")).toBe("'101'");
             expect(value_to_sql(makeColumn("varbit"), "11001")).toBe("'11001'");

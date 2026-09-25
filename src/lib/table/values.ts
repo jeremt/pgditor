@@ -259,7 +259,11 @@ export const value_to_sql = (column: ValueColumn, value: any): string => {
 
     // 📚 Arrays (named `_<element type>` in pg_type, e.g. `_int4`)
     if (Array.isArray(value)) {
-        return quote_literal(to_array_literal(value));
+        // a json item can itself be an array, which isn't a dimension of the postgres array
+        const items = ["_json", "_jsonb"].includes(type)
+            ? value.map((item) => (item === null ? null : JSON.stringify(item)))
+            : value;
+        return quote_literal(to_array_literal(items));
     }
 
     // 💾 Binary data, which postgres returns already prefixed with \x
