@@ -17,7 +17,8 @@ Toute la génération du SQL côté front passe maintenant par des helpers de
   Il ne met jamais de cast (`'x'` et pas `'x'::inet`) : la valeur est toujours affectée ou
   comparée à une colonne, dont Postgres prend le type. Un cast sur le nom `pg_type` casse les
   types qui demandent des guillemets (enum Prisma `"Role"`) ou hors du search path. Seuls les
-  composites passent par `jsonb_populate_record(null::<type>, …)`. Les nombres en chaîne ne
+  composites passent par `jsonb_populate_record(null::<type>, …)`, élément par élément pour
+  les tableaux de composites. Les nombres en chaîne ne
   sont écrits tels quels que s'ils ont la forme d'un nombre, sinon ils sont quotés ;
 - `sql_to_value(column, sql)` : retire les apostrophes et le cast d'un `column_default`
   (`'draft'::character varying` donne `draft`) ;
@@ -61,17 +62,6 @@ Façon de travailler : une branche, un commit par problème, puis une PR.
       `query_generator_context.svelte.ts:174` : deux générations AI en parallèle mélangent leurs
       historiques. Piste : les callbacks `action` des `MenuItem` côté JS pour le menu, et un
       `tauri::ipc::Channel` passé à la commande pour le streaming AI.
-
-## Qualité et robustesse
-
-- [ ] **Tableaux de composites impossibles à mettre à jour.** Les colonnes composites passent
-      par `jsonb_populate_record(null::<type>, '<json>')` (`value_to_sql`, grâce à
-      `composite_type` renvoyé par `list_table_columns`), mais un `pair[]` (`_pair`) est encore
-      envoyé en `'{"{\"a\":1}"}'` et Postgres le refuse. Comme le formulaire d'update envoie
-      toutes les colonnes, la table entière reste bloquée. Piste : renvoyer aussi le type
-      composite des éléments, et générer (testé sur Postgres 16) :
-      `array(select jsonb_populate_record(null::pair, e) from jsonb_array_elements('[…]')
-      with ordinality as x(e, i) order by i)`.
 
 ## Backend et sécurité
 

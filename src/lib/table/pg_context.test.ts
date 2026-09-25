@@ -150,6 +150,17 @@ WHERE ("id") in ((7));`);
 "pair" = jsonb_populate_record(null::other."My Pair", '{"a":1,"b":"it''s","c":{"x":2,"tags":["a b",null]}}')
 WHERE ("id") in ((7));`);
     });
+
+    it("should let postgres convert arrays of composites back item by item", async () => {
+        const pg = create_pg([
+            column("id", "int4", {is_primary_key: "YES"}),
+            column("pairs", "_pair", {composite_type: "pair"}),
+        ]);
+        await pg.update_row({id: 7, pairs: [{a: 1, b: "x"}, null]});
+        expect(queries[0].trim()).toBe(`UPDATE "public"."projects" SET
+"pairs" = array(select jsonb_populate_record(null::pair, nullif(e, 'null')) from jsonb_array_elements('[{"a":1,"b":"x"},null]') with ordinality as x(e, i) order by i)
+WHERE ("id") in ((7));`);
+    });
 });
 
 describe("int8 primary keys", () => {

@@ -30,7 +30,10 @@ pub async fn list_table_columns(
             fk.foreign_column_name,
             t.typtype AS type_category,
             t.oid AS type_oid,
-            CASE WHEN t.typtype = 'c' THEN format_type(a.atttypid, NULL) END AS composite_type
+            CASE
+                WHEN t.typtype = 'c' THEN format_type(t.oid, NULL)
+                WHEN et.typtype = 'c' THEN format_type(et.oid, NULL)
+            END AS composite_type
         FROM 
             information_schema.columns AS c
         INNER JOIN pg_catalog.pg_namespace AS n
@@ -43,6 +46,8 @@ pub async fn list_table_columns(
             AND a.attname = c.column_name
         INNER JOIN pg_catalog.pg_type AS t
             ON a.atttypid = t.oid
+        LEFT JOIN pg_catalog.pg_type AS et
+            ON et.oid = t.typelem
         LEFT JOIN (
             SELECT kcu.table_schema, kcu.table_name, kcu.column_name
             FROM information_schema.key_column_usage AS kcu

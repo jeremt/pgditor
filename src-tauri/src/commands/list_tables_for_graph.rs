@@ -54,7 +54,10 @@ pub async fn list_tables_for_graph(
 
             pt.typtype AS type_category,
             pt.oid AS type_oid,
-            CASE WHEN pt.typtype = 'c' THEN format_type(a.atttypid, NULL) END AS composite_type,
+            CASE
+                WHEN pt.typtype = 'c' THEN format_type(pt.oid, NULL)
+                WHEN et.typtype = 'c' THEN format_type(et.oid, NULL)
+            END AS composite_type,
 
             c.ordinal_position
 
@@ -77,6 +80,9 @@ pub async fn list_tables_for_graph(
 
         LEFT JOIN pg_type pt
             ON pt.oid = a.atttypid
+
+        LEFT JOIN pg_type et
+            ON et.oid = pt.typelem
 
         LEFT JOIN (
             SELECT kcu.table_schema, kcu.table_name, kcu.column_name

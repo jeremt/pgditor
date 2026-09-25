@@ -73,7 +73,8 @@ export const default_values = {
 export type PgType = keyof typeof default_values;
 
 /**
- * What the values helpers need to know about a column, `composite_type` only being set for composite columns.
+ * What the values helpers need to know about a column, `composite_type` only being set for composite columns and
+ * arrays of composites (where it names the type of the items).
  */
 export type ValueColumn = Pick<PgColumn, "data_type"> & Partial<Pick<PgColumn, "composite_type">>;
 
@@ -243,6 +244,10 @@ export const value_to_sql = (column: ValueColumn, value: any): string => {
     const type = column.data_type;
 
     // row_to_json sends composites as objects, which postgres converts back field by field
+    if (column.composite_type && value_type_is_array(type)) {
+        // jsonb_populate_record refuses a null item, so it is turned into a SQL null
+        return `array(select jsonb_populate_record(null::${column.composite_type}, nullif(e, 'null')) from jsonb_array_elements(${quote_literal(JSON.stringify(value))}) with ordinality as x(e, i) order by i)`;
+    }
     if (column.composite_type) {
         return `jsonb_populate_record(null::${column.composite_type}, ${quote_literal(JSON.stringify(value))})`;
     }

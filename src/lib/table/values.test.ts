@@ -426,6 +426,18 @@ describe("formatValue", () => {
         it("should start from an empty composite", () => {
             expect(default_value(pair)).toEqual({});
         });
+
+        const pairs = {...makeColumn("_pair"), composite_type: 'other."My Pair"'};
+
+        it("should convert each item of an array of composites, in order", () => {
+            expect(value_to_sql(pairs, [{a: 1, b: "it's"}, null])).toBe(
+                `array(select jsonb_populate_record(null::other."My Pair", nullif(e, 'null')) from jsonb_array_elements('[{"a":1,"b":"it''s"},null]') with ordinality as x(e, i) order by i)`,
+            );
+        });
+
+        it("should start from an empty array of composites", () => {
+            expect(default_value(pairs)).toEqual([]);
+        });
     });
 
     describe("📦 System/Special types", () => {

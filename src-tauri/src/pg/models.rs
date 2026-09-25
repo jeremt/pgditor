@@ -23,7 +23,8 @@ pub struct PgColumn {
     pub foreign_table_name: Option<String>,
     pub foreign_column_name: Option<String>,
     pub enum_values: Option<Vec<String>>,
-    /// Name of the column's composite type, schema-qualified when it isn't in the search path.
+    /// Name of the column's composite type, or of its items for an array of composites,
+    /// schema-qualified when it isn't in the search path.
     pub composite_type: Option<String>,
 }
 
