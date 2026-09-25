@@ -54,6 +54,7 @@ const column = (column_name: string, data_type: string, options: Partial<PgColum
         foreign_table_name: null,
         foreign_column_name: null,
         enum_values: null,
+        composite_type: null,
         ...options,
     }) as PgColumn;
 
@@ -136,6 +137,17 @@ WHERE ("user_id", "id") in (('00000000-0000-0000-0000-00000000000a'::uuid, 0));`
         await pg.update_row({...primary_key, userName: null});
         expect(queries[0].trim()).toBe(`UPDATE "public"."projects" SET
 "userName" = null
+WHERE ("id") in ((7));`);
+    });
+
+    it("should let postgres convert composite values back from their json", async () => {
+        const pg = create_pg([
+            column("id", "int4", {is_primary_key: "YES"}),
+            column("pair", "My Pair", {composite_type: 'other."My Pair"'}),
+        ]);
+        await pg.update_row({id: 7, pair: {a: 1, b: "it's", c: {x: 2, tags: ["a b", null]}}});
+        expect(queries[0].trim()).toBe(`UPDATE "public"."projects" SET
+"pair" = jsonb_populate_record(null::other."My Pair", '{"a":1,"b":"it''s","c":{"x":2,"tags":["a b",null]}}')
 WHERE ("id") in ((7));`);
     });
 });

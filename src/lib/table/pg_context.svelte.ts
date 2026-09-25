@@ -35,6 +35,7 @@ export type PgColumn = {
     foreign_table_name: string | null;
     foreign_column_name: string | null;
     enum_values: string[] | null;
+    composite_type: string | null;
 };
 
 export type PgTableForGraph = Omit<PgTable, "column_names"> & {columns: PgColumn[]};

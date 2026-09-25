@@ -73,6 +73,11 @@ export const default_values = {
 export type PgType = keyof typeof default_values;
 
 /**
+ * What the values helpers need to know about a column, `composite_type` only being set for composite columns.
+ */
+export type ValueColumn = Pick<PgColumn, "data_type"> & Partial<Pick<PgColumn, "composite_type">>;
+
+/**
  * Array columns are named `_<element type>` in pg_type (e.g. `_text` for `text[]`).
  */
 export const value_type_is_array = (data_type: PgType) => data_type.startsWith("_");
@@ -80,8 +85,12 @@ export const value_type_is_array = (data_type: PgType) => data_type.startsWith("
 /**
  * The value to start from when the user sets a column that has no value.
  */
-export const default_value = (column: Pick<PgColumn, "data_type">): PgValue =>
-    value_type_is_array(column.data_type) ? [] : ((default_values[column.data_type] as PgValue) ?? "");
+export const default_value = (column: ValueColumn): PgValue =>
+    value_type_is_array(column.data_type)
+        ? []
+        : column.composite_type
+          ? {}
+          : ((default_values[column.data_type] as PgValue) ?? "");
 
 /**
  * Parse a postgres array literal (e.g. `{a,"b c",NULL,{1,2}}`), or return undefined if it isn't one.
@@ -216,10 +225,15 @@ const to_array_literal = (value: unknown[]): string =>
 // `character` and `character varying` are named `bpchar` and `varchar` in pg_type
 const TEXT_TYPES = ["character", "character_varying", "bpchar", "varchar", "text", "xml", "tsquery", "tsvector"];
 
-export const value_to_sql = (column: Pick<PgColumn, "data_type">, value: any): string => {
+export const value_to_sql = (column: ValueColumn, value: any): string => {
     // Handle NULL values
     if (value === null || value === undefined) {
         return "null";
+    }
+
+    // row_to_json sends composites as objects, which postgres converts back field by field
+    if (column.composite_type) {
+        return `jsonb_populate_record(null::${column.composite_type}, ${quote_literal(JSON.stringify(value))})`;
     }
 
     const type = column.data_type;

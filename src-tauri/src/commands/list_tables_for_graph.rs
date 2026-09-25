@@ -54,6 +54,7 @@ pub async fn list_tables_for_graph(
 
             pt.typtype AS type_category,
             pt.oid AS type_oid,
+            CASE WHEN pt.typtype = 'c' THEN format_type(a.atttypid, NULL) END AS composite_type,
 
             c.ordinal_position
 
@@ -172,6 +173,7 @@ pub async fn list_tables_for_graph(
                 foreign_table_name: row.get("foreign_table_name"),
                 foreign_column_name: row.get("foreign_column_name"),
                 enum_values,
+                composite_type: row.get("composite_type"),
             });
         }
     }

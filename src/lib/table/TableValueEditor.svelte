@@ -29,9 +29,10 @@
     };
     let {column, row = $bindable(), inlined, is_insert = false}: Props = $props();
 
-    // arrays of json and multidimensional arrays are edited as JSON, other arrays item by item
+    // composites, arrays of json and multidimensional arrays are edited as JSON, other arrays item by item
     const is_json = $derived(
         ["json", "jsonb", "_json", "_jsonb"].includes(column.data_type) ||
+            Boolean(column.composite_type) ||
             (Array.isArray(row[column.column_name]) &&
                 (row[column.column_name] as unknown[]).some((item) => Array.isArray(item))),
     );

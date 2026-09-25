@@ -28,7 +28,7 @@ partiel. `data_type` contient le `typname` Postgres (`varchar`, `bpchar`, `int4`
 
 ### Vérifier qu'une correction ne casse rien
 
-1. `pnpm test` : 33 tests échouent déjà, tous dans les anciens blocs de `values.test.ts` (voir
+1. `pnpm test` : 30 tests échouent déjà, tous dans les anciens blocs de `values.test.ts` (voir
    plus bas). Tout nouvel échec est une régression.
 2. `src/lib/table/pg_context.test.ts` fait tourner le vrai `PgContext` avec `svelte` et
    `@tauri-apps/api/core` mockés, et vérifie le SQL envoyé à `raw_query` et les arguments de
@@ -62,18 +62,19 @@ Façon de travailler : une branche, un commit par problème, puis une PR.
 
 ## Qualité et robustesse
 
-- [ ] **`pnpm test` : 33 anciens tests de `values.test.ts` échouent.** Ils sont dans les blocs
+- [ ] **`pnpm test` : 30 anciens tests de `values.test.ts` échouent.** Ils sont dans les blocs
       d'origine (`NULL handling`, types géométriques, réseau, range, bit, composites, types
       système…) et décrivent un comportement que le code n'a jamais eu : `NULL` au lieu de
-      `null`, pas de cast sur les types sans cas dédié, `ROW(...)` pour les composites, `point`
-      depuis un objet. Il faut décider pour chacun du bon comportement, puis aligner le code ou
-      le test. Les blocs ajoutés depuis passent tous.
-- [ ] **Colonnes de type composite impossibles à mettre à jour.** `row_to_json` les renvoie en
-      objet (`{"a":1,"b":"x"}`), que `value_to_sql` envoie en `'{"a":1,"b":"x"}'::pair` :
-      Postgres refuse (`malformed record literal`). Le formulaire d'update envoyant toutes les
-      colonnes, aucune colonne d'une telle table ne peut être modifiée depuis le panneau. L'éditeur
-      affiche aussi `[object Object]`. Piste : exposer `typtype = 'c'` dans `list_table_columns`
-      et générer `row(1, 'x')::pair` (lié aux tests `ROW(...)` du point précédent).
+      `null`, pas de cast sur les types sans cas dédié, `point` depuis un objet. Il faut décider
+      pour chacun du bon comportement, puis aligner le code ou le test. Les blocs ajoutés depuis passent tous.
+- [ ] **Tableaux de composites impossibles à mettre à jour.** Les colonnes composites passent
+      par `jsonb_populate_record(null::<type>, '<json>')` (`value_to_sql`, grâce à
+      `composite_type` renvoyé par `list_table_columns`), mais un `pair[]` (`_pair`) est encore
+      envoyé en `'{"{\"a\":1}"}'` et Postgres le refuse. Comme le formulaire d'update envoie
+      toutes les colonnes, la table entière reste bloquée. Piste : renvoyer aussi le type
+      composite des éléments, et générer (testé sur Postgres 16) :
+      `array(select jsonb_populate_record(null::pair, e) from jsonb_array_elements('[…]')
+      with ordinality as x(e, i) order by i)`.
 
 ## Backend et sécurité
 

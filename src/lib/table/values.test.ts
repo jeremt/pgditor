@@ -19,6 +19,7 @@ describe("formatValue", () => {
         is_primary_key: "NO",
         column_default: null,
         enum_values: null,
+        composite_type: null,
         foreign_column_name: null,
         foreign_table_name: null,
         foreign_table_schema: null,
@@ -415,18 +416,20 @@ describe("formatValue", () => {
     });
 
     describe("🧱 Composite types", () => {
-        it("should format composite type", () => {
-            expect(value_to_sql(makeColumn("composite"), {field1: "value1", field2: "value2"})).toBe(
-                "ROW('value1','value2')",
+        const pair = {...makeColumn("pair"), composite_type: "pair"};
+
+        it("should let postgres convert the json sent by row_to_json", () => {
+            expect(value_to_sql(pair, {field1: "value1", field2: null})).toBe(
+                `jsonb_populate_record(null::pair, '{"field1":"value1","field2":null}')`,
             );
         });
 
-        it("should handle NULL in composite fields", () => {
-            expect(value_to_sql(makeColumn("composite"), {field1: "value1", field2: null})).toBe("ROW('value1',NULL)");
+        it("should escape quotes in composite fields", () => {
+            expect(value_to_sql(pair, {name: "O'Brien"})).toBe(`jsonb_populate_record(null::pair, '{"name":"O''Brien"}')`);
         });
 
-        it("should escape quotes in composite fields", () => {
-            expect(value_to_sql(makeColumn("composite"), {name: "O'Brien"})).toBe("ROW('O''Brien')");
+        it("should start from an empty composite", () => {
+            expect(default_value(pair)).toEqual({});
         });
     });
 
