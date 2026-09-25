@@ -4,31 +4,18 @@ Revue globale du projet (septembre 2026). Classé par gravité.
 
 ## Bugs qui touchent aux données
 
-- [ ] **Clés primaires composites ignorées.** Seule la première colonne de la PK est utilisée
-      (`columns.find(col => col.is_primary_key === "YES")`). Sur une PK `(a, b)`,
-      `delete_selection` fait `where a = any(...)` et supprime toutes les lignes qui ont le même
-      `a`. `update_row` modifie aussi plusieurs lignes.
-- [ ] **« Set to NULL » / « Set to default » du menu contextuel ne font rien.** La ligne passée à
-      `update_row` ne contient pas la PK, donc la requête finit en `WHERE id = null`, qui ne touche
-      aucune ligne (le toast affiche quand même un succès). « Set default » envoie en plus
-      `column_default` (ex. `nextval(...)`) comme une chaîne au lieu du mot-clé `DEFAULT`.
-- [ ] **Noms de colonnes jamais entre guillemets** : update, insert, delete, filtres WHERE,
-      `order by`, colonnes sélectionnées, « Set all to NULL », export SQL. Toute colonne en
-      camelCase (`"userId"`, ce que fait Prisma) ou qui porte un mot réservé (`order`, `user`)
-      fait échouer la requête. `fullname` n'échappe pas non plus les `"`.
-- [ ] **`value_to_sql` n'échappe pas les apostrophes dans plusieurs cas** :
-    - `varchar` passe par le cas par défaut `'${value}'::varchar` sans échappement ;
-    - les opérateurs `like` / `ilike` / `~` font `'${value}'` sans échappement ;
-    - un nombre dont le type n'est pas reconnu plante avec `value.includes is not a function`
-      (c'est le cas de `numeric`, que `row_to_json` renvoie comme nombre JSON) ;
-    - les tableaux : le nom de type Postgres est `_text` / `_int4` et jamais `text_array`, donc
-      les éléments ne sont ni mis entre guillemets ni échappés.
 - [ ] **Perte de précision des `bigint` > 2^53** : les données passent en JSON puis par
       `JSON.parse` dans le webview. Avec des IDs de type snowflake, un update ou un delete par PK
       peut viser une autre ligne, ou aucune.
-- [ ] **Insert impossible quand la PK n'a pas de valeur par défaut** : `insert_row` et
-      `upsert_row` excluent toujours les colonnes de la PK (tables de jointure, PK en `uuid` ou
-      en texte sans défaut).
+- [ ] **Impossible de saisir une PK sans valeur par défaut à l'insert.** `insert_row` insère
+      maintenant les colonnes de PK qui ont une valeur, mais `TableValueEditor` affiche une PK
+      vide comme « générée par Postgres », sans champ de saisie (sauf si c'est aussi une FK).
+      Cas concernés : PK en texte ou en `uuid` sans défaut.
+- [ ] **Les défauts qui sont des expressions sont envoyés comme des littéraux.** Le panneau
+      d'insert préremplit une colonne qui n'est pas dans la PK avec son `column_default`, par
+      exemple `gen_random_uuid()`, qui part en `'gen_random_uuid()'::uuid` et fait échouer
+      l'insert. (`now()` passe par chance : Postgres accepte `'now()'` comme date.) Il faudrait
+      envoyer le mot-clé `default` tant que l'utilisateur n'a pas modifié la valeur.
 
 ## Multi-fenêtres
 
@@ -40,18 +27,22 @@ Revue globale du projet (septembre 2026). Classé par gravité.
 
 ## Qualité et robustesse
 
-- [ ] **`pnpm test` : les tests de `values.test.ts` échouent.** Ils décrivent un comportement
-      que le code n'a pas (`NULL` au lieu de `null`, types `real` / `double_precision` qui ne
-      sont pas des `typname`, types composites, `point` depuis un objet…). Aligner le code et les
-      tests.
+- [ ] **`pnpm test` : 33 anciens tests de `values.test.ts` échouent.** Ils décrivent un
+      comportement que le code n'a pas (`NULL` au lieu de `null`, pas de cast sur les types
+      géométriques, réseau et range, types composites, `point` depuis un objet…). Il faut
+      décider pour chacun du bon comportement, puis aligner le code ou le test.
 - [ ] **`pnpm check` échoue** sur `vite.config.js` : `process` n'est pas typé, il manque
       `@types/node`.
+- [ ] **Filtres `=` qui ne trouvent jamais la ligne** :
+    - `float4` : `"col" = 3.14` compare en `float8` et ne matche pas la valeur arrondie en
+      `float4` ; il faudrait un littéral non typé (`'3.14'`) ou un cast `::float4` ;
+    - `json` / `jsonb` : la valeur tapée passe par `JSON.stringify` et devient une chaîne JSON
+      (`'"{...}"'`) au lieu d'un objet.
 - [ ] **`is_loading` reste à `true`** quand `load_tables` ou `select_table` sortent en erreur.
       Le toast « Connected to… » s'affiche aussi à chaque refresh.
 - [ ] **Deux clics rapides sur deux tables** peuvent afficher les lignes de la première sous
       les colonnes de la seconde : l'ancienne réponse n'est jamais ignorée.
 - [ ] `operators_for_column` ajoute `"<="` deux fois et oublie `">="`.
-- [ ] `upsert_row` teste `primary_key_value ?` : une PK égale à `0` part en insert.
 - [ ] `fetch_enum_values` filtre sur `typname` sans le schéma : deux enums du même nom dans deux
       schémas mélangent leurs valeurs.
 
