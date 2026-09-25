@@ -31,7 +31,7 @@ vi.mock("@tauri-apps/api/core", () => ({
 vi.mock("@tauri-apps/api/window", () => ({getCurrentWindow: () => ({setTitle: async () => {}})}));
 vi.mock("$lib/widgets/Toaster.svelte", () => ({get_toast_context: () => ({toast: () => {}})}));
 
-const {filters_to_where, set_pg_context} = await import("./pg_context.svelte");
+const {filters_to_where, set_pg_context, without_untouched_defaults} = await import("./pg_context.svelte");
 
 const column = (column_name: string, data_type: string, options: Partial<PgColumn> = {}) =>
     ({
@@ -188,6 +188,43 @@ describe("insert_row edge cases", () => {
 ("note")
 values
 (null);`);
+    });
+});
+
+describe("insert with defaults", () => {
+    const columns = [
+        column("id", "int4", {is_primary_key: "YES", column_default: "nextval('s'::regclass)"}),
+        column("token", "uuid", {column_default: "gen_random_uuid()"}),
+        column("status", "varchar", {column_default: "'draft'::character varying"}),
+        column("name", "text"),
+    ];
+    const initial_row = {id: null, token: "gen_random_uuid()", status: "draft", name: ""};
+
+    it("should let postgres evaluate the defaults the user didn't change", async () => {
+        const pg = create_pg(columns);
+        const row = without_untouched_defaults(columns, initial_row, {...initial_row, name: "p"});
+        await pg.insert_row(row);
+        expect(queries[0]).toBe(`insert into "public"."projects"
+("name")
+values
+('p');`);
+    });
+
+    it("should insert the defaults the user changed", async () => {
+        const pg = create_pg(columns);
+        const token = "00000000-0000-0000-0000-00000000000a";
+        const row = without_untouched_defaults(columns, initial_row, {...initial_row, token, status: "done"});
+        await pg.insert_row(row);
+        expect(queries[0]).toBe(`insert into "public"."projects"
+("token", "status", "name")
+values
+('${token}'::uuid, 'done', '');`);
+    });
+
+    it("should insert default values when every column is left to its default", async () => {
+        const pg = create_pg(columns.slice(0, 3));
+        await pg.insert_row(without_untouched_defaults(columns, initial_row, {id: null, token: "gen_random_uuid()", status: "draft"}));
+        expect(queries[0]).toBe(`insert into "public"."projects" default values;`);
     });
 });
 

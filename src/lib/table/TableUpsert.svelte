@@ -5,7 +5,7 @@
     import LinkIcon from "$lib/icons/LinkIcon.svelte";
     import CheckboxInput from "$lib/widgets/CheckboxInput.svelte";
     import {default_values} from "./values";
-    import {get_pg_context, type PgRow} from "./pg_context.svelte";
+    import {get_pg_context, without_untouched_defaults, type PgRow} from "./pg_context.svelte";
     import TableValueEditor from "./TableValueEditor.svelte";
     import {catch_error} from "@les3dev/catch_error";
     import ActionButton from "$lib/widgets/ActionButton.svelte";
@@ -38,7 +38,9 @@
     });
 
     const insertOrUpdate = async () => {
-        const error = await catch_error(() => (mode === "insert" ? pg.insert_row(localRow) : pg.update_row(localRow)));
+        const error = await catch_error(() =>
+            mode === "insert" ? pg.insert_row(without_untouched_defaults(pg.current_table?.columns ?? [], row, localRow)) : pg.update_row(localRow),
+        );
         if (error instanceof Error) {
             errorMessage = error.message;
         } else {

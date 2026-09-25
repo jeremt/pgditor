@@ -84,6 +84,18 @@ export const filters_to_where = (filters: WhereFilter[]) =>
         );
     }, "");
 
+/**
+ * Leave out the columns whose default the user didn't change, so that postgres evaluates it on insert (e.g.
+ * `gen_random_uuid()` would otherwise be sent as a string).
+ */
+export const without_untouched_defaults = (columns: PgColumn[], initial_row: PgRow, row: PgRow): PgRow =>
+    Object.fromEntries(
+        Object.entries(row).filter(([name, value]) => {
+            const column = columns.find((col) => col.column_name === name);
+            return !column?.column_default || JSON.stringify(value) !== JSON.stringify(initial_row[name]);
+        }),
+    );
+
 export const operators_for_column = (column: PgColumn | undefined): WhereOperator[] => {
     if (column === undefined) {
         return [];
@@ -597,20 +609,21 @@ WHERE ${primary_key_condition(primary_keys, [row])};
         if (!this.current_table) {
             return;
         }
-        // a primary key column without value is left to its default, but one that has a value (e.g. a foreign
-        // key that is part of a composite key) must be inserted
-        const editableColumns = (column: PgColumn) =>
-            column.data_type !== "tsvector" && (column.is_primary_key === "NO" || row[column.column_name] != null);
+        // columns missing from the row are left to their default, and so are primary key columns without value,
+        // but one that has a value (e.g. a foreign key that is part of a composite key) must be inserted
+        const columns = this.current_table.columns.filter(
+            (column) =>
+                column.data_type !== "tsvector" &&
+                row[column.column_name] !== undefined &&
+                (column.is_primary_key === "NO" || row[column.column_name] !== null),
+        );
+        if (columns.length === 0) {
+            return await this.raw_query(`insert into ${this.fullname} default values;`, {throwError});
+        }
         const query = `insert into ${this.fullname}
-(${this.current_table.columns
-            .filter(editableColumns)
-            .map(({column_name}) => quote_ident(column_name))
-            .join(", ")})
+(${columns.map(({column_name}) => quote_ident(column_name)).join(", ")})
 values
-(${this.current_table.columns
-            .filter(editableColumns)
-            .map((col) => value_to_sql(col, row[col.column_name]))
-            .join(", ")});`;
+(${columns.map((col) => value_to_sql(col, row[col.column_name])).join(", ")});`;
         return await this.raw_query(query, {throwError});
     };
 }

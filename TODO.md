@@ -49,15 +49,6 @@ partiel. `data_type` contient le `typname` Postgres (`varchar`, `bpchar`, `int4`
 
 Façon de travailler : une branche, un commit par problème, puis une PR.
 
-## Bugs qui touchent aux données
-
-- [ ] **Les défauts qui sont des expressions sont envoyés comme des littéraux.** `row_to_insert`
-      (`src/lib/table/TablesMenu.svelte:29`) préremplit une colonne qui n'est pas dans la PK
-      avec `sql_to_value(column_default)`. `gen_random_uuid()` part alors en
-      `'gen_random_uuid()'::uuid` et l'insert échoue (`now()` passe par chance : Postgres
-      accepte `'now()'` comme date). Piste : envoyer le mot-clé `default` tant que l'utilisateur
-      n'a pas modifié la valeur.
-
 ## Multi-fenêtres
 
 - [ ] **`menu-event` et `generate-query` sont envoyés à toutes les fenêtres.**
