@@ -2,7 +2,13 @@
     import Select from "$lib/widgets/Select.svelte";
     import JsonValueEditor from "./valueEditors/JsonValueEditor.svelte";
     import type {PgColumn, PgRow} from "./pg_context.svelte";
-    import {value_to_sql, value_type_is_bigint, value_type_is_float, value_type_is_integer} from "./values";
+    import {
+        value_to_sql,
+        value_type_is_array,
+        value_type_is_bigint,
+        value_type_is_float,
+        value_type_is_integer,
+    } from "./values";
     import TextValueEditor from "./valueEditors/TextValueEditor.svelte";
     import EnumValueEditor from "./valueEditors/EnumValueEditor.svelte";
     import FKEditor from "./valueEditors/FKEditor.svelte";
@@ -12,6 +18,7 @@
     import UuidValueEditor from "./valueEditors/UuidValueEditor.svelte";
     import GeographyValueEditor from "./valueEditors/GeographyValueEditor.svelte";
     import GeometryValueEditor from "./valueEditors/GeometryValueEditor.svelte";
+    import ArrayValueEditor from "./valueEditors/ArrayValueEditor.svelte";
 
     type Props = {
         inlined: boolean;
@@ -21,6 +28,13 @@
         is_insert?: boolean;
     };
     let {column, row = $bindable(), inlined, is_insert = false}: Props = $props();
+
+    // arrays of json and multidimensional arrays are edited as JSON, other arrays item by item
+    const is_json = $derived(
+        ["json", "jsonb", "_json", "_jsonb"].includes(column.data_type) ||
+            (Array.isArray(row[column.column_name]) &&
+                (row[column.column_name] as unknown[]).some((item) => Array.isArray(item))),
+    );
 </script>
 
 {#if column.is_nullable === "YES" && row[column.column_name] === null}
@@ -58,7 +72,7 @@
         <option>true</option>
         <option>false</option>
     </Select>
-{:else if column.data_type === "json" || column.data_type === "jsonb"}
+{:else if is_json}
     <JsonValueEditor
         bind:value={
             () => JSON.stringify(row[column.column_name], null, 4),
@@ -69,6 +83,8 @@
         {column}
         {inlined}
     />
+{:else if value_type_is_array(column.data_type)}
+    <ArrayValueEditor bind:value={row[column.column_name]} {column} {inlined} />
 {:else if value_type_is_bigint(column.data_type)}
     <input
         id={column.column_name}

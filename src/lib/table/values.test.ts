@@ -1,5 +1,12 @@
 import {describe, expect, it} from "vitest";
-import {primary_key_condition, quote_ident, sql_to_value, value_to_sql} from "./values";
+import {
+    default_value,
+    parse_array_literal,
+    primary_key_condition,
+    quote_ident,
+    sql_to_value,
+    value_to_sql,
+} from "./values";
 import type {PgColumn} from "./pg_context.svelte";
 
 describe("formatValue", () => {
@@ -563,7 +570,7 @@ describe("sql_to_value", () => {
 
     it("should unwrap a literal whose cast isn't named like pg_type", () => {
         expect(sql_to_value(column("varchar"), "'draft'::character varying")).toBe("draft");
-        expect(sql_to_value(column("_text"), "'{}'::text[]")).toBe("{}");
+        expect(sql_to_value(column("_text"), "'{}'::text[]")).toEqual([]);
     });
 
     it("should unescape the quotes of the literal", () => {
@@ -669,3 +676,29 @@ describe("primary_key_condition edge cases", () => {
         expect(primary_key_condition([column("id", "int4")], [{id: 0}])).toBe(`("id") in ((0))`);
     });
 });
+
+describe("arrays typed in the editor", () => {
+    const column = (data_type: string) => ({data_type}) as PgColumn;
+
+    it("should quote the items", () => {
+        expect(value_to_sql(column("_text"), ["hello world", 'a"b', "c\\d", null])).toBe(
+            `'{"hello world","a\\"b","c\\\\d",NULL}'`,
+        );
+        expect(value_to_sql(column("_int4"), ["1", "2"])).toBe(`'{"1","2"}'`);
+    });
+
+    it("should start from an empty array", () => {
+        expect(default_value(column("_text"))).toEqual([]);
+        expect(default_value(column("text"))).toBe("");
+    });
+
+    it("should parse array literals", () => {
+        expect(parse_array_literal("{}")).toEqual([]);
+        expect(parse_array_literal('{a,"b c",NULL,"NULL","x\\"y"}')).toEqual(["a", "b c", null, "NULL", 'x"y']);
+        expect(parse_array_literal("{{1,2},{3,4}}")).toEqual([["1", "2"], ["3", "4"]]);
+        expect(parse_array_literal("array['a']")).toBeUndefined();
+        expect(sql_to_value(column("_text"), "'{a,\"b c\"}'::text[]")).toEqual(["a", "b c"]);
+        expect(sql_to_value(column("_text"), "ARRAY['a'::text]")).toBe("ARRAY['a'::text]");
+    });
+});
+

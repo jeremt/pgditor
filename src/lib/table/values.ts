@@ -1,4 +1,4 @@
-import type {PgColumn} from "./pg_context.svelte";
+import type {PgColumn, PgValue} from "./pg_context.svelte";
 
 export const default_values = {
     smallint: 0,
@@ -71,6 +71,54 @@ export const default_values = {
 
 export type PgType = keyof typeof default_values;
 
+/**
+ * Array columns are named `_<element type>` in pg_type (e.g. `_text` for `text[]`).
+ */
+export const value_type_is_array = (data_type: PgType) => data_type.startsWith("_");
+
+/**
+ * The value to start from when the user sets a column that has no value.
+ */
+export const default_value = (column: Pick<PgColumn, "data_type">): PgValue =>
+    value_type_is_array(column.data_type) ? [] : ((default_values[column.data_type] as PgValue) ?? "");
+
+/**
+ * Parse a postgres array literal (e.g. `{a,"b c",NULL,{1,2}}`), or return undefined if it isn't one.
+ */
+export const parse_array_literal = (text: string): unknown[] | undefined => {
+    if (!text.startsWith("{")) {
+        return undefined;
+    }
+    let i = 0;
+    const parse_array = (): unknown[] => {
+        const items: unknown[] = [];
+        i++; // opening brace
+        while (i < text.length && text[i] !== "}") {
+            if (text[i] === "{") {
+                items.push(parse_array());
+            } else if (text[i] === '"') {
+                let item = "";
+                for (i++; i < text.length && text[i] !== '"'; i++) {
+                    if (text[i] === "\\") i++;
+                    item += text[i];
+                }
+                i++; // closing quote
+                items.push(item);
+            } else {
+                let item = "";
+                for (; i < text.length && text[i] !== "," && text[i] !== "}"; i++) {
+                    item += text[i];
+                }
+                items.push(item.trim().toUpperCase() === "NULL" ? null : item.trim());
+            }
+            if (text[i] === ",") i++;
+        }
+        i++; // closing brace
+        return items;
+    };
+    return parse_array();
+};
+
 export const sql_to_value = (column: Pick<PgColumn, "data_type">, sql: string): unknown => {
     // unwrap quoted literals and their cast, which postgres doesn't always name like pg_type
     // (e.g. `'draft'::character varying` for a varchar or `'{}'::text[]` for a _text)
@@ -78,6 +126,9 @@ export const sql_to_value = (column: Pick<PgColumn, "data_type">, sql: string): 
     const value = literal ? literal[1].replace(/''/g, "'") : sql;
     if (column.data_type === "json" || column.data_type === "jsonb") {
         return JSON.parse(value);
+    }
+    if (literal && value_type_is_array(column.data_type)) {
+        return parse_array_literal(value) ?? value;
     }
     return value;
 };

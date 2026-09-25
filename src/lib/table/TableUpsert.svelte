@@ -4,7 +4,7 @@
     import KeyIcon from "$lib/icons/KeyIcon.svelte";
     import LinkIcon from "$lib/icons/LinkIcon.svelte";
     import CheckboxInput from "$lib/widgets/CheckboxInput.svelte";
-    import {default_values} from "./values";
+    import {default_value} from "./values";
     import {get_pg_context, without_untouched_defaults, type PgRow} from "./pg_context.svelte";
     import TableValueEditor from "./TableValueEditor.svelte";
     import {catch_error} from "@les3dev/catch_error";
@@ -95,7 +95,7 @@
                                 if (localRow[column.column_name] !== null) {
                                     localRow[column.column_name] = null;
                                 } else {
-                                    localRow[column.column_name] = default_values[column.data_type];
+                                    localRow[column.column_name] = default_value(column);
                                 }
                             }}
                         />
