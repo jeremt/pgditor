@@ -115,9 +115,9 @@
                         {#each data.rows as row (row.__index)}
                             <tr
                                 onclick={() => {
-                                    const pk = data?.columns.find((column) => column.is_primary_key === "YES");
-                                    if (pk) {
-                                        value = row[pk.column_name]?.toString() ?? value;
+                                    // the foreign key can reference any unique column, not only the primary key
+                                    if (column.foreign_column_name) {
+                                        value = row[column.foreign_column_name]?.toString() ?? value;
                                     }
                                 }}
                             >

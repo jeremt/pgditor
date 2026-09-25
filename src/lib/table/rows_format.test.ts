@@ -20,6 +20,6 @@ describe("rows_format", () => {
     });
 
     it("generates an insert statement", () => {
-        expect(rows_to_sql("t", columns, rows)).toBe("INSERT INTO t\n(id,name)\nVALUES\n(1,'a,b'),\n(2,null)\n;");
+        expect(rows_to_sql("t", columns, rows)).toBe("INSERT INTO t\n(\"id\",\"name\")\nVALUES\n(1,'a,b'),\n(2,null)\n;");
     });
 });

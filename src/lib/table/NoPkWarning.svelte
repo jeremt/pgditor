@@ -4,7 +4,7 @@
     import TerminalIcon from "$lib/icons/TerminalIcon.svelte";
     import {get_scripts_context} from "$lib/scripts/scripts_context.svelte";
     import {get_pg_context, type PgColumn, type PgRow} from "./pg_context.svelte";
-    import {value_to_sql} from "./values";
+    import {quote_ident, value_to_sql} from "./values";
     import {anchor_to_target} from "$lib/helpers/anchor_to_target.svelte";
 
     type Props = {
@@ -53,11 +53,11 @@
                         const row = Object.entries(target!.row).filter(([key]) => key !== "__index");
                         if (row.length > 0 && pg.current_table) {
                             scripts.current_value = `update ${pg.fullname} set
-    ${row[0][0]} = ${value_to_sql(pg.current_table.columns.find((col) => col.column_name === row[0][0])!, row[0][1])}
+    ${quote_ident(row[0][0])} = ${value_to_sql(pg.current_table.columns.find((col) => col.column_name === row[0][0])!, row[0][1])}
 where ${row.reduce((result, [name, value], index) => {
                                 return (
                                     result +
-                                    `${name} = ${value_to_sql(pg.current_table!.columns.find((col) => col.column_name === name)!, value)}` +
+                                    `${quote_ident(name)} = ${value_to_sql(pg.current_table!.columns.find((col) => col.column_name === name)!, value)}` +
                                     (index < row.length - 1 ? `\nor ` : "")
                                 );
                             }, "")};`;

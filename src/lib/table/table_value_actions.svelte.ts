@@ -24,18 +24,24 @@ export const create_table_value_actions = (
         }
     });
 
-    const update_value = async () => {
-        const pk = pg.get_primary_key();
+    /**
+     * Keep the primary key of the target row and the value of the target cell.
+     */
+    const target_update = () => {
         const t = target();
-        if (t === undefined || pk === undefined) {
+        const primary_key = t && pg.pick_primary_keys(t.row);
+        if (t === undefined || primary_key === undefined) {
             return;
         }
-        const error = await catch_error(() =>
-            pg.update_row({
-                [pk.column_name]: t.row[pk.column_name],
-                [t.column.column_name]: t.row[t.column.column_name],
-            } as PgRow),
-        );
+        return {...primary_key, [t.column.column_name]: t.row[t.column.column_name]} as PgRow;
+    };
+
+    const update_value = async () => {
+        const row = target_update();
+        if (row === undefined) {
+            return;
+        }
+        const error = await catch_error(() => pg.update_row(row));
         if (error instanceof Error) {
             error_message = error.message;
         } else {
@@ -71,15 +77,11 @@ export const create_table_value_actions = (
     };
 
     const copy_sql = async () => {
-        const pk = pg.get_primary_key();
-        const t = target();
-        if (t === undefined || pk === undefined) {
+        const row = target_update();
+        if (row === undefined) {
             return;
         }
-        const sql = await pg.generate_update_row({
-            [pk.column_name]: t.row[pk.column_name],
-            [t.column.column_name]: t.row[t.column.column_name],
-        } as PgRow);
+        const sql = await pg.generate_update_row(row);
         if (sql !== undefined) {
             await writeText(sql.trim());
             toast(`Copied sql to clipboard`);
@@ -87,15 +89,11 @@ export const create_table_value_actions = (
     };
 
     const edit_sql = async () => {
-        const pk = pg.get_primary_key();
-        const t = target();
-        if (t === undefined || pk === undefined) {
+        const row = target_update();
+        if (row === undefined) {
             return;
         }
-        const sql = await pg.generate_update_row({
-            [pk.column_name]: t.row[pk.column_name],
-            [t.column.column_name]: t.row[t.column.column_name],
-        } as PgRow);
+        const sql = await pg.generate_update_row(row);
         if (sql) {
             scripts.empty_file();
             scripts.current_value = sql.trim();
