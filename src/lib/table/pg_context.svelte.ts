@@ -2,7 +2,7 @@ import {get_connections_context} from "$lib/connection/connections_context.svelt
 import {catch_error} from "@les3dev/catch_error";
 import {invoke} from "@tauri-apps/api/core";
 import {getContext, setContext} from "svelte";
-import {value_to_sql, value_type_is_number, type PgType} from "./values";
+import {quote_literal, value_to_sql, value_type_is_number, type PgType} from "./values";
 import {rows_to_csv, rows_to_sql} from "./rows_format";
 import {get_toast_context} from "$lib/widgets/Toaster.svelte";
 import {getCurrentWindow} from "@tauri-apps/api/window";
@@ -63,7 +63,7 @@ const value_for_operator = (data_type: PgType, operator: WhereOperator, value: s
         operator === "!~" ||
         operator === "!~*"
     ) {
-        return `'${value}'`;
+        return quote_literal(value);
     }
     return value_to_sql({data_type}, value as any);
 };

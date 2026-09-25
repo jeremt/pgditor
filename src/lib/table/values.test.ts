@@ -306,7 +306,7 @@ describe("formatValue", () => {
 
     describe("📜 Text search", () => {
         it("should format tsvector", () => {
-            expect(value_to_sql(makeColumn("tsvector"), "'fat':2 'cat':3")).toBe("''fat':2 'cat':3'");
+            expect(value_to_sql(makeColumn("tsvector"), "'fat':2 'cat':3")).toBe("'''fat'':2 ''cat'':3'");
         });
 
         it("should format tsquery", () => {
@@ -460,6 +460,39 @@ describe("formatValue", () => {
 
         it("should format empty vector", () => {
             expect(value_to_sql(makeColumn("vector"), [])).toBe("'[]'");
+        });
+    });
+
+    describe("🔒 Escaping", () => {
+        it("should escape single quotes in varchar and bpchar", () => {
+            expect(value_to_sql(makeColumn("varchar"), "l'avion")).toBe("'l''avion'");
+            expect(value_to_sql(makeColumn("bpchar"), "l'avion")).toBe("'l''avion'");
+        });
+
+        it("should escape single quotes in types cast by default", () => {
+            expect(value_to_sql(makeColumn("citext"), "l'avion")).toBe("'l''avion'::citext");
+            expect(value_to_sql(makeColumn("inet"), "1'1")).toBe("'1''1'::inet");
+        });
+
+        it("should format numbers of any type without crashing", () => {
+            expect(value_to_sql(makeColumn("numeric"), 12.5)).toBe("12.5");
+            expect(value_to_sql(makeColumn("oid"), 16384)).toBe("16384");
+        });
+
+        it("should keep values already cast to the column type", () => {
+            expect(value_to_sql(makeColumn("point"), "'(5,15)'::point")).toBe("'(5,15)'::point");
+        });
+
+        it("should format arrays named after pg_type", () => {
+            expect(value_to_sql(makeColumn("_text"), ["a,b", "l'avion", 'x"y', null])).toBe(
+                `'{"a,b","l''avion","x\\"y",NULL}'`,
+            );
+            expect(value_to_sql(makeColumn("_int4"), [[1, 2], [3, 4]])).toBe("'{{1,2},{3,4}}'");
+            expect(value_to_sql(makeColumn("_text"), "{a,b}")).toBe("'{a,b}'");
+        });
+
+        it("should not prefix bytea returned by postgres twice", () => {
+            expect(value_to_sql(makeColumn("bytea"), "\\x48656c6c6f")).toBe("'\\x48656c6c6f'");
         });
     });
 
