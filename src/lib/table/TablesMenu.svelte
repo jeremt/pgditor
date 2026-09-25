@@ -95,8 +95,7 @@
         setTimeout(() => {
             refreshing = false;
         }, 500);
-        await pg.load_tables(false);
-        await pg.refresh_data();
+        await pg.refresh_tables();
     };
 
     const export_rows = async (

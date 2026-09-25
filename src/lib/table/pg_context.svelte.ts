@@ -489,6 +489,23 @@ class PgContext {
     };
 
     /**
+     * Reload the table list and the displayed rows, e.g. after a script that created, renamed or dropped tables.
+     *
+     * Falls back to the first table when the displayed one no longer exists.
+     */
+    refresh_tables = async () => {
+        await this.load_tables(false);
+        const current = this.current_table;
+        if (current && this.tables.some((table) => table.schema === current.schema && table.name === current.name)) {
+            await this.refresh_data();
+        } else if (this.tables[0]) {
+            await this.select_table(this.tables[0]);
+        } else {
+            this.current_table = undefined;
+        }
+    };
+
+    /**
      * Re-run a select to get the up to date value of a single cell from the database.
      *
      * Returns `undefined` when the value cannot be fetched (no primary key, deleted row or sql error).
@@ -523,7 +540,8 @@ class PgContext {
      * @param throwError Throws an error by default, set to `false` if you want a toast like other helpers.
      */
     raw_query = async (sql: string, {throwError = true, refresh = true} = {}) => {
-        if (!this.connections.current || !this.current_table) {
+        // no table is needed to run a script, e.g. to create the first one
+        if (!this.connections.current) {
             return;
         }
         const connectionString = this.connections.current.connectionString;
@@ -612,6 +630,9 @@ where ${primary_key_condition(primary_keys, rows)};`;
     };
 
     truncate_table = async () => {
+        if (!this.current_table) {
+            return;
+        }
         await this.raw_query(`truncate ${this.fullname} restart identity cascade`, {throwError: false});
         this.reset_filters();
     };

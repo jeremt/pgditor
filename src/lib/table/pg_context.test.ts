@@ -470,3 +470,45 @@ describe("loading", () => {
         expect(pg.is_loading).toBe(false);
     });
 });
+
+describe("refresh_tables", () => {
+    const table = (name: string) =>
+        ({schema: "public", name, type: "BASE TABLE", column_names: ["id"], size_mb: 0}) satisfies PgTable;
+
+    it("should list the tables a script created and reload the displayed rows", async () => {
+        respond = (command) =>
+            command === "list_tables" ? Promise.resolve([table("projects"), table("test_values")]) : undefined;
+        const pg = create_pg([column("id", "int4")]);
+        await pg.refresh_tables();
+        expect(pg.tables.map((t) => t.name)).toEqual(["projects", "test_values"]);
+        expect(pg.current_table?.name).toBe("projects");
+        expect(calls.filter((call) => call.command === "get_table_data").map((call) => call.args.table)).toEqual([
+            "projects",
+        ]);
+        expect(pg.is_loading).toBe(false);
+    });
+
+    it("should show the first table when the displayed one was dropped", async () => {
+        respond = (command) => (command === "list_tables" ? Promise.resolve([table("users")]) : undefined);
+        const pg = create_pg([column("id", "int4")]);
+        await pg.refresh_tables();
+        expect(pg.current_table?.name).toBe("users");
+        expect(calls.some((call) => call.command === "get_table_data" && call.args.table === "projects")).toBe(false);
+    });
+
+    it("should show no table when the last one was dropped", async () => {
+        respond = (command) => (command === "list_tables" ? Promise.resolve([]) : undefined);
+        const pg = create_pg([column("id", "int4")]);
+        await pg.refresh_tables();
+        expect(pg.current_table).toBeUndefined();
+    });
+});
+
+describe("raw_query", () => {
+    it("should run a script when no table is selected, e.g. to create the first one", async () => {
+        const pg = create_pg([]);
+        pg.current_table = undefined;
+        await pg.raw_query("create table first (id int)");
+        expect(queries).toEqual(["create table first (id int)"]);
+    });
+});
