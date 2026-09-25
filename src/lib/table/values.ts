@@ -72,15 +72,14 @@ export const default_values = {
 export type PgType = keyof typeof default_values;
 
 export const sql_to_value = (column: Pick<PgColumn, "data_type">, sql: string): unknown => {
-    // strip explicit type casts
-    if (sql.startsWith("'") && sql.endsWith(`'::${column.data_type}`)) {
-        const result = sql.slice(1, sql.length - `'::${column.data_type}`.length);
-        return sql_to_value(column, result);
-    }
+    // unwrap quoted literals and their cast, which postgres doesn't always name like pg_type
+    // (e.g. `'draft'::character varying` for a varchar or `'{}'::text[]` for a _text)
+    const literal = sql.match(/^'((?:[^']|'')*)'(::.+)?$/);
+    const value = literal ? literal[1].replace(/''/g, "'") : sql;
     if (column.data_type === "json" || column.data_type === "jsonb") {
-        return JSON.parse(sql);
+        return JSON.parse(value);
     }
-    return sql;
+    return value;
 };
 
 export const value_type_is_integer = (data_type: PgType) => {

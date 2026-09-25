@@ -1,5 +1,5 @@
 import {describe, expect, it} from "vitest";
-import {primary_key_condition, quote_ident, value_to_sql} from "./values";
+import {primary_key_condition, quote_ident, sql_to_value, value_to_sql} from "./values";
 import type {PgColumn} from "./pg_context.svelte";
 
 describe("formatValue", () => {
@@ -550,5 +550,30 @@ describe("primary_key_condition", () => {
 
     it("should work with a single column key", () => {
         expect(primary_key_condition([column("id", "int4")], [{id: 1}])).toBe(`("id") in ((1))`);
+    });
+});
+
+describe("sql_to_value", () => {
+    const column = (data_type: string) => ({data_type}) as PgColumn;
+
+    it("should unwrap a literal whose cast isn't named like pg_type", () => {
+        expect(sql_to_value(column("varchar"), "'draft'::character varying")).toBe("draft");
+        expect(sql_to_value(column("_text"), "'{}'::text[]")).toBe("{}");
+    });
+
+    it("should unescape the quotes of the literal", () => {
+        expect(sql_to_value(column("text"), "'it''s'::text")).toBe("it's");
+        expect(sql_to_value(column("text"), "'a''::b'::text")).toBe("a'::b");
+    });
+
+    it("should unwrap enums and json", () => {
+        expect(sql_to_value(column("mood"), "'happy'::mood")).toBe("happy");
+        expect(sql_to_value(column("jsonb"), `'{"a": "it''s"}'::jsonb`)).toEqual({a: "it's"});
+    });
+
+    it("should keep expressions and numbers as they are", () => {
+        expect(sql_to_value(column("timestamptz"), "now()")).toBe("now()");
+        expect(sql_to_value(column("int4"), "nextval('seq'::regclass)")).toBe("nextval('seq'::regclass)");
+        expect(sql_to_value(column("int4"), "42")).toBe("42");
     });
 });
