@@ -51,11 +51,6 @@ Façon de travailler : une branche, un commit par problème, puis une PR.
 
 ## Bugs qui touchent aux données
 
-- [ ] **Impossible de saisir une PK sans valeur par défaut à l'insert.** `insert_row` insère
-      bien les colonnes de PK qui ont une valeur, mais `TableValueEditor.svelte` (branche
-      `is_primary_key === "YES"`, ligne 30) affiche une PK vide comme « générée par Postgres »,
-      sans champ de saisie, sauf si c'est aussi une FK. Cas concernés : PK en texte ou en `uuid`
-      sans défaut. Piste : afficher l'éditeur normal quand `column_default` est `null`.
 - [ ] **Les défauts qui sont des expressions sont envoyés comme des littéraux.** `row_to_insert`
       (`src/lib/table/TablesMenu.svelte:29`) préremplit une colonne qui n'est pas dans la PK
       avec `sql_to_value(column_default)`. `gen_random_uuid()` part alors en

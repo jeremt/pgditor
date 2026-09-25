@@ -593,20 +593,6 @@ WHERE ${primary_key_condition(primary_keys, [row])};
         return await this.raw_query(query, {throwError});
     };
 
-    /**
-     * Simple helper function to do an insert into or an update depending on whether the row has a primary key value.
-     */
-    upsert_row = async (row: PgRow, {throwError = true} = {}) => {
-        const primary_keys = this.get_primary_keys();
-        if (!primary_keys) {
-            return;
-        }
-        const has_primary_key = primary_keys.every(
-            (pk) => row[pk.column_name] !== null && row[pk.column_name] !== undefined,
-        );
-        return has_primary_key ? await this.update_row(row, {throwError}) : await this.insert_row(row, {throwError});
-    };
-
     insert_row = async (row: PgRow, {throwError = true} = {}) => {
         if (!this.current_table) {
             return;

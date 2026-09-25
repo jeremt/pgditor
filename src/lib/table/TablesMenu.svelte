@@ -34,7 +34,7 @@
                     column.column_default && column.is_primary_key === "NO"
                         ? sql_to_value(column, column.column_default)
                         : column.is_nullable === "YES" ||
-                            column.is_primary_key === "YES"
+                            (column.is_primary_key === "YES" && column.column_default)
                           ? null
                           : (default_values[column.data_type] ?? ""),
             };
@@ -264,6 +264,7 @@
     >
         <TableUpsert
             row={row_to_insert}
+            mode="insert"
             onclose={() => (commands.is_insert_open = false)}
         />
     </Dialog>

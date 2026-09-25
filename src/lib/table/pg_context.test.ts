@@ -102,29 +102,19 @@ values
     });
 });
 
-describe("upsert_row", () => {
-    const columns = [
-        column("user_id", "uuid", {...user_fk, is_primary_key: "YES"}),
-        column("id", "int4", {is_primary_key: "YES", column_default: "nextval('projects_id_seq'::regclass)"}),
-        column("name", "text"),
-    ];
-
-    it("should insert when a column of a composite primary key is empty", async () => {
-        const pg = create_pg(columns);
-        await pg.upsert_row({user_id: "00000000-0000-0000-0000-00000000000a", id: null, name: "p"});
-        expect(queries[0]).toMatch(/^insert into/);
-    });
-
+describe("update_row", () => {
     it("should update the row matching every column of the primary key", async () => {
-        const pg = create_pg(columns);
-        await pg.upsert_row({user_id: "00000000-0000-0000-0000-00000000000a", id: 0, name: "p"});
+        const pg = create_pg([
+            column("user_id", "uuid", {...user_fk, is_primary_key: "YES"}),
+            column("id", "int4", {is_primary_key: "YES", column_default: "nextval('projects_id_seq'::regclass)"}),
+            column("name", "text"),
+        ]);
+        await pg.update_row({user_id: "00000000-0000-0000-0000-00000000000a", id: 0, name: "p"});
         expect(queries[0].trim()).toBe(`UPDATE "public"."projects" SET
 "name" = 'p'
 WHERE ("user_id", "id") in (('00000000-0000-0000-0000-00000000000a'::uuid, 0));`);
     });
-});
 
-describe("update_row", () => {
     it("should only set the given columns", async () => {
         const pg = create_pg([
             column("id", "int4", {is_primary_key: "YES"}),
@@ -220,20 +210,6 @@ WHERE ("id") in ((1));`);
         const pg = create_pg([column("a", "text")]);
         await pg.update_row({a: "x"});
         expect(queries).toEqual([]);
-    });
-});
-
-describe("upsert_row edge cases", () => {
-    it("should update a row whose primary key is 0", async () => {
-        const pg = create_pg([column("id", "int4", {is_primary_key: "YES"}), column("name", "text")]);
-        await pg.upsert_row({id: 0, name: "p"});
-        expect(queries[0]).toMatch(/^UPDATE/);
-    });
-
-    it("should insert a row without primary key value", async () => {
-        const pg = create_pg([column("id", "int4", {is_primary_key: "YES"}), column("name", "text")]);
-        await pg.upsert_row({id: null, name: "p"});
-        expect(queries[0]).toMatch(/^insert into/);
     });
 });
 
