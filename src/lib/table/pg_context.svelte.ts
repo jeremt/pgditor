@@ -73,15 +73,23 @@ const value_for_operator = (data_type: PgType, operator: WhereOperator, value: s
     ) {
         return quote_literal(value);
     }
+    // an untyped literal takes the type of the column: `3.14` would compare a float4 as a float8 and never
+    // match, and the json typed in the filter would be sent as a json string
+    if (data_type === "float4" || data_type === "json" || data_type === "jsonb") {
+        return quote_literal(value);
+    }
     return value_to_sql({data_type}, value as any);
 };
+// json has no equality operator, jsonb compares the values whatever their spacing or key order
+const column_for_filter = (filter: WhereFilter) =>
+    filter.column_type === "json" ? `${quote_ident(filter.column)}::jsonb` : quote_ident(filter.column);
 export const filters_to_where = (filters: WhereFilter[]) =>
     filters.reduce((result, filter) => {
         return (
             result +
             "\n" +
             (result === "" ? "where" : "and") +
-            ` ${quote_ident(filter.column)} ${filter.operator} ${filter.operator !== "is null" && filter.operator !== "is not null" ? value_for_operator(filter.column_type, filter.operator, filter.value) : ""}`
+            ` ${column_for_filter(filter)} ${filter.operator} ${filter.operator !== "is null" && filter.operator !== "is not null" ? value_for_operator(filter.column_type, filter.operator, filter.value) : ""}`
         );
     }, "");
 

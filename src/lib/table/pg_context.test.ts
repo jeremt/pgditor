@@ -345,6 +345,21 @@ describe("filters_to_where", () => {
         );
     });
 
+    it("should compare float4 columns to an untyped literal", () => {
+        expect(filters_to_where([{column: "r", column_type: "float4", operator: ">=", value: "3.14"}])).toBe(
+            `\nwhere "r" >= '3.14'`,
+        );
+    });
+
+    it("should compare json columns to the typed json", () => {
+        expect(
+            filters_to_where([
+                {column: "jb", column_type: "jsonb", operator: "=", value: `{"name": "l'a"}`},
+                {column: "j", column_type: "json", operator: "!=", value: `{"a": 1}`},
+            ]),
+        ).toBe(`\nwhere "jb" = '{"name": "l''a"}'\nand "j"::jsonb != '{"a": 1}'`);
+    });
+
     it("should cast uuid values", () => {
         expect(
             filters_to_where([
