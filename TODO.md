@@ -74,26 +74,6 @@ Façon de travailler : une branche, un commit par problème, puis une PR.
       colonnes, aucune colonne d'une telle table ne peut être modifiée depuis le panneau. L'éditeur
       affiche aussi `[object Object]`. Piste : exposer `typtype = 'c'` dans `list_table_columns`
       et générer `row(1, 'x')::pair` (lié aux tests `ROW(...)` du point précédent).
-- [ ] **`pnpm check` échoue** sur `vite.config.js:5` : `process` n'est pas typé. Ajouter
-      `@types/node` en devDependency.
-- [ ] **Filtres `=` qui ne trouvent jamais la ligne** (`value_for_operator`,
-      `pg_context.svelte.ts:56`) :
-    - `float4` : `"col" = 3.14` compare en `float8` et ne matche pas la valeur arrondie en
-      `float4`. Piste : un littéral non typé (`'3.14'`) ou un cast `::float4` ;
-    - `json` / `jsonb` : la valeur tapée passe par `JSON.stringify` et devient une chaîne JSON
-      (`'"{...}"'`) au lieu d'un objet. Piste : parser la valeur tapée, ou comparer `::text`.
-- [ ] **`is_loading` reste à `true`** quand `load_tables` (`pg_context.svelte.ts:184`) ou
-      `select_table` (`:250`) sortent en erreur. Le toast « Connected to… » de `load_tables`
-      s'affiche aussi à chaque refresh (`load_tables(false)`).
-- [ ] **Deux clics rapides sur deux tables** peuvent afficher les lignes de la première sous
-      les colonnes de la seconde : `select_table` et `update_data` n'ignorent jamais une
-      réponse arrivée trop tard. Piste : un compteur de requête, en ne gardant que la dernière.
-- [ ] `operators_for_column` (`pg_context.svelte.ts:94` et `:97`) ajoute `"<="` deux fois et
-      oublie `">="`.
-- [ ] `fetch_enum_values` (`src-tauri/src/commands/list_table_columns.rs:129`) filtre sur
-      `t.typname` sans le schéma : deux enums du même nom dans deux schémas mélangent leurs
-      valeurs. Piste : filtrer par l'OID du type (`a.atttypid`), que la requête principale
-      connaît déjà.
 
 ## Backend et sécurité
 
