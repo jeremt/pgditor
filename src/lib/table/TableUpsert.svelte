@@ -28,14 +28,11 @@
         return value;
     });
 
-    const pk = $derived.by(() => {
-        if (!pg.current_table) {
-            return;
-        }
-        return pg.current_table.columns.find((column) => column.is_primary_key === "YES");
-    });
+    const primary_keys = $derived(pg.current_table?.columns.filter((column) => column.is_primary_key === "YES") ?? []);
 
-    const hasPkValue = $derived(!pk ? false : localRow[pk.column_name] !== null);
+    const hasPkValue = $derived(
+        primary_keys.length > 0 && primary_keys.every((column) => localRow[column.column_name] !== null),
+    );
 
     $effect(() => {
         if (localRow) {
@@ -75,7 +72,7 @@
         <div class="text-sm text-error p-2 mx-4 mb-4 border border-bg-2 rounded-xl">{errorMessage}</div>
     {/if}
     <div class="flex flex-col gap-2 grow overflow-auto pb-4 px-4">
-        {#if pk === undefined && hasPkValue}
+        {#if primary_keys.length === 0}
             <div class="text-fg-1 text-xs flex flex-wrap gap-1">
                 Without primary key, you cannot update a specific row, use <TerminalIcon --size="1rem" /> instead.
             </div>

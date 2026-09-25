@@ -243,3 +243,13 @@ export const value_to_sql = (column: Pick<PgColumn, "data_type">, value: any): s
     // otherwise, explicitly cast and wrap in quote special types
     return `${quote_literal(value)}::${type}`;
 };
+
+/**
+ * Build the condition matching the given rows by their primary key, which can span several columns.
+ *
+ * e.g. `("a", "b") in ((1, 'x'), (2, 'y'))`
+ */
+export const primary_key_condition = (primary_keys: PgColumn[], rows: Record<string, unknown>[]) =>
+    `(${primary_keys.map((pk) => quote_ident(pk.column_name)).join(", ")}) in (${rows
+        .map((row) => `(${primary_keys.map((pk) => value_to_sql(pk, row[pk.column_name])).join(", ")})`)
+        .join(", ")})`;

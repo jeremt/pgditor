@@ -2,7 +2,14 @@ import {get_connections_context} from "$lib/connection/connections_context.svelt
 import {catch_error} from "@les3dev/catch_error";
 import {invoke} from "@tauri-apps/api/core";
 import {getContext, setContext} from "svelte";
-import {quote_ident, quote_literal, value_to_sql, value_type_is_number, type PgType} from "./values";
+import {
+    primary_key_condition,
+    quote_ident,
+    quote_literal,
+    value_to_sql,
+    value_type_is_number,
+    type PgType,
+} from "./values";
 import {rows_to_csv, rows_to_sql} from "./rows_format";
 import {get_toast_context} from "$lib/widgets/Toaster.svelte";
 import {getCurrentWindow} from "@tauri-apps/api/window";
@@ -388,7 +395,7 @@ class PgContext {
         }
         const connectionString = this.connections.current.connectionString;
         this.is_loading = true;
-        const primary_key = this.current_table.columns.find((col) => col.is_primary_key === "YES");
+        const primary_keys = this.current_table.columns.filter((col) => col.is_primary_key === "YES");
         const {schema, name: table, column_names} = this.current_table;
         const data = await catch_error(() =>
             invoke<{rows: PgRow[]; count: number}>("get_table_data", {
@@ -404,8 +411,8 @@ class PgContext {
                 whereClause: where,
                 orderBy: this.order_by
                     ? `order by ${quote_ident(this.order_by.column)} ${this.order_by.direction}`
-                    : primary_key !== undefined
-                      ? `order by ${quote_ident(primary_key.column_name)} asc`
+                    : primary_keys.length > 0
+                      ? `order by ${primary_keys.map((pk) => `${quote_ident(pk.column_name)} asc`).join(", ")}`
                       : "",
             }),
         );
@@ -442,11 +449,11 @@ class PgContext {
         if (!this.current_table) {
             return;
         }
-        const primary_key = this.get_primary_key();
-        if (!primary_key) {
+        const primary_keys = this.get_primary_keys();
+        if (!primary_keys) {
             return;
         }
-        const where = `where ${quote_ident(primary_key.column_name)} = ${value_to_sql(primary_key, row[primary_key.column_name])}`;
+        const where = `where ${primary_key_condition(primary_keys, [row])}`;
         const data = await this.get_table_data(this.current_table, where, 0, 1);
         if (data instanceof Error) {
             console.error(data.message);
@@ -498,29 +505,39 @@ class PgContext {
     };
 
     /**
-     * Get the primary key column of the currently selected table.
+     * Get the primary key columns of the currently selected table, a composite key has several of them.
      */
-    get_primary_key = () => {
+    get_primary_keys = () => {
         if (!this.current_table) {
             return;
         }
-        const primary_key = this.current_table.columns.find((col) => col.is_primary_key === "YES");
-        if (primary_key === undefined) {
+        const primary_keys = this.current_table.columns.filter((col) => col.is_primary_key === "YES");
+        if (primary_keys.length === 0) {
             this.#toast_context.toast(`Cannot update row without primary key.`, {kind: "error"});
             return;
         }
-        return primary_key;
+        return primary_keys;
+    };
+
+    /**
+     * Keep only the primary key values of the given row, so it can be completed with the values to update.
+     */
+    pick_primary_keys = (row: PgRow): PgRow | undefined => {
+        const primary_keys = this.get_primary_keys();
+        if (!primary_keys) {
+            return;
+        }
+        return Object.fromEntries(primary_keys.map((pk) => [pk.column_name, row[pk.column_name]]));
     };
 
     delete_selection = async () => {
-        const pk = this.get_primary_key();
-        if (!pk || !this.current_table) {
+        const primary_keys = this.get_primary_keys();
+        if (!primary_keys || !this.current_table) {
             return;
         }
+        const rows = this.selected_rows.map((index) => this.current_table!.rows[index]);
         const query = `delete from ${this.fullname}
-where ${quote_ident(pk.column_name)} = any(array[${this.selected_rows
-            .map((index) => value_to_sql(pk, this.current_table!.rows[index][pk.column_name]))
-            .join(", ")}]);`;
+where ${primary_key_condition(primary_keys, rows)};`;
         const result = await catch_error(() => this.raw_query(query));
         if (result instanceof Error) {
             this.#toast_context.toast(`Failed to delete rows: ${result.message}`, {kind: "error", details: query});
@@ -550,8 +567,8 @@ where ${quote_ident(pk.column_name)} = any(array[${this.selected_rows
     };
 
     generate_update_row = async (row: PgRow) => {
-        const pk = this.get_primary_key();
-        if (!pk || !this.current_table) {
+        const primary_keys = this.get_primary_keys();
+        if (!primary_keys || !this.current_table) {
             console.warn(`Cannot update without primary key.`);
             return;
         }
@@ -564,7 +581,7 @@ ${this.current_table.columns
     .filter(editableColumns)
     .map((col) => `${quote_ident(col.column_name)} = ${value_to_sql(col, row[col.column_name])}`)
     .join(",\n  ")}
-WHERE ${quote_ident(pk.column_name)} = ${value_to_sql(pk, row[pk.column_name])};
+WHERE ${primary_key_condition(primary_keys, [row])};
                         `;
     };
 
@@ -577,41 +594,17 @@ WHERE ${quote_ident(pk.column_name)} = ${value_to_sql(pk, row[pk.column_name])};
     };
 
     /**
-     * Simple helper function to do an insert into or an update depending on whether there is a primary key or not.
+     * Simple helper function to do an insert into or an update depending on whether the row has a primary key value.
      */
     upsert_row = async (row: PgRow, {throwError = true} = {}) => {
-        if (!this.current_table) {
+        const primary_keys = this.get_primary_keys();
+        if (!primary_keys) {
             return;
         }
-        const primary_key = this.get_primary_key();
-        if (!primary_key) {
-            this.#toast_context.toast(`Can't update row without primary key`);
-            return;
-        }
-        const editableColumns = (column: PgColumn) => column.is_primary_key === "NO" && column.data_type !== "tsvector";
-        const primary_key_value = primary_key ? row[primary_key.column_name] : null;
-        const query = primary_key_value
-            ? // updae
-              `update ${this.fullname}
-set
-  ${this.current_table.columns
-      .filter(editableColumns)
-      .map((col) => `${quote_ident(col.column_name)} = ${value_to_sql(col, row[col.column_name])}`)
-      .join(",\n  ")}
-where ${quote_ident(primary_key!.column_name)} = ${value_to_sql(primary_key!, primary_key_value)};`
-            : // insert
-              `insert into ${this.fullname}
-(${this.current_table.columns
-                  .filter(editableColumns)
-                  .map(({column_name}) => quote_ident(column_name))
-                  .join(", ")})
-values
-(${this.current_table.columns
-                  .filter(editableColumns)
-                  .map((col) => value_to_sql(col, row[col.column_name]))
-                  .join(", ")});`;
-
-        return await this.raw_query(query, {throwError});
+        const has_primary_key = primary_keys.every(
+            (pk) => row[pk.column_name] !== null && row[pk.column_name] !== undefined,
+        );
+        return has_primary_key ? await this.update_row(row, {throwError}) : await this.insert_row(row, {throwError});
     };
 
     insert_row = async (row: PgRow, {throwError = true} = {}) => {

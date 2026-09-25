@@ -1,5 +1,5 @@
 import {describe, expect, it} from "vitest";
-import {quote_ident, value_to_sql} from "./values";
+import {primary_key_condition, quote_ident, value_to_sql} from "./values";
 import type {PgColumn} from "./pg_context.svelte";
 
 describe("formatValue", () => {
@@ -532,5 +532,23 @@ describe("quote_ident", () => {
 
     it("should double the quotes inside the name", () => {
         expect(quote_ident('a"b')).toBe('"a""b"');
+    });
+});
+
+describe("primary_key_condition", () => {
+    const column = (column_name: string, data_type: string) => ({column_name, data_type}) as PgColumn;
+
+    it("should match every column of a composite key", () => {
+        const pks = [column("tenantId", "uuid"), column("id", "int4")];
+        expect(
+            primary_key_condition(pks, [
+                {tenantId: "a", id: 1, name: "x"},
+                {tenantId: "b", id: 2, name: "y"},
+            ]),
+        ).toBe(`("tenantId", "id") in (('a'::uuid, 1), ('b'::uuid, 2))`);
+    });
+
+    it("should work with a single column key", () => {
+        expect(primary_key_condition([column("id", "int4")], [{id: 1}])).toBe(`("id") in ((1))`);
     });
 });
