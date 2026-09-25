@@ -265,9 +265,10 @@ export const value_to_sql = (column: Pick<PgColumn, "data_type">, value: any): s
         return quote_literal(`\\x${String(value).replace(/^\\x/, "")}`);
     }
 
-    // Remove JS n anotation to send numbers to PG
-    if (type === "bigint" || type === "int8" || type === "bigserial") {
-        return String(value).replace("n", "");
+    // typed in a text input, so quote anything that isn't an integer to get a postgres error instead of broken SQL
+    if (value_type_is_bigint(type)) {
+        const text = String(value).trim();
+        return /^-?\d+$/.test(text) ? text : `${quote_literal(value)}::int8`;
     }
 
     // 📚 Array types (named `_<element type>` in pg_type, e.g. `_int4`)

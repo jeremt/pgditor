@@ -702,3 +702,13 @@ describe("arrays typed in the editor", () => {
     });
 });
 
+describe("int8 typed in a text input", () => {
+    const column = {data_type: "int8"} as PgColumn;
+
+    it("should send integers as is and quote anything else", () => {
+        expect(value_to_sql(column, " 9007199254740993 ")).toBe("9007199254740993");
+        expect(value_to_sql(column, "-1")).toBe("-1");
+        expect(value_to_sql(column, "")).toBe("''::int8");
+        expect(value_to_sql(column, "1; drop table x")).toBe("'1; drop table x'::int8");
+    });
+});
