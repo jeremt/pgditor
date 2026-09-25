@@ -4,7 +4,7 @@ import {writeText} from "@tauri-apps/plugin-clipboard-manager";
 import {save_to_file} from "$lib/helpers/save_to_file";
 import {get_toast_context} from "$lib/widgets/Toaster.svelte";
 import {get_pg_context, type PgColumn, type PgRow} from "./pg_context.svelte";
-import {quote_ident} from "./values";
+import {primary_key_condition, quote_ident} from "./values";
 
 export const create_context_menu = () => {
     const pg = get_pg_context();
@@ -85,37 +85,54 @@ export const create_context_menu = () => {
                     toast("Row copied to clipboard (in JSON)");
                     break;
                 case "table_set_null": {
-                    if (lastMenuContext.column) {
-                        await pg.update_row({[lastMenuContext.column.column_name]: null}, {throwError: false});
-                        toast("Value set to NULL");
+                    // the row must keep its primary key, otherwise the update matches no row
+                    const primary_key = lastMenuContext.row && pg.pick_primary_keys(lastMenuContext.row);
+                    if (lastMenuContext.column && primary_key) {
+                        const result = await pg.update_row(
+                            {...primary_key, [lastMenuContext.column.column_name]: null},
+                            {throwError: false},
+                        );
+                        if (result) {
+                            toast("Value set to NULL");
+                        }
                     }
                     break;
                 }
                 case "table_set_default": {
-                    if (lastMenuContext.column) {
-                        await pg.update_row(
-                            {[lastMenuContext.column.column_name]: lastMenuContext.column.column_default},
+                    // column_default is an sql expression, the `default` keyword lets postgres evaluate it
+                    const primary_keys = pg.get_primary_keys();
+                    if (lastMenuContext.column && lastMenuContext.row && primary_keys) {
+                        const result = await pg.raw_query(
+                            `UPDATE ${pg.fullname} SET ${quote_ident(lastMenuContext.column.column_name)} = default
+WHERE ${primary_key_condition(primary_keys, [lastMenuContext.row])};`,
                             {throwError: false},
                         );
-                        toast("Value set to default");
+                        if (result) {
+                            toast("Value set to default");
+                        }
                     }
                     break;
                 }
                 case "table_set_all_null":
                     if (lastMenuContext.column && pg.current_table) {
-                        await pg.raw_query(`UPDATE ${pg.fullname} SET ${quote_ident(lastMenuContext.column.column_name)} = null;`, {
-                            throwError: false,
-                        });
-                        toast(`All values of column ${lastMenuContext.column.column_name} set to NULL`);
+                        const result = await pg.raw_query(
+                            `UPDATE ${pg.fullname} SET ${quote_ident(lastMenuContext.column.column_name)} = null;`,
+                            {throwError: false},
+                        );
+                        if (result) {
+                            toast(`All values of column ${lastMenuContext.column.column_name} set to NULL`);
+                        }
                     }
                     break;
                 case "table_set_all_default":
                     if (lastMenuContext.column && pg.current_table) {
-                        await pg.raw_query(
-                            `UPDATE ${pg.fullname} SET ${quote_ident(lastMenuContext.column.column_name)} = ${lastMenuContext.column.column_default};`,
+                        const result = await pg.raw_query(
+                            `UPDATE ${pg.fullname} SET ${quote_ident(lastMenuContext.column.column_name)} = default;`,
                             {throwError: false},
                         );
-                        toast(`All values of column ${lastMenuContext.column.column_name} set to default`);
+                        if (result) {
+                            toast(`All values of column ${lastMenuContext.column.column_name} set to default`);
+                        }
                     }
                     break;
                 case "copy_json":

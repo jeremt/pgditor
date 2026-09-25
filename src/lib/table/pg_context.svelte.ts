@@ -590,7 +590,7 @@ WHERE ${primary_key_condition(primary_keys, [row])};
         if (!query) {
             return;
         }
-        await this.raw_query(query, {throwError});
+        return await this.raw_query(query, {throwError});
     };
 
     /**
