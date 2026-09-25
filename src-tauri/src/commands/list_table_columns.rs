@@ -53,29 +53,38 @@ pub async fn list_table_columns(
             AND c.table_name = pk.table_name
             AND c.column_name = pk.column_name
         LEFT JOIN (
-            SELECT
-                src_ns.nspname       AS table_schema,
-                src_cls.relname      AS table_name,
-                src_attr.attname     AS column_name,
-                tgt_ns.nspname       AS foreign_table_schema,
-                tgt_cls.relname      AS foreign_table_name,
-                tgt_attr.attname     AS foreign_column_name
-            FROM pg_catalog.pg_constraint AS con
-            INNER JOIN pg_catalog.pg_class AS src_cls
-                ON src_cls.oid = con.conrelid
-            INNER JOIN pg_catalog.pg_namespace AS src_ns
-                ON src_ns.oid = src_cls.relnamespace
-            INNER JOIN pg_catalog.pg_class AS tgt_cls
-                ON tgt_cls.oid = con.confrelid
-            INNER JOIN pg_catalog.pg_namespace AS tgt_ns
-                ON tgt_ns.oid = tgt_cls.relnamespace
-            INNER JOIN pg_catalog.pg_attribute AS src_attr
-                ON src_attr.attrelid = con.conrelid
-                AND src_attr.attnum = ANY(con.conkey)
-            INNER JOIN pg_catalog.pg_attribute AS tgt_attr
-                ON tgt_attr.attrelid = con.confrelid
-                AND tgt_attr.attnum = ANY(con.confkey)
-            WHERE con.contype = 'f'
+            -- unnest pairs conkey/confkey positionally: using `= ANY(...)` on both
+            -- cross-joins them, which duplicates every column of a composite key.
+            -- A column in several FKs keeps the first constraint by name, so it is stable.
+            SELECT DISTINCT ON (table_schema, table_name, column_name) *
+            FROM (
+                SELECT
+                    src_ns.nspname       AS table_schema,
+                    src_cls.relname      AS table_name,
+                    src_attr.attname     AS column_name,
+                    tgt_ns.nspname       AS foreign_table_schema,
+                    tgt_cls.relname      AS foreign_table_name,
+                    tgt_attr.attname     AS foreign_column_name,
+                    con.conname          AS constraint_name
+                FROM pg_catalog.pg_constraint AS con
+                CROSS JOIN LATERAL unnest(con.conkey, con.confkey) AS k(conkey, confkey)
+                INNER JOIN pg_catalog.pg_class AS src_cls
+                    ON src_cls.oid = con.conrelid
+                INNER JOIN pg_catalog.pg_namespace AS src_ns
+                    ON src_ns.oid = src_cls.relnamespace
+                INNER JOIN pg_catalog.pg_class AS tgt_cls
+                    ON tgt_cls.oid = con.confrelid
+                INNER JOIN pg_catalog.pg_namespace AS tgt_ns
+                    ON tgt_ns.oid = tgt_cls.relnamespace
+                INNER JOIN pg_catalog.pg_attribute AS src_attr
+                    ON src_attr.attrelid = con.conrelid
+                    AND src_attr.attnum = k.conkey
+                INNER JOIN pg_catalog.pg_attribute AS tgt_attr
+                    ON tgt_attr.attrelid = con.confrelid
+                    AND tgt_attr.attnum = k.confkey
+                WHERE con.contype = 'f'
+            ) AS all_fk
+            ORDER BY table_schema, table_name, column_name, constraint_name
         ) AS fk
             ON c.table_schema = fk.table_schema
             AND c.table_name = fk.table_name

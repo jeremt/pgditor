@@ -53,7 +53,10 @@ pub async fn get_table_data(
         json_rows.push(v);
     }
 
-    let count_sql = format!("select count(*) as count from {}.{}", schema_q, table_q);
+    let count_sql = format!(
+        "select count(*) as count from {}.{} {}",
+        schema_q, table_q, where_clause
+    );
     let count_row = client.query_one(&count_sql, &[]).await.map_err(CommandError::from)?;
     let count: i64 = count_row.get("count");
 
