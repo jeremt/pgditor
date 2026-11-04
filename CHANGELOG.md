@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.2.1 — 2026-11-04
+
+### Added
+
+- Reorder array items by drag and drop
+- Edit array columns item by item
+
+### Fixed
+
+- Keep the horizontal scroll position when sorting a column
+- Save composite columns and arrays of composites correctly
+- Save each item of json arrays as its JSON text
+- Let Postgres read edited values as the column's type
+- Show the tables a SQL script creates without a manual refresh
+- Filter float4, json and char(n) columns with the right operators
+- Stop loading forever after an error and ignore table loads that answer too late
+- Keep enum values apart when two enums share a name
+- Keep int8 and numeric values exact beyond 2^53
+- Insert rows with a primary key that has no default, and let Postgres fill the untouched defaults
+- Update the clicked row with Set to NULL and Set to default, including on composite primary keys
+- Pick the referenced column in the foreign key editor
+- Quote column names and escape quotes in generated SQL
+- Stop casting bit values to bit(1)
+- Unwrap quoted column defaults whatever their cast
+
 ## 0.2.0 — 2026-09-25
 
 ### Added
