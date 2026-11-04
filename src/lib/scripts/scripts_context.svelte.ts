@@ -209,7 +209,7 @@ class ScriptsContext extends StoreContext {
     run = async () => {
         this.error_message = "";
         const result = await catch_error(() =>
-            this.#pg.raw_query(this.current_selection ? this.current_selection : this.current_value),
+            this.#pg.raw_query(this.current_selection ? this.current_selection : this.current_value, {refresh: false}),
         );
         if (result instanceof Error) {
             this.error_message = result.message;
@@ -221,6 +221,8 @@ class ScriptsContext extends StoreContext {
                     this.last_result[i].__index = i.toString(); // used to prevent re-render table rows
                 }
             }
+            // the script may have created, renamed or dropped tables
+            await this.#pg.refresh_tables();
         }
     };
 }

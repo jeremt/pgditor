@@ -53,6 +53,11 @@ pub async fn list_tables_for_graph(
             fk.foreign_column_name,
 
             pt.typtype AS type_category,
+            pt.oid AS type_oid,
+            CASE
+                WHEN pt.typtype = 'c' THEN format_type(pt.oid, NULL)
+                WHEN et.typtype = 'c' THEN format_type(et.oid, NULL)
+            END AS composite_type,
 
             c.ordinal_position
 
@@ -75,6 +80,9 @@ pub async fn list_tables_for_graph(
 
         LEFT JOIN pg_type pt
             ON pt.oid = a.atttypid
+
+        LEFT JOIN pg_type et
+            ON et.oid = pt.typelem
 
         LEFT JOIN (
             SELECT kcu.table_schema, kcu.table_name, kcu.column_name
@@ -155,7 +163,7 @@ pub async fn list_tables_for_graph(
             let type_category: i8 = row.get("type_category");
 
             let enum_values = if type_category == b'e' as i8 {
-                fetch_enum_values(&client, &data_type).await.ok()
+                fetch_enum_values(&client, row.get("type_oid")).await.ok()
             } else {
                 None
             };
@@ -171,6 +179,7 @@ pub async fn list_tables_for_graph(
                 foreign_table_name: row.get("foreign_table_name"),
                 foreign_column_name: row.get("foreign_column_name"),
                 enum_values,
+                composite_type: row.get("composite_type"),
             });
         }
     }

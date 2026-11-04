@@ -42,12 +42,17 @@
         <UnpluggedIcon --size="3rem" --thickness="1.2" />
         <div>The database is empty or not started.</div>
     </div>
-{:else if pg.is_loading}
+{:else if pg.is_loading && pg.current_table.rows.length === 0}
     <div class="w-full h-full flex flex-col gap-4 items-center justify-center text-fg-1">
         <ProgressCircle infinite={true} show_value={false} />
     </div>
 {:else}
-    <div class="flex flex-1 w-full h-full overflow-auto">
+    <!-- Stays mounted while rows reload (sort, filters, pagination) so only the cells update and the scroll position is kept. -->
+    <div
+        class="flex flex-1 w-full h-full overflow-auto transition-opacity"
+        class:opacity-60={pg.is_loading}
+        aria-busy={pg.is_loading}
+    >
         <TableRowCheckbox />
         <table class="h-fit">
             <thead class="sticky top-0 bg-bg z-10">

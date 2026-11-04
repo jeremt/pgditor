@@ -14,6 +14,7 @@ const column = (column_name: string, data_type: string, overrides: Partial<PgCol
     foreign_table_name: null,
     foreign_column_name: null,
     enum_values: null,
+    composite_type: null,
     ...overrides,
 });
 

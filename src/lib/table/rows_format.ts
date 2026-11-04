@@ -4,7 +4,7 @@ import type {PgColumn, PgRow} from "./pg_context.svelte";
 export const ROWS_FORMATS = ["json", "csv", "sql"] as const;
 export type RowsFormat = (typeof ROWS_FORMATS)[number];
 
-type FormatColumn = Pick<PgColumn, "column_name" | "data_type">;
+type FormatColumn = Pick<PgColumn, "column_name" | "data_type"> & Partial<Pick<PgColumn, "composite_type">>;
 
 export const escape_csv_value = (value: unknown) => {
     const str =

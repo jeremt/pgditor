@@ -28,7 +28,12 @@ pub async fn list_table_columns(
             fk.foreign_table_schema,
             fk.foreign_table_name,
             fk.foreign_column_name,
-            t.typtype AS type_category
+            t.typtype AS type_category,
+            t.oid AS type_oid,
+            CASE
+                WHEN t.typtype = 'c' THEN format_type(t.oid, NULL)
+                WHEN et.typtype = 'c' THEN format_type(et.oid, NULL)
+            END AS composite_type
         FROM 
             information_schema.columns AS c
         INNER JOIN pg_catalog.pg_namespace AS n
@@ -41,6 +46,8 @@ pub async fn list_table_columns(
             AND a.attname = c.column_name
         INNER JOIN pg_catalog.pg_type AS t
             ON a.atttypid = t.oid
+        LEFT JOIN pg_catalog.pg_type AS et
+            ON et.oid = t.typelem
         LEFT JOIN (
             SELECT kcu.table_schema, kcu.table_name, kcu.column_name
             FROM information_schema.key_column_usage AS kcu
@@ -104,7 +111,7 @@ pub async fn list_table_columns(
         let type_category: i8 = row.get("type_category");
 
         let enum_values = if type_category == b'e' as i8 {
-            fetch_enum_values(&client, &data_type).await.ok()
+            fetch_enum_values(&client, row.get("type_oid")).await.ok()
         } else {
             None
         };
@@ -120,25 +127,26 @@ pub async fn list_table_columns(
             foreign_table_name: row.get("foreign_table_name"),
             foreign_column_name: row.get("foreign_column_name"),
             enum_values,
+            composite_type: row.get("composite_type"),
         });
     }
 
     Ok(columns)
 }
 
+/// Filter by the type oid rather than its name, which several schemas can share.
 pub async fn fetch_enum_values(
     client: &PgClient,
-    enum_type: &str,
+    enum_type_oid: u32,
 ) -> Result<Vec<String>, CommandError> {
     let query = r#"
         SELECT e.enumlabel
-        FROM pg_catalog.pg_type t
-        JOIN pg_catalog.pg_enum e ON t.oid = e.enumtypid
-        WHERE t.typname = $1
+        FROM pg_catalog.pg_enum e
+        WHERE e.enumtypid = $1
         ORDER BY e.enumsortorder;
     "#;
 
-    let rows = client.query(query, &[&enum_type]).await.map_err(CommandError::from)?;
+    let rows = client.query(query, &[&enum_type_oid]).await.map_err(CommandError::from)?;
 
     Ok(rows.iter().map(|row| row.get("enumlabel")).collect())
 }

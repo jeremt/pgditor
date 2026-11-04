@@ -14,8 +14,12 @@ Toute la génération du SQL côté front passe maintenant par des helpers de
   Toujours l'utiliser, jamais `${column_name}` en brut ;
 - `quote_literal(value)` : met une chaîne entre apostrophes et double celles qu'elle contient ;
 - `value_to_sql(column, value)` : convertit une valeur lue par `row_to_json` en littéral SQL.
-  Le cas par défaut ajoute un cast sur le nom `pg_type` (`'x'::inet`) ; `bit` n'est jamais
-  casté (`::bit` veut dire `bit(1)`) ;
+  Il ne met jamais de cast (`'x'` et pas `'x'::inet`) : la valeur est toujours affectée ou
+  comparée à une colonne, dont Postgres prend le type. Un cast sur le nom `pg_type` casse les
+  types qui demandent des guillemets (enum Prisma `"Role"`) ou hors du search path. Seuls les
+  composites passent par `jsonb_populate_record(null::<type>, …)`, élément par élément pour
+  les tableaux de composites. Les nombres en chaîne ne
+  sont écrits tels quels que s'ils ont la forme d'un nombre, sinon ils sont quotés ;
 - `sql_to_value(column, sql)` : retire les apostrophes et le cast d'un `column_default`
   (`'draft'::character varying` donne `draft`) ;
 - `primary_key_condition(pks, rows)` : construit `("a", "b") in ((1, 2), …)` et gère les PK
@@ -28,8 +32,7 @@ partiel. `data_type` contient le `typname` Postgres (`varchar`, `bpchar`, `int4`
 
 ### Vérifier qu'une correction ne casse rien
 
-1. `pnpm test` : 33 tests échouent déjà, tous dans les anciens blocs de `values.test.ts` (voir
-   plus bas). Tout nouvel échec est une régression.
+1. `pnpm test` : tous les tests passent, tout échec est une régression.
 2. `src/lib/table/pg_context.test.ts` fait tourner le vrai `PgContext` avec `svelte` et
    `@tauri-apps/api/core` mockés, et vérifie le SQL envoyé à `raw_query` et les arguments de
    `get_table_data`. Y ajouter un cas pour chaque flux modifié.
@@ -59,41 +62,6 @@ Façon de travailler : une branche, un commit par problème, puis une PR.
       `query_generator_context.svelte.ts:174` : deux générations AI en parallèle mélangent leurs
       historiques. Piste : les callbacks `action` des `MenuItem` côté JS pour le menu, et un
       `tauri::ipc::Channel` passé à la commande pour le streaming AI.
-
-## Qualité et robustesse
-
-- [ ] **`pnpm test` : 33 anciens tests de `values.test.ts` échouent.** Ils sont dans les blocs
-      d'origine (`NULL handling`, types géométriques, réseau, range, bit, composites, types
-      système…) et décrivent un comportement que le code n'a jamais eu : `NULL` au lieu de
-      `null`, pas de cast sur les types sans cas dédié, `ROW(...)` pour les composites, `point`
-      depuis un objet. Il faut décider pour chacun du bon comportement, puis aligner le code ou
-      le test. Les blocs ajoutés depuis passent tous.
-- [ ] **Colonnes de type composite impossibles à mettre à jour.** `row_to_json` les renvoie en
-      objet (`{"a":1,"b":"x"}`), que `value_to_sql` envoie en `'{"a":1,"b":"x"}'::pair` :
-      Postgres refuse (`malformed record literal`). Le formulaire d'update envoyant toutes les
-      colonnes, aucune colonne d'une telle table ne peut être modifiée depuis le panneau. L'éditeur
-      affiche aussi `[object Object]`. Piste : exposer `typtype = 'c'` dans `list_table_columns`
-      et générer `row(1, 'x')::pair` (lié aux tests `ROW(...)` du point précédent).
-- [ ] **`pnpm check` échoue** sur `vite.config.js:5` : `process` n'est pas typé. Ajouter
-      `@types/node` en devDependency.
-- [ ] **Filtres `=` qui ne trouvent jamais la ligne** (`value_for_operator`,
-      `pg_context.svelte.ts:56`) :
-    - `float4` : `"col" = 3.14` compare en `float8` et ne matche pas la valeur arrondie en
-      `float4`. Piste : un littéral non typé (`'3.14'`) ou un cast `::float4` ;
-    - `json` / `jsonb` : la valeur tapée passe par `JSON.stringify` et devient une chaîne JSON
-      (`'"{...}"'`) au lieu d'un objet. Piste : parser la valeur tapée, ou comparer `::text`.
-- [ ] **`is_loading` reste à `true`** quand `load_tables` (`pg_context.svelte.ts:184`) ou
-      `select_table` (`:250`) sortent en erreur. Le toast « Connected to… » de `load_tables`
-      s'affiche aussi à chaque refresh (`load_tables(false)`).
-- [ ] **Deux clics rapides sur deux tables** peuvent afficher les lignes de la première sous
-      les colonnes de la seconde : `select_table` et `update_data` n'ignorent jamais une
-      réponse arrivée trop tard. Piste : un compteur de requête, en ne gardant que la dernière.
-- [ ] `operators_for_column` (`pg_context.svelte.ts:94` et `:97`) ajoute `"<="` deux fois et
-      oublie `">="`.
-- [ ] `fetch_enum_values` (`src-tauri/src/commands/list_table_columns.rs:129`) filtre sur
-      `t.typname` sans le schéma : deux enums du même nom dans deux schémas mélangent leurs
-      valeurs. Piste : filtrer par l'OID du type (`a.atttypid`), que la requête principale
-      connaît déjà.
 
 ## Backend et sécurité
 

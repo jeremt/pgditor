@@ -1,24 +1,31 @@
 import {beforeEach, describe, expect, it, vi} from "vitest";
-import type {PgColumn, PgRow} from "./pg_context.svelte";
+import type {PgColumn, PgRow, PgTable} from "./pg_context.svelte";
 
 const queries: string[] = [];
 const calls: {command: string; args: Record<string, unknown>}[] = [];
+const toasts: string[] = [];
+// lets a test answer a command itself, e.g. to delay or fail it
+let respond: ((command: string, args: Record<string, unknown>) => Promise<unknown> | undefined) | undefined;
 
 // PgContext reads its dependencies from svelte contexts and runs its queries through tauri
 vi.mock("svelte", async (original) => ({
     ...(await original<typeof import("svelte")>()),
     setContext: (_key: unknown, value: unknown) => value,
     getContext: () => ({
-        toast: () => {},
         current: {name: "test", connectionString: "postgres://test"},
         hide_system_tables: true,
         hide_views: true,
         save_selected_table: () => {},
+        get_selected_table: async () => undefined,
     }),
 }));
 vi.mock("@tauri-apps/api/core", () => ({
     invoke: async (command: string, args: Record<string, unknown>) => {
         calls.push({command, args});
+        const response = respond?.(command, args);
+        if (response) {
+            return response;
+        }
         if (command === "raw_query") {
             queries.push(args.sql as string);
         }
@@ -29,9 +36,11 @@ vi.mock("@tauri-apps/api/core", () => ({
     },
 }));
 vi.mock("@tauri-apps/api/window", () => ({getCurrentWindow: () => ({setTitle: async () => {}})}));
-vi.mock("$lib/widgets/Toaster.svelte", () => ({get_toast_context: () => ({toast: () => {}})}));
+vi.mock("$lib/widgets/Toaster.svelte", () => ({
+    get_toast_context: () => ({toast: (message: string) => toasts.push(message)}),
+}));
 
-const {filters_to_where, set_pg_context, without_untouched_defaults} = await import("./pg_context.svelte");
+const {filters_to_where, operators_for_column, set_pg_context, without_untouched_defaults} = await import("./pg_context.svelte");
 
 const column = (column_name: string, data_type: string, options: Partial<PgColumn> = {}) =>
     ({
@@ -45,6 +54,7 @@ const column = (column_name: string, data_type: string, options: Partial<PgColum
         foreign_table_name: null,
         foreign_column_name: null,
         enum_values: null,
+        composite_type: null,
         ...options,
     }) as PgColumn;
 
@@ -68,6 +78,8 @@ const create_pg = (columns: PgColumn[]) => {
 beforeEach(() => {
     queries.length = 0;
     calls.length = 0;
+    toasts.length = 0;
+    respond = undefined;
 });
 
 describe("insert_row", () => {
@@ -82,7 +94,7 @@ describe("insert_row", () => {
             `insert into "public"."projects"
 ("user_id", "name")
 values
-('00000000-0000-0000-0000-00000000000a'::uuid, 'p');`,
+('00000000-0000-0000-0000-00000000000a', 'p');`,
         ]);
     });
 
@@ -97,7 +109,7 @@ values
             `insert into "public"."projects"
 ("user_id", "name")
 values
-('00000000-0000-0000-0000-00000000000a'::uuid, 'p');`,
+('00000000-0000-0000-0000-00000000000a', 'p');`,
         ]);
     });
 });
@@ -112,7 +124,7 @@ describe("update_row", () => {
         await pg.update_row({user_id: "00000000-0000-0000-0000-00000000000a", id: 0, name: "p"});
         expect(queries[0].trim()).toBe(`UPDATE "public"."projects" SET
 "name" = 'p'
-WHERE ("user_id", "id") in (('00000000-0000-0000-0000-00000000000a'::uuid, 0));`);
+WHERE ("user_id", "id") in (('00000000-0000-0000-0000-00000000000a', 0));`);
     });
 
     it("should only set the given columns", async () => {
@@ -127,6 +139,28 @@ WHERE ("user_id", "id") in (('00000000-0000-0000-0000-00000000000a'::uuid, 0));`
 "userName" = null
 WHERE ("id") in ((7));`);
     });
+
+    it("should let postgres convert composite values back from their json", async () => {
+        const pg = create_pg([
+            column("id", "int4", {is_primary_key: "YES"}),
+            column("pair", "My Pair", {composite_type: 'other."My Pair"'}),
+        ]);
+        await pg.update_row({id: 7, pair: {a: 1, b: "it's", c: {x: 2, tags: ["a b", null]}}});
+        expect(queries[0].trim()).toBe(`UPDATE "public"."projects" SET
+"pair" = jsonb_populate_record(null::other."My Pair", '{"a":1,"b":"it''s","c":{"x":2,"tags":["a b",null]}}')
+WHERE ("id") in ((7));`);
+    });
+
+    it("should let postgres convert arrays of composites back item by item", async () => {
+        const pg = create_pg([
+            column("id", "int4", {is_primary_key: "YES"}),
+            column("pairs", "_pair", {composite_type: "pair"}),
+        ]);
+        await pg.update_row({id: 7, pairs: [{a: 1, b: "x"}, null]});
+        expect(queries[0].trim()).toBe(`UPDATE "public"."projects" SET
+"pairs" = array(select jsonb_populate_record(null::pair, nullif(e, 'null')) from jsonb_array_elements('[{"a":1,"b":"x"},null]') with ordinality as x(e, i) order by i)
+WHERE ("id") in ((7));`);
+    });
 });
 
 describe("int8 primary keys", () => {
@@ -137,7 +171,7 @@ describe("int8 primary keys", () => {
         const pg = create_pg(columns);
         await pg.update_row({id: "1234567890123456789", amount: "12345678901234567.89"});
         expect(queries[0].trim()).toBe(`UPDATE "public"."projects" SET
-"amount" = '12345678901234567.89'::numeric
+"amount" = 12345678901234567.89
 WHERE ("id") in ((1234567890123456789));`);
     });
 
@@ -218,7 +252,7 @@ values
         expect(queries[0]).toBe(`insert into "public"."projects"
 ("token", "status", "name")
 values
-('${token}'::uuid, 'done', '');`);
+('${token}', 'done', '');`);
     });
 
     it("should insert default values when every column is left to its default", async () => {
@@ -257,7 +291,7 @@ describe("delete_selection edge cases", () => {
         pg.selected_rows = [1];
         await pg.delete_selection();
         expect(queries[0]).toBe(`delete from "public"."projects"
-where ("id") in (('00000000-0000-0000-0000-000000000002'::uuid));`);
+where ("id") in (('00000000-0000-0000-0000-000000000002'));`);
     });
 
     it("should not delete anything on a table without primary key", async () => {
@@ -334,11 +368,158 @@ describe("filters_to_where", () => {
         );
     });
 
-    it("should cast uuid values", () => {
+    it("should compare float4 columns to an untyped literal", () => {
+        expect(filters_to_where([{column: "r", column_type: "float4", operator: ">=", value: "3.14"}])).toBe(
+            `\nwhere "r" >= '3.14'`,
+        );
+    });
+
+    it("should compare json columns to the typed json", () => {
+        expect(
+            filters_to_where([
+                {column: "jb", column_type: "jsonb", operator: "=", value: `{"name": "l'a"}`},
+                {column: "j", column_type: "json", operator: "!=", value: `{"a": 1}`},
+            ]),
+        ).toBe(`\nwhere "jb" = '{"name": "l''a"}'\nand "j"::jsonb != '{"a": 1}'`);
+    });
+
+    it("should leave uuid values untyped, postgres reads them as the column's type", () => {
         expect(
             filters_to_where([
                 {column: "id", column_type: "uuid", operator: "=", value: "550e8400-e29b-41d4-a716-446655440000"},
             ]),
-        ).toBe(`\nwhere "id" = '550e8400-e29b-41d4-a716-446655440000'::uuid`);
+        ).toBe(`\nwhere "id" = '550e8400-e29b-41d4-a716-446655440000'`);
+    });
+});
+
+describe("operators_for_column", () => {
+    it("should offer every comparison once to numbers", () => {
+        expect(operators_for_column(column("n", "int4"))).toEqual(["=", "!=", "<", "<=", ">", ">="]);
+    });
+
+    it("should offer the text operators to every character type", () => {
+        for (const data_type of ["text", "varchar", "bpchar"]) {
+            expect(operators_for_column(column("s", data_type, {is_nullable: "YES"}))).toEqual([
+                "=", "!=", "is null", "is not null", "<", "<=", ">", ">=",
+                "like", "ilike", "not like", "~", "~*", "!~", "!~*",
+            ]);
+        }
+    });
+});
+
+describe("loading", () => {
+    const users = {schema: "public", name: "users", type: "BASE TABLE", column_names: ["id"], size_mb: 0} satisfies PgTable;
+    const posts = {schema: "public", name: "posts", type: "BASE TABLE", column_names: ["id"], size_mb: 0} satisfies PgTable;
+    const later = <T>(value: T) => {
+        let resolve!: () => void;
+        const promise = new Promise<T>((r) => (resolve = () => r(value)));
+        return {promise, resolve};
+    };
+
+    it("should stop loading when the tables can't be listed", async () => {
+        respond = (command) => (command === "list_tables" ? Promise.reject(new Error("down")) : undefined);
+        const pg = create_pg([]);
+        await pg.load_tables();
+        expect(pg.is_loading).toBe(false);
+        expect(pg.current_table).toBeUndefined();
+    });
+
+    it("should stop loading when the columns can't be listed", async () => {
+        respond = (command) => (command === "list_table_columns" ? Promise.reject(new Error("down")) : undefined);
+        const pg = create_pg([]);
+        pg.tables = [users];
+        await pg.select_table(users);
+        expect(pg.is_loading).toBe(false);
+    });
+
+    it("should only say it is connected when the connection changes", async () => {
+        respond = (command) => (command === "list_tables" ? Promise.resolve([users]) : undefined);
+        const pg = create_pg([]);
+        await pg.load_tables();
+        await pg.load_tables(false);
+        await pg.load_tables();
+        expect(toasts).toEqual(["Connected to test"]);
+        expect(pg.is_loading).toBe(false);
+    });
+
+    it("should keep the last selected table when a previous one answers later", async () => {
+        const users_columns = later([column("user_id", "int4")]);
+        respond = (command, args) => {
+            if (command === "list_table_columns") {
+                return args.table === "users" ? users_columns.promise : Promise.resolve([column("post_id", "int4")]);
+            }
+            if (command === "get_table_data") {
+                return Promise.resolve({rows: [{table: args.table}], count: 1});
+            }
+        };
+        const pg = create_pg([]);
+        pg.tables = [users, posts];
+        const selecting_users = pg.select_table(users);
+        await pg.select_table(posts);
+        users_columns.resolve();
+        await selecting_users;
+        expect(pg.current_table?.name).toBe("posts");
+        expect(pg.current_table?.columns.map((col) => col.column_name)).toEqual(["post_id"]);
+        expect(pg.current_table?.rows).toEqual([{table: "posts", __index: 0}]);
+        expect(pg.is_loading).toBe(false);
+    });
+
+    it("should keep the rows of the last load when a previous one answers later", async () => {
+        const first_page = later({rows: [{page: 0}], count: 2});
+        respond = (command, args) =>
+            command === "get_table_data"
+                ? args.offset === 0
+                    ? first_page.promise
+                    : Promise.resolve({rows: [{page: 1}], count: 2})
+                : undefined;
+        const pg = create_pg([column("id", "int4")]);
+        const loading_first_page = pg.update_data("", 0, 1);
+        await pg.update_data("", 1, 1);
+        first_page.resolve();
+        await loading_first_page;
+        expect(pg.current_table?.rows).toEqual([{page: 1, __index: 0}]);
+        expect(pg.is_loading).toBe(false);
+    });
+});
+
+describe("refresh_tables", () => {
+    const table = (name: string) =>
+        ({schema: "public", name, type: "BASE TABLE", column_names: ["id"], size_mb: 0}) satisfies PgTable;
+
+    it("should list the tables a script created and reload the displayed rows", async () => {
+        respond = (command) =>
+            command === "list_tables" ? Promise.resolve([table("projects"), table("test_values")]) : undefined;
+        const pg = create_pg([column("id", "int4")]);
+        await pg.refresh_tables();
+        expect(pg.tables.map((t) => t.name)).toEqual(["projects", "test_values"]);
+        expect(pg.current_table?.name).toBe("projects");
+        expect(calls.filter((call) => call.command === "get_table_data").map((call) => call.args.table)).toEqual([
+            "projects",
+        ]);
+        expect(pg.is_loading).toBe(false);
+    });
+
+    it("should show the first table when the displayed one was dropped", async () => {
+        respond = (command) => (command === "list_tables" ? Promise.resolve([table("users")]) : undefined);
+        const pg = create_pg([column("id", "int4")]);
+        await pg.refresh_tables();
+        expect(pg.current_table?.name).toBe("users");
+        expect(calls.some((call) => call.command === "get_table_data" && call.args.table === "projects")).toBe(false);
+    });
+
+    it("should show no table when the last one was dropped", async () => {
+        respond = (command) => (command === "list_tables" ? Promise.resolve([]) : undefined);
+        const pg = create_pg([column("id", "int4")]);
+        await pg.refresh_tables();
+        expect(pg.current_table).toBeUndefined();
+    });
+});
+
+describe("raw_query", () => {
+    it("should run a script when no table is selected, e.g. to create the first one", async () => {
+        const pg = create_pg([]);
+        pg.current_table = undefined;
+        await pg.raw_query("create table first (id int)");
+        expect(queries).toEqual(["create table first (id int)"]);
     });
 });

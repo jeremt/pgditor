@@ -3,7 +3,6 @@
     import JsonValueEditor from "./valueEditors/JsonValueEditor.svelte";
     import type {PgColumn, PgRow} from "./pg_context.svelte";
     import {
-        value_to_sql,
         value_type_is_array,
         value_type_is_bigint,
         value_type_is_float,
@@ -29,9 +28,11 @@
     };
     let {column, row = $bindable(), inlined, is_insert = false}: Props = $props();
 
-    // arrays of json and multidimensional arrays are edited as JSON, other arrays item by item
+    // composites (and arrays of them), arrays of json and multidimensional arrays are edited as JSON, other arrays
+    // item by item
     const is_json = $derived(
         ["json", "jsonb", "_json", "_jsonb"].includes(column.data_type) ||
+            Boolean(column.composite_type) ||
             (Array.isArray(row[column.column_name]) &&
                 (row[column.column_name] as unknown[]).some((item) => Array.isArray(item))),
     );
@@ -67,7 +68,7 @@
     <Select
         class="font-mono font-normal! w-full"
         id={column.column_name}
-        bind:value={() => value_to_sql(column, row[column.column_name]), (value) => (row[column.column_name] = value)}
+        bind:value={() => String(row[column.column_name]), (value) => (row[column.column_name] = value === "true")}
     >
         <option>true</option>
         <option>false</option>
